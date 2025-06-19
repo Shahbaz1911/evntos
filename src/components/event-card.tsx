@@ -3,7 +3,7 @@ import type { Event } from '@/types';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit3, Eye, Users, Trash2, Share2, UserCheck } from 'lucide-react';
+import { Edit3, Eye, Users, Trash2, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -81,11 +81,6 @@ export default function EventCard({ event }: EventCardProps) {
            <Button variant="ghost" size="sm" asChild>
             <Link href={`/events/${event.id}/guests`}>
               <Users className="mr-2 h-4 w-4" /> Guests
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/events/${event.id}/verified-guests`}>
-              <UserCheck className="mr-2 h-4 w-4" /> Verified
             </Link>
           </Button>
         </div>
