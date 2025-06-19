@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react'; // Renamed Ticket to avoid conflict
+import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react'; 
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -118,73 +118,59 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     y: number,
     maxWidth: number,
     lineHeight: number,
-    maxLines?: number
-  ) => {
+    maxLines: number = 99,
+    addEllipsis: boolean = false
+  ): number => { // Returns the Y position *after* the last line drawn
     const words = text.split(' ');
     let line = '';
     let currentY = y;
     let linesDrawn = 0;
 
-    for (let n = 0; n < words.length; n++) {
-      if (maxLines && linesDrawn >= maxLines) {
-         // If we are at max lines and there are more words, add ellipsis to the current line
-        if (n < words.length) {
-            let lastLine = ctx.measureText(line.trim() + '...').width > maxWidth ? line.substring(0, line.length - 2).trim() + '...' : line.trim() + '...';
-            // Need to clear the previous line before drawing the truncated one
-            // This is complex as it requires knowing the previous line's exact y.
-            // Simplified: just draw the (potentially truncated) last line.
-            // This part of ellipsis for wrapped text is tricky. The current logic adds ellipsis if the *next* word makes it overflow.
-            // Let's ensure the current line gets ellipsis if it's the last allowed line and there's more text.
-            let tempLine = line.trim();
-            if (ctx.measureText(tempLine).width > maxWidth) { // if current line itself is too long
-                 while(ctx.measureText(tempLine + "...").width > maxWidth && tempLine.length > 0) {
-                    tempLine = tempLine.slice(0, -1);
-                 }
-                 tempLine += "...";
-            } else if (n < words.length -1 && linesDrawn === maxLines -1) { // last allowed line and more words
-                 tempLine += "...";
-                 while(ctx.measureText(tempLine).width > maxWidth && tempLine.length > 3) { // 3 for "..."
-                    tempLine = tempLine.slice(0, -4) + "..."; // remove char before "..."
-                 }
-            }
-            ctx.fillText(tempLine, x, currentY - lineHeight); // Redraw previous line with ellipsis if needed
-            ctx.fillText(tempLine, x, currentY);
+    for (let i = 0; i < words.length; i++) {
+      if (linesDrawn >= maxLines) break;
 
-        }
-        break; 
-      }
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = testLine.trim() === words[n] && metrics.width > maxWidth ? maxWidth : metrics.width; // Handle single very long word
+      const testLineAttempt = line + words[i] + ' ';
+      const testWidth = ctx.measureText(testLineAttempt).width;
 
-      if (testWidth > maxWidth && n > 0) {
-        let textToDraw = line.trim();
-        if (linesDrawn === maxLines - 1 && n < words.length -1 ) { // If this is the last allowed line and there are more words
-            while(ctx.measureText(textToDraw + "...").width > maxWidth && textToDraw.length > 0) {
-                textToDraw = textToDraw.slice(0, -1);
-            }
-            textToDraw += "...";
+      if (testWidth > maxWidth && line !== '') { // Current line + new word overflows, and current line is not empty
+        let lineToPrint = line.trim();
+        if (addEllipsis && linesDrawn === maxLines - 1 && i < words.length) { 
+          while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
+            lineToPrint = lineToPrint.slice(0, -1);
+          }
+          lineToPrint += '...';
         }
-        ctx.fillText(textToDraw, x, currentY);
-        line = words[n] + ' ';
+        ctx.fillText(lineToPrint, x, currentY);
         currentY += lineHeight;
         linesDrawn++;
-      } else {
-        line = testLine;
+        if (linesDrawn >= maxLines) {
+          line = ''; 
+          break;
+        }
+        line = words[i] + ' '; // Start new line with current word
+      } else { // Current line + new word fits, or current line is empty
+        line = testLineAttempt;
       }
     }
-    // Draw the last line
-    if (!(maxLines && linesDrawn >= maxLines)) {
-        let finalText = line.trim();
-        if (linesDrawn === maxLines -1 && line.length > 0 && words.length > 0 && ctx.measureText(finalText).width > maxWidth){
-             while(ctx.measureText(finalText + "...").width > maxWidth && finalText.length > 0) {
-                finalText = finalText.slice(0, -1);
+
+    if (line.trim() !== '' && linesDrawn < maxLines) {
+      let lineToPrint = line.trim();
+      if (ctx.measureText(lineToPrint).width > maxWidth) { // Last line itself overflows
+        if (addEllipsis) {
+            while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
+                lineToPrint = lineToPrint.slice(0, -1);
             }
-            finalText += "...";
+            lineToPrint += '...';
+        } else {
+            while (ctx.measureText(lineToPrint).width > maxWidth && lineToPrint.length > 0) {
+                lineToPrint = lineToPrint.slice(0, -1);
+            }
         }
-       ctx.fillText(finalText, x, currentY);
+      }
+      ctx.fillText(lineToPrint, x, currentY);
+      currentY += lineHeight;
     }
-    return currentY + lineHeight; // Return Y for the next line
+    return currentY; 
   };
 
 
@@ -199,40 +185,31 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     }
 
     const pdfTicketWidthMm = 70;
-    const pdfTicketHeightMm = 120;
-    const dpi = 300; // Good resolution for print
+    const pdfTicketHeightMm = 120; // Increased height slightly for better spacing
+    const dpi = 300; 
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
 
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
-    // Get theme colors
     const rootStyle = getComputedStyle(document.documentElement);
     const primaryHslRaw = rootStyle.getPropertyValue('--primary').trim();
     const primaryHex = hslToHex(`hsl(${primaryHslRaw})`);
-    
     const primaryFgHslRaw = rootStyle.getPropertyValue('--primary-foreground').trim();
     const primaryFgHex = hslToHex(`hsl(${primaryFgHslRaw})`);
-
     const cardHslRaw = rootStyle.getPropertyValue('--card').trim();
     const cardHex = hslToHex(`hsl(${cardHslRaw})`);
-
     const textHslRaw = rootStyle.getPropertyValue('--card-foreground').trim();
     const textHex = hslToHex(`hsl(${textHslRaw})`);
-    
     const mutedTextHslRaw = rootStyle.getPropertyValue('--muted-foreground').trim();
     const mutedTextHex = hslToHex(`hsl(${mutedTextHslRaw})`);
-
     const borderHslRaw = rootStyle.getPropertyValue('--border').trim();
     const borderHex = hslToHex(`hsl(${borderHslRaw})`);
 
     // --- Drawing Start ---
-
-    // 1. Background
     ctx.fillStyle = cardHex;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Border
     ctx.strokeStyle = borderHex;
     ctx.lineWidth = mmToPx(0.3);
     ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
@@ -241,95 +218,83 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     const contentWidth = canvas.width - 2 * contentPadding;
     let currentY = contentPadding;
 
-    // 3. Header Section (Event Title)
-    const headerHeight = mmToPx(22);
+    // 1. Header Section (Event Title)
+    const headerHeight = mmToPx(20); // Reduced header height slightly
     ctx.fillStyle = primaryHex;
     ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
 
     ctx.fillStyle = primaryFgHex;
-    ctx.font = `bold ${mmToPx(5.5)}px Inter, sans-serif`;
+    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`; // Slightly smaller title font
     ctx.textAlign = 'center';
-    const eventTitleText = `🎟️ ${eventName}`; // Unicode ticket emoji
-    // Vertically align text in header
-    const eventTitleMetrics = ctx.measureText("M"); // Approximate height
-    const eventTitleActualHeight = eventTitleMetrics.actualBoundingBoxAscent + eventTitleMetrics.actualBoundingBoxDescent || mmToPx(5.5);
-    drawTextWithWrapping(ctx, eventTitleText, canvas.width / 2, currentY + (headerHeight / 2) + (eventTitleActualHeight / 3) , contentWidth - mmToPx(6), mmToPx(6.5), 2);
-    currentY += headerHeight + mmToPx(8);
+    const eventTitleLineHeight = mmToPx(6);
+    const eventTitleTextY = currentY + (headerHeight / 2) - eventTitleLineHeight + (eventTitleLineHeight * 0.9); // Adjusted for 2 lines centered
+    drawTextWithWrapping(ctx, `Event: ${eventName}`, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(8), eventTitleLineHeight, 2, true);
+    currentY += headerHeight + mmToPx(6); // Space after header
 
-    // 4. "GUEST TICKET" Sub-header
+    // 2. "GUEST TICKET" Sub-header
     ctx.fillStyle = textHex;
-    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`;
+    ctx.font = `bold ${mmToPx(4.2)}px Inter, sans-serif`; // Slightly smaller sub-header
     ctx.textAlign = 'center';
-    ctx.fillText("GUEST TICKET", canvas.width / 2, currentY);
-    currentY += mmToPx(10);
+    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(5), 1);
+    currentY += mmToPx(7); // Increased space after sub-header
 
-    // 5. Guest Details Section
-    ctx.textAlign = 'left';
-    const detailIndent = contentPadding + mmToPx(3);
-    
-    const drawDetailItemPremium = (icon: string, labelText: string, valueText: string) => {
-        const iconSize = mmToPx(4.5);
-        const textStartX = detailIndent + iconSize + mmToPx(3); // Start X for text after icon
-        const availableTextWidth = contentWidth - (iconSize + mmToPx(5)); // Width for label and value
+    // 3. Guest Details Section
+    const detailIndent = contentPadding + mmToPx(2); // Reduced indent slightly
 
-        // Icon (Emoji)
-        ctx.font = `${iconSize}px Inter, sans-serif`;
-        ctx.fillStyle = primaryHex; // Use primary color for icons
-        // Adjust Y for emoji baseline alignment - this is approximate
-        const iconMetrics = ctx.measureText(icon);
-        const iconActualHeight = iconMetrics.actualBoundingBoxAscent + iconMetrics.actualBoundingBoxDescent || iconSize;
-        ctx.fillText(icon, detailIndent, currentY + iconActualHeight * 0.7); 
+    const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2) => {
+        const textStartX = detailIndent;
+        const availableTextWidth = contentWidth - mmToPx(4); // (detailIndent - contentPadding);
 
         // Label
-        ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
-        ctx.fillStyle = mutedTextHex; // Muted color for labels
-        ctx.fillText(labelText, textStartX, currentY);
-        currentY += mmToPx(4.5); // Line height for label
+        ctx.font = `bold ${mmToPx(3.2)}px Inter, sans-serif`; // Smaller label font
+        ctx.fillStyle = mutedTextHex;
+        ctx.textAlign = 'left';
+        currentY = drawTextWithWrapping(ctx, labelText, textStartX, currentY, availableTextWidth, mmToPx(4), 1);
 
         // Value
-        ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
-        ctx.fillStyle = textHex; // Standard text color for values
-        currentY = drawTextWithWrapping(ctx, valueText, textStartX, currentY, availableTextWidth, mmToPx(5), 2); // Max 2 lines for value
-        currentY += mmToPx(5); // Space after each item
+        ctx.font = `normal ${mmToPx(3.5)}px Inter, sans-serif`; // Smaller value font
+        ctx.fillStyle = textHex;
+        ctx.textAlign = 'left';
+        currentY = drawTextWithWrapping(ctx, valueText, textStartX, currentY, availableTextWidth, mmToPx(4.5), valueMaxLines, false);
+        currentY += mmToPx(3.5); // Space after each full item
     };
 
-    drawDetailItemPremium("👤", "Guest Name:", submittedRegistration.name); // User emoji
-    drawDetailItemPremium("📧", "Email Address:", submittedRegistration.email); // Email emoji
+    drawDetailItem("Guest Name:", submittedRegistration.name, 2);
+    drawDetailItem("Email Address:", submittedRegistration.email, 2);
     if (submittedRegistration.contactNumber) {
-      drawDetailItemPremium("📞", "Contact:", submittedRegistration.contactNumber); // Phone emoji
+      drawDetailItem("Contact:", submittedRegistration.contactNumber, 1);
     }
-    currentY += mmToPx(3); 
+    currentY += mmToPx(3); // Extra space before QR
 
-    // 6. QR Code
-    const qrSizePx = mmToPx(40);
+    // 4. QR Code
+    const qrSizePx = mmToPx(35); // Adjusted QR size
     const qrX = (canvas.width - qrSizePx) / 2;
-    const qrY = Math.min(currentY, canvas.height - contentPadding - qrSizePx - mmToPx(15)); // Ensure QR fits before instructions
+    const qrY = currentY;
 
     const qrImage = new Image();
     qrImage.onload = () => {
       ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
-      let postQrY = qrY + qrSizePx + mmToPx(7);
+      let postQrY = qrY + qrSizePx + mmToPx(5);
 
-      // 7. Instructions
+      // 5. Instructions
       ctx.fillStyle = mutedTextHex;
-      ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
+      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`; // Smaller instructions font
       ctx.textAlign = 'center';
-      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(4), mmToPx(4.5), 2);
+      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(3.8), 2);
       
-      // 8. Footer Branding - Positioned at the very bottom
-      const footerY = canvas.height - contentPadding + mmToPx(1);
-      ctx.font = `normal ${mmToPx(3)}px Inter, sans-serif`;
+      // 6. Footer Branding - Positioned at the very bottom
+      const footerTextY = canvas.height - contentPadding + mmToPx(0.5); // Fine-tune footer position
+      ctx.font = `normal ${mmToPx(2.5)}px Inter, sans-serif`; // Smaller footer font
       ctx.fillStyle = mutedTextHex;
-      // Ensure branding doesn't overlap with instructions if content is tall
-      if (postQrY < footerY - mmToPx(5)) {
-         ctx.fillText("Powered by Eventos", canvas.width / 2, footerY);
-      } else { // If not enough space, draw it just below instructions
-         ctx.fillText("Powered by Eventos", canvas.width / 2, postQrY + mmToPx(4));
+      ctx.textAlign = 'center';
+      // Ensure footer doesn't overlap if content above is tall
+      if (postQrY < footerTextY - mmToPx(5)) { 
+         ctx.fillText("Powered by Eventos", canvas.width / 2, footerTextY);
+      } else {
+         ctx.fillText("Powered by Eventos", canvas.width / 2, postQrY + mmToPx(4)); // Fallback if too close
       }
 
-
       // --- Drawing End ---
-
       const dataUrl = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -352,12 +317,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
           errorCorrectionLevel: 'H', 
-          width: 400, 
+          width: 300, // Reduced width for smaller QR on PDF
           margin: 1, 
           type: 'image/png',
           color: {
             dark: primaryHex, 
-            light: '#00000000' // Transparent background for QR
+            light: '#00000000' 
           }
         });
         qrImage.src = qrCodePngDataUrl;
