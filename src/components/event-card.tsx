@@ -3,7 +3,7 @@ import type { Event } from '@/types';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit3, Eye, Users, Trash2, Share2 } from 'lucide-react';
+import { Edit3, Eye, Users, Trash2, Share2, UserCheck } from 'lucide-react';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -72,7 +72,7 @@ export default function EventCard({ event }: EventCardProps) {
         </div>
       </CardHeader>
       <CardFooter className="flex-wrap justify-between items-center bg-muted/50 p-4 mt-auto">
-        <div className="flex gap-2 mb-2 sm:mb-0">
+        <div className="flex gap-2 mb-2 sm:mb-0 flex-wrap">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/events/${event.id}/edit`}>
               <Edit3 className="mr-2 h-4 w-4" /> Edit
@@ -83,8 +83,13 @@ export default function EventCard({ event }: EventCardProps) {
               <Users className="mr-2 h-4 w-4" /> Guests
             </Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/events/${event.id}/verified-guests`}>
+              <UserCheck className="mr-2 h-4 w-4" /> Verified
+            </Link>
+          </Button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share2 className="mr-2 h-4 w-4" /> Share
           </Button>
@@ -110,7 +115,7 @@ export default function EventCard({ event }: EventCardProps) {
             </AlertDialogContent>
           </AlertDialog>
            <Button variant="default" size="sm" asChild className="bg-primary hover:bg-primary/90">
-            <Link href={`/e/${event.slug}`}>
+            <Link href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer">
               View Page <Eye className="ml-2 h-4 w-4" />
             </Link>
           </Button>
