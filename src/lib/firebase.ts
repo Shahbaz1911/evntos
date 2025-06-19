@@ -2,17 +2,18 @@
 // Firebase app initialization
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 // IMPORTANT: Replace these with your actual Firebase project configuration!
 const firebaseConfig = {
-  apiKey: "AIzaSyA6FCx0TdqvsFnwGR35D-C4AdSK6UNV2gc",
-  authDomain: "eventos-74593.firebaseapp.com",
-  projectId: "eventos-74593",
-  storageBucket: "eventos-74593.firebasestorage.app",
-  messagingSenderId: "480526111994",
-  appId: "1:480526111994:web:d40e1e290f454a190c2543",
-  measurementId: "G-HCLCXQR3J0"
+  apiKey: "YOUR_API_KEY", // Replace with your actual API key
+  authDomain: "YOUR_AUTH_DOMAIN", // Replace with your actual auth domain
+  projectId: "YOUR_PROJECT_ID", // Replace with your actual project ID
+  storageBucket: "YOUR_STORAGE_BUCKET", // Replace with your actual storage bucket
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Replace with your actual messaging sender ID
+  appId: "YOUR_APP_ID", // Replace with your actual app ID
+  measurementId: "YOUR_MEASUREMENT_ID" // Optional: Replace with your actual measurement ID
 };
 
 // Initialize Firebase
@@ -24,5 +25,6 @@ if (!getApps().length) {
 }
 
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-export { app, auth };
+export { app, auth, db };

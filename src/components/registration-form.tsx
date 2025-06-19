@@ -35,11 +35,10 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     resolver: zodResolver(registrationSchema),
   });
 
-  const onSubmit: SubmitHandler<RegistrationFormValues> = (data) => {
+  const onSubmit: SubmitHandler<RegistrationFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
-      // The `source: 'form'` is now handled within the `addRegistration` in EventContext
-      addRegistration({ eventId, ...data }); 
+      await addRegistration({ eventId, ...data }); 
       toast({
         title: "Registration Successful!",
         description: `You're registered for "${eventName}". A confirmation has been simulated.`,

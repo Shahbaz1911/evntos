@@ -1,6 +1,7 @@
 
 export interface Event {
   id: string;
+  userId: string; // ID of the user who created the event
   title: string;
   description: string;
   imageUrl: string;

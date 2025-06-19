@@ -7,9 +7,10 @@ import EventCard from '@/components/event-card';
 import { useEvents } from '@/context/EventContext';
 import { PlusCircle, CalendarDays } from 'lucide-react';
 import AuthGuard from '@/components/auth-guard'; 
+import LoadingSpinner from '@/components/loading-spinner';
 
 export default function HomePage() {
-  const { events } = useEvents();
+  const { events, contextLoading } = useEvents();
 
   return (
     <AuthGuard> 
@@ -24,7 +25,11 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {events.length === 0 ? (
+        {contextLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <LoadingSpinner size={48} />
+          </div>
+        ) : events.length === 0 ? (
           <div className="text-center py-12">
             <CalendarDays className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground font-semibold">No events yet.</p>
