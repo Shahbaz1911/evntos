@@ -100,7 +100,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="hover:bg-accent hover:text-accent-foreground">
+              <Button asChild variant="ghost" size="sm" className="hover:bg-accent hover:text-accent-foreground text-foreground/80">
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
