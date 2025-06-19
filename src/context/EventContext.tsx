@@ -5,7 +5,7 @@ import type { Event, Registration } from '@/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { generateSeoFriendlyUrl } from '@/ai/flows/generate-seo-friendly-url';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase'; // Removed auth import as it's handled by useAuth
+import { db } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -16,9 +16,10 @@ import {
   writeBatch,
   query,
   where,
-  Timestamp // Keep Timestamp if you plan to use it, but currently dates are ISO strings
+  Timestamp,
+  getDoc
 } from 'firebase/firestore';
-import { useAuth } from './AuthContext'; // To get current user UID and auth loading state
+import { useAuth } from './AuthContext';
 
 interface EventContextType {
   events: Event[];
@@ -30,9 +31,10 @@ interface EventContextType {
   deleteEvent: (eventId: string) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
   getEventBySlug: (slug: string) => Event | undefined;
-  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => Promise<void>;
+  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => Promise<Registration | null>;
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
+  getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -43,22 +45,20 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const [contextLoading, setContextLoading] = useState(true);
   const [isGeneratingSlug, setIsGeneratingSlug] = useState(false);
   const { toast } = useToast();
-  const { user: authUser, loading: authLoading } = useAuth(); // Get authenticated user and loading state
+  const { user: authUser, loading: authLoading } = useAuth();
 
   const fetchData = useCallback(async () => {
     if (authLoading) {
-      setContextLoading(true); // Keep context loading until auth state is resolved
+      setContextLoading(true);
       return;
     }
 
     setContextLoading(true);
     try {
-      // Fetch events - these are public
       const eventsCol = collection(db, 'events');
       const eventSnapshot = await getDocs(eventsCol);
       const eventsList = eventSnapshot.docs.map(docSnapshot => {
         const data = docSnapshot.data();
-        // Ensure all fields are correctly mapped and typed
         return {
           id: docSnapshot.id,
           userId: data.userId,
@@ -68,14 +68,13 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           mapLink: data.mapLink,
           slug: data.slug,
           registrationOpen: data.registrationOpen,
-          createdAt: data.createdAt, // Assumed to be ISO string from Firestore
+          createdAt: data.createdAt,
           eventDate: data.eventDate,
           eventTime: data.eventTime,
         } as Event;
       });
       setEvents(eventsList);
 
-      // Fetch registrations ONLY if a user is authenticated
       if (authUser) {
         const regsCol = collection(db, 'registrations');
         const regSnapshot = await getDocs(regsCol);
@@ -86,31 +85,33 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
             eventId: data.eventId,
             name: data.name,
             email: data.email,
-            registeredAt: data.registeredAt, // Assumed to be ISO string
+            registeredAt: data.registeredAt,
             source: data.source,
+            checkedIn: data.checkedIn || false,
+            checkedInAt: data.checkedInAt,
           } as Registration;
         });
         setRegistrations(regsList);
       } else {
-        setRegistrations([]); // Clear registrations if no user is authenticated
+        setRegistrations([]);
       }
 
     } catch (error) {
       console.error("Error fetching data from Firestore:", error);
       const firebaseError = error as import('firebase/app').FirebaseError;
       if (firebaseError.code === 'permission-denied') {
-          toast({ title: "Permissions Error", description: "Could not load some data due to access restrictions. Please ensure you are logged in if trying to access private data.", variant: "destructive" });
+          toast({ title: "Permissions Error", description: "Could not load some data due to access restrictions.", variant: "destructive" });
       } else {
           toast({ title: "Data Load Error", description: "Could not load data from the cloud.", variant: "destructive" });
       }
     } finally {
       setContextLoading(false);
     }
-  }, [authUser, authLoading, toast]); // Dependencies include authUser and authLoading
+  }, [authUser, authLoading, toast]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // fetchData is a useCallback, so this effect runs when authUser or authLoading changes
+  }, [fetchData]);
 
 
   const addEvent = useCallback(async (newEventData: Pick<Event, 'title'>): Promise<Event | null> => {
@@ -123,7 +124,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const seoResult = await generateSeoFriendlyUrl({ title: newEventData.title });
       
       const eventDraft: Omit<Event, 'id' | 'slug'> = {
-        userId: authUser.uid, // Correctly use authUser.uid
+        userId: authUser.uid,
         title: newEventData.title,
         description: '',
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
@@ -197,11 +198,10 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     const eventRef = doc(db, "events", finalUpdatedEvent.id);
 
     try {
-      await updateDoc(eventRef, { ...finalUpdatedEvent }); // Spread to ensure all fields are passed
+      await updateDoc(eventRef, { ...finalUpdatedEvent });
       setEvents((prevEvents) =>
         prevEvents.map((event) => (event.id === finalUpdatedEvent.id ? finalUpdatedEvent : event))
       );
-      // toast({ title: "Event Updated", description: `"${finalUpdatedEvent.title}" has been updated.` });
     } catch (error) {
       console.error("Error updating event in Firestore:", error);
       toast({ title: "Error", description: "Could not update event.", variant: "destructive" });
@@ -222,7 +222,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const regsQuery = query(collection(db, "registrations"), where("eventId", "==", eventId));
       const regsSnapshot = await getDocs(regsQuery);
       const batch = writeBatch(db);
-      regsSnapshot.forEach((docSnapshot) => { // Renamed doc to docSnapshot to avoid conflict
+      regsSnapshot.forEach((docSnapshot) => {
         batch.delete(docSnapshot.ref);
       });
       await batch.commit();
@@ -243,20 +243,22 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const getEventById = useCallback((id: string) => events.find((event) => event.id === id), [events]);
   const getEventBySlug = useCallback((slug: string) => events.find((event) => event.slug === slug), [events]);
 
-  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email'>) => {
+  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email'>): Promise<Registration | null> => {
     const registrationDraft: Omit<Registration, 'id'> = {
       ...newRegData,
       registeredAt: new Date().toISOString(),
       source: 'form',
+      checkedIn: false,
     };
     try {
       const docRef = await addDoc(collection(db, "registrations"), registrationDraft);
       const newRegistrationWithId: Registration = { ...registrationDraft, id: docRef.id };
       setRegistrations((prev) => [newRegistrationWithId, ...prev]);
+      return newRegistrationWithId;
     } catch (error) {
       console.error("Error adding registration to Firestore:", error);
       toast({ title: "Registration Error", description: "Could not save registration.", variant: "destructive" });
-      throw error;
+      throw error; // Re-throw to be caught by the form
     }
   }, [toast]);
 
@@ -267,6 +269,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       email: `shared-view-${Date.now()}@${eventSlug}.local`,
       registeredAt: new Date().toISOString(),
       source: 'shared_link',
+      checkedIn: false,
     };
     try {
       const docRef = await addDoc(collection(db, "registrations"), registrationDraft);
@@ -275,10 +278,36 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error recording shared link visit in Firestore:", error);
     }
-  }, [toast]); // Added toast as a dependency if it's used, though not directly in this func
+  }, []); // Removed toast dependency as it wasn't used here
 
   const getRegistrationsByEventId = useCallback((eventId: string) =>
     registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form'), [registrations]);
+
+  const getRegistrationByIdFromFirestore = useCallback(async (registrationId: string): Promise<Registration | null> => {
+    try {
+      const regRef = doc(db, "registrations", registrationId);
+      const docSnap = await getDoc(regRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          eventId: data.eventId,
+          name: data.name,
+          email: data.email,
+          registeredAt: data.registeredAt,
+          source: data.source,
+          checkedIn: data.checkedIn || false,
+          checkedInAt: data.checkedInAt,
+        } as Registration;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching registration by ID:", error);
+      toast({ title: "Error", description: "Could not fetch registration details.", variant: "destructive" });
+      return null;
+    }
+  }, [toast]);
 
 
   return (
@@ -296,6 +325,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         addRegistration,
         recordSharedLinkVisit,
         getRegistrationsByEventId,
+        getRegistrationByIdFromFirestore,
       }}
     >
       {children}
@@ -310,4 +340,3 @@ export const useEvents = () => {
   }
   return context;
 };
-

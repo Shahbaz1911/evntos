@@ -12,6 +12,8 @@ import { useEvents } from '@/context/EventContext';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
+import { QRCodeSVG } from 'qrcode.react';
+import type { Registration } from '@/types';
 
 const registrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(100),
@@ -29,7 +31,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const { addRegistration } = useEvents();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedRegistration, setSubmittedRegistration] = useState<Registration | null>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -38,13 +40,17 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const onSubmit: SubmitHandler<RegistrationFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
-      await addRegistration({ eventId, ...data }); 
-      toast({
-        title: "Registration Successful!",
-        description: `You're registered for "${eventName}". A confirmation has been simulated.`,
-      });
-      reset();
-      setIsSubmitted(true);
+      const newRegistration = await addRegistration({ eventId, ...data }); 
+      if (newRegistration) {
+        toast({
+          title: "Registration Successful!",
+          description: `You're registered for "${eventName}". Your QR code ticket is below.`,
+        });
+        setSubmittedRegistration(newRegistration);
+        reset();
+      } else {
+        throw new Error("Failed to get registration details after creation.");
+      }
     } catch (error) {
       console.error("Registration failed:", error);
       toast({
@@ -52,20 +58,30 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         description: "Could not complete registration. Please try again.",
         variant: "destructive",
       });
+      setSubmittedRegistration(null);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isSubmitted) {
+  if (submittedRegistration) {
     return (
       <Card className="bg-green-50 border-green-200 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-green-700 font-headline">Registration Confirmed!</CardTitle>
+        <CardHeader className="text-center">
+          <CardTitle className="text-green-700 font-headline text-2xl">Registration Confirmed!</CardTitle>
+          <CardDescription className="text-green-600">
+            Thank you for registering for {eventName}.<br/> Present this QR code at the event.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-green-600">Thank you for registering for {eventName}. We've simulated sending a confirmation to your email.</p>
-           <Button variant="link" onClick={() => setIsSubmitted(false)} className="mt-4 text-primary p-0">Register another person?</Button>
+        <CardContent className="flex flex-col items-center space-y-4">
+          <div className="p-4 bg-white rounded-lg shadow-inner">
+            <QRCodeSVG value={submittedRegistration.id} size={192} includeMargin={true} />
+          </div>
+          <p className="text-sm text-muted-foreground">Name: {submittedRegistration.name}</p>
+          <p className="text-sm text-muted-foreground">Email: {submittedRegistration.email}</p>
+          <Button variant="outline" onClick={() => { setSubmittedRegistration(null); reset(); }} className="mt-4">
+            Register another person
+          </Button>
         </CardContent>
       </Card>
     );
@@ -93,7 +109,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         <CardFooter>
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
             {isSubmitting && <LoadingSpinner size={16} className="mr-2" />}
-            {isSubmitting ? "Registering..." : "Register Now"}
+            {isSubmitting ? "Registering..." : "Register Now & Get QR Ticket"}
           </Button>
         </CardFooter>
       </form>

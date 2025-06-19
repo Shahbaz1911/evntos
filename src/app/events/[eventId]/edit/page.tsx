@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Users, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, Eye, Trash2, QrCode } from 'lucide-react';
 import type { Event } from '@/types';
 import AuthGuard from '@/components/auth-guard';
 import {
@@ -29,7 +29,7 @@ export default function EditEventPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, updateEvent, deleteEvent, isGeneratingSlug } = useEvents();
+  const { getEventById, updateEvent, deleteEvent, isGeneratingSlug, events } = useEvents();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,20 +38,33 @@ export default function EditEventPage() {
 
   useEffect(() => {
     if (eventId) {
-      const foundEvent = getEventById(eventId);
+      // Try to get event from context first (faster if already loaded)
+      let foundEvent = getEventById(eventId);
+      
+      // If not in context (e.g., direct navigation), try to find in the full events list if available
+      // This is a fallback, ideally context should be up-to-date or refetch mechanism robust
+      if (!foundEvent && events.length > 0) {
+        foundEvent = events.find(e => e.id === eventId) || null;
+      }
+
       if (foundEvent) {
         setEvent(foundEvent);
       } else {
+        // If still not found after context check and full list, then show error or redirect.
+        // This might indicate the event doesn't exist or there's a delay in context loading.
+        // For simplicity, we assume if it's not in getEventById, it might not be loaded yet or doesn't exist.
+        // A more robust solution might involve a dedicated fetch if not found.
         toast({
-          title: "Error",
-          description: "Event not found.",
-          variant: "destructive",
+          title: "Notice",
+          description: "Event details are loading or event not found.",
+          variant: "default",
         });
-        router.push('/');
+        // Consider router.push('/') if event is definitively not found after loading.
       }
-      setIsLoading(false);
+      setIsLoading(false); // Set loading to false once check is done
     }
-  }, [eventId, getEventById, router, toast]);
+  }, [eventId, getEventById, events, router, toast]);
+
 
   const handleSubmit = async (data: EventFormValues) => {
     if (!event) return;
@@ -62,7 +75,7 @@ export default function EditEventPage() {
         ...data,
       };
       await updateEvent(updatedEventData);
-      setEvent(updatedEventData);
+      setEvent(updatedEventData); // Optimistically update local state
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
@@ -86,24 +99,6 @@ export default function EditEventPage() {
     router.push('/');
   };
 
-  const handleShare = async () => {
-    if (!event) return;
-    const shareUrl = `${window.location.origin}/e/${event.slug}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link Copied!",
-        description: "Event share link copied to clipboard.",
-      });
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      toast({
-        title: "Error",
-        description: "Could not copy link. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -117,7 +112,7 @@ export default function EditEventPage() {
      return (
       <AuthGuard>
         <div className="text-center py-10">
-          <p className="text-xl text-muted-foreground">Event not found.</p>
+          <p className="text-xl text-muted-foreground">Event not found or still loading.</p>
           <Button asChild className="mt-4">
             <Link href="/">Go to Dashboard</Link>
           </Button>
@@ -125,6 +120,20 @@ export default function EditEventPage() {
       </AuthGuard>
     );
   }
+  
+  // Ensure event is not null before rendering form or actions
+  if (!event) {
+    // This case should ideally be covered by the loading/not found logic above,
+    // but as a fallback:
+    return (
+      <AuthGuard>
+        <div className="flex justify-center items-center h-64">
+          <p>Loading event details...</p> <LoadingSpinner size={24} className="ml-2"/>
+        </div>
+      </AuthGuard>
+    );
+  }
+
 
   return (
     <AuthGuard>
@@ -139,22 +148,29 @@ export default function EditEventPage() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <CardTitle className="font-headline text-2xl">Edit: {event?.title}</CardTitle>
+                <CardTitle className="font-headline text-2xl">Edit: {event.title}</CardTitle>
                 <CardDescription>Update your event details and manage settings.</CardDescription>
               </div>
               <div className="flex gap-2 flex-wrap">
                  <Button variant="outline" size="sm" asChild>
-                  <Link href={`/events/${event?.id}/guests`}>
+                  <Link href={`/events/${event.id}/guests`}>
                     <Users className="mr-2 h-4 w-4" /> Guest List
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleShare}>
-                  <Share2 className="mr-2 h-4 w-4" /> Share
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/events/${event.id}/scan`}>
+                    <QrCode className="mr-2 h-4 w-4" /> Scan Tickets
+                  </Link>
+                </Button>
+                <Button variant="secondary" size="sm" asChild>
+                  <Link href={`/e/${event.slug}`} target="_blank">
+                    <Eye className="mr-2 h-4 w-4" /> View Public Page
+                  </Link>
                 </Button>
               </div>
             </div>
           </CardHeader>
-          {event && (
+          
             <>
               <EventForm
                 event={event}
@@ -173,7 +189,7 @@ export default function EditEventPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the event "{event?.title}" and all its registrations.
+                          This action cannot be undone. This will permanently delete the event "{event.title}" and all its registrations.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -186,7 +202,7 @@ export default function EditEventPage() {
                   </AlertDialog>
               </CardFooter>
             </>
-          )}
+          
         </Card>
       </div>
     </AuthGuard>
