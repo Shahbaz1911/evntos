@@ -12,9 +12,10 @@ import { useEvents } from '@/context/EventContext';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useRef } from 'react';
 import LoadingSpinner from './loading-spinner';
-import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Registration } from '@/types';
 import { Download, Phone } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 const registrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(100),
@@ -40,7 +41,6 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRegistration, setSubmittedRegistration] = useState<Registration | null>(null);
   
-  const qrCodeCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -83,87 +83,103 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const scale = 2; // For higher resolution image
-    const padding = 20 * scale;
-    const qrSize = 128 * scale;
-    const lineHeight = 20 * scale;
-    const textMarginTop = 10 * scale;
-    
-    const eventNameText = `Event: ${eventName}`;
-    const guestNameText = `Guest: ${submittedRegistration.name}`;
-    const emailText = `Email: ${submittedRegistration.email}`;
-    const contactText = submittedRegistration.contactNumber ? `Contact: ${submittedRegistration.contactNumber}` : "";
-
-    ctx.font = `${16 * scale}px Inter, sans-serif`;
-    const eventNameWidth = ctx.measureText(eventNameText).width;
-    const guestNameWidth = ctx.measureText(guestNameText).width;
-    const emailWidth = ctx.measureText(emailText).width;
-    const contactWidth = contactText ? ctx.measureText(contactText).width : 0;
-    
-    const textBlockHeight = lineHeight * (contactText ? 4 : 3) + (textMarginTop * (contactText ? 3 : 2));
-    const contentWidth = Math.max(qrSize, eventNameWidth, guestNameWidth, emailWidth, contactWidth);
-    
-    canvas.width = contentWidth + padding * 2;
-    canvas.height = qrSize + padding * 2 + textBlockHeight + padding; // Extra padding at bottom
-
-    // Background
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Event Name
-    ctx.fillStyle = '#4285F4'; // Primary color
-    ctx.font = `bold ${18*scale}px Inter, sans-serif`;
-    ctx.fillText(eventNameText, padding, padding + lineHeight);
-
-    // Draw Guest Name
-    ctx.fillStyle = 'black';
-    ctx.font = `${16*scale}px Inter, sans-serif`;
-    ctx.fillText(guestNameText, padding, padding + lineHeight * 2 + textMarginTop);
-    
-    // Draw Email
-    ctx.fillText(emailText, padding, padding + lineHeight * 3 + textMarginTop * 2);
-
-    // Draw Contact Number if available
-    let qrTopPosition = padding + lineHeight * 3 + textMarginTop * 2 + lineHeight;
-    if (contactText) {
-      ctx.fillText(contactText, padding, padding + lineHeight * 4 + textMarginTop * 3);
-      qrTopPosition = padding + lineHeight * 4 + textMarginTop * 3 + lineHeight;
+    if (!ctx) {
+      toast({ title: "Download Error", description: "Could not initialize graphics for ticket.", variant: "destructive" });
+      return;
     }
 
+    // PDF page/ticket dimensions in mm
+    const pdfTicketWidthMm = 70;
+    const pdfTicketHeightMm = 120; // Adjusted for a common ticket aspect ratio
 
-    // Draw QR Code
-    // Create a temporary canvas for QRCodeCanvas to render onto
-    const tempQrCanvas = document.createElement('canvas');
-    const qrComponent = <QRCodeCanvas value={submittedRegistration.id} size={qrSize} level="H" includeMargin={false} />;
+    // DPI for rendering on canvas
+    const dpi = 300;
+    const mmToPx = (mm: number) => (mm / 25.4) * dpi;
+
+    canvas.width = Math.round(mmToPx(pdfTicketWidthMm));
+    canvas.height = Math.round(mmToPx(pdfTicketHeightMm));
     
-    // This is a bit of a hack to get QRCodeCanvas to render to our temp canvas.
-    // We'll render it to a React Portal targeting the temp canvas.
-    // However, a more direct way if QRCodeCanvas exposes its canvas or data directly would be better.
-    // For now, let's use an Image approach as it's more reliable.
+    // Styling
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const primaryHsl = primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/) 
+      ? `hsl(${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[1]}, ${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[2]}%, ${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[3]}%)`
+      : '#4285F4'; // Fallback primary color
 
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--card-foreground').trim();
+     const textHsl = textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)
+      ? `hsl(${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[1]}, ${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[2]}%, ${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[3]}%)`
+      : '#333333'; // Fallback text color
+
+
+    // Background
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Content
+    const padding = mmToPx(6);
+    let currentY = padding;
+
+    // Event Name (Larger, Bold)
+    ctx.fillStyle = primaryHsl;
+    ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(eventName, canvas.width / 2, currentY + mmToPx(6));
+    currentY += mmToPx(12);
+
+    // Guest Name
+    ctx.fillStyle = textHsl;
+    ctx.font = `normal ${mmToPx(4.5)}px Inter, sans-serif`;
+    ctx.fillText(`Guest: ${submittedRegistration.name}`, canvas.width / 2, currentY + mmToPx(4.5));
+    currentY += mmToPx(8);
+
+    // Email
+    ctx.fillText(`Email: ${submittedRegistration.email}`, canvas.width / 2, currentY + mmToPx(4.5));
+    currentY += mmToPx(8);
+    
+    // Contact Number (if available)
+    if (submittedRegistration.contactNumber) {
+      ctx.fillText(`Contact: ${submittedRegistration.contactNumber}`, canvas.width / 2, currentY + mmToPx(4.5));
+      currentY += mmToPx(8);
+    }
+    
+    currentY += mmToPx(4); // Some space before QR
+
+    // QR Code
+    const qrSizePx = mmToPx(45); // 45mm QR code
+    const qrSvgString = new QRCodeSVG({ value: submittedRegistration.id, size: 256, level: "H", includeMargin: false }).props.children as string;
+    
+    // Create an image from SVG string to draw on canvas
     const qrImage = new Image();
-    const qrSvgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="${qrSize}" height="${qrSize}">${
-        new QRCodeSVG({value: submittedRegistration.id, size: 256, level:"H", includeMargin: false, }).props.children
-    }</svg>`;
-
     qrImage.onload = () => {
-      ctx.drawImage(qrImage, (canvas.width - qrSize) / 2, qrTopPosition, qrSize, qrSize);
+      // Draw QR code centered
+      ctx.drawImage(qrImage, (canvas.width - qrSizePx) / 2, currentY, qrSizePx, qrSizePx);
+      currentY += qrSizePx + mmToPx(5);
 
-      // Trigger download
+      // "Present this at the event"
+      ctx.fillStyle = textHsl;
+      ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
+      ctx.fillText("Present this QR code at the event.", canvas.width / 2, currentY + mmToPx(3.5));
+
+      // Convert canvas to image data
       const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `${eventName.replace(/\s+/g, '_')}-Ticket-${submittedRegistration.name.replace(/\s+/g, '_')}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [pdfTicketWidthMm, pdfTicketHeightMm]
+      });
+
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfTicketWidthMm, pdfTicketHeightMm);
+      
+      const fileName = `${eventName.replace(/\s+/g, '_')}-Ticket-${submittedRegistration.name.replace(/\s+/g, '_')}.pdf`;
+      pdf.save(fileName);
     };
     qrImage.onerror = (err) => {
         console.error("Error loading QR SVG for canvas drawing:", err);
-        toast({ title: "Download Error", description: "Could not generate QR code image.", variant: "destructive" });
+        toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
     }
+    // Convert SVG string to base64 data URL
     qrImage.src = `data:image/svg+xml;base64,${btoa(qrSvgString)}`;
   };
 
@@ -188,7 +204,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           )}
           <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">
             <Button variant="default" onClick={handleDownloadTicket} className="w-full bg-accent hover:bg-accent/90">
-              <Download className="mr-2 h-4 w-4" /> Download Ticket
+              <Download className="mr-2 h-4 w-4" /> Download Ticket (PDF)
             </Button>
             <Button variant="outline" onClick={() => { setSubmittedRegistration(null); reset(); }} className="w-full">
               Register another person
@@ -235,4 +251,3 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
-
