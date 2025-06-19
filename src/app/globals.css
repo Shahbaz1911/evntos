@@ -9,73 +9,78 @@ body {
 
 @layer base {
   :root {
-    --background: 33 94% 89%; /* Light Peach-Orange #feebc8 */
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217 89% 61%; /* Saturated Blue #4285F4 */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 16 100% 57%; /* Vibrant Orange #FF5722 */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 217 89% 61%; /* Saturated Blue for ring */
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --background: 220 20% 97%; /* Very Light Cool Gray #f5f7fa */
+    --foreground: 220 15% 15%; /* Very Dark Cool Gray #212529 */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 220 15% 15%; /* Very Dark Cool Gray */
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 220 15% 15%; /* Very Dark Cool Gray */
+    --primary: 190 70% 40%; /* Deep Teal #218e8d */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 190 60% 90%; /* Light Teal #d9f2f2 */
+    --secondary-foreground: 190 70% 30%; /* Darker Teal */
+    --muted: 220 15% 94%; /* Light Gray Muted #ebeef2 */
+    --muted-foreground: 220 10% 45%; /* Medium Gray Muted Text #6a7178 */
+    --accent: 35 90% 60%; /* Warm Amber #f7b84b */
+    --accent-foreground: 220 15% 15%; /* Dark Gray for contrast on Amber */
+    --destructive: 0 75% 55%; /* Refined Red #d94747 */
+    --destructive-foreground: 0 0% 100%; /* White */
+    --border: 220 15% 88%; /* Light Gray Border #d8dde3 */
+    --input: 220 15% 88%; /* Light Gray Input Border */
+    --ring: 190 70% 45%; /* Brighter Teal for Ring */
+    --chart-1: 190 70% 50%;
+    --chart-2: 35 90% 65%;
+    --chart-3: 210 60% 50%;
+    --chart-4: 10 80% 60%;
+    --chart-5: 270 50% 55%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 89% 61%; /* Saturated Blue #4285F4 */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 16 100% 57%; /* Vibrant Orange #FF5722 */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217 89% 61%; /* Saturated Blue for ring */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+
+    /* Sidebar Light Theme */
+    --sidebar-background: 220 15% 95%; /* Slightly darker than main bg */
+    --sidebar-foreground: 220 15% 25%;
+    --sidebar-primary: 190 70% 38%; /* Slightly darker primary for sidebar */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 15% 90%; /* Lighter accent for active items */
+    --sidebar-accent-foreground: 190 70% 35%; /* Primary for text on accent */
+    --sidebar-border: 220 15% 85%;
+    --sidebar-ring: 190 70% 45%;
+  }
+
+  .dark {
+    --background: 220 15% 12%; /* Very Dark Cool Gray #1a1d21 */
+    --foreground: 220 10% 85%; /* Light Gray #d3d6da */
+    --card: 220 15% 18%; /* Dark Gray Card #262a2e */
+    --card-foreground: 220 10% 85%; /* Light Gray */
+    --popover: 220 15% 18%; /* Dark Gray Popover */
+    --popover-foreground: 220 10% 85%; /* Light Gray */
+    --primary: 190 70% 48%; /* Brighter Deep Teal #32b1b0 */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 190 60% 25%; /* Darker Teal for secondary bg */
+    --secondary-foreground: 190 70% 75%; /* Lighter Teal text on secondary */
+    --muted: 220 10% 20%; /* Dark Gray Muted #2d3238 */
+    --muted-foreground: 220 10% 60%; /* Medium-Light Gray Muted Text #8c939c */
+    --accent: 35 90% 68%; /* Brighter Warm Amber #f9c971 */
+    --accent-foreground: 220 15% 15%; /* Dark Gray for contrast on Amber */
+    --destructive: 0 70% 60%; /* Slightly Brighter Red #ea5858 */
+    --destructive-foreground: 0 0% 100%; /* White */
+    --border: 220 10% 25%; /* Darker Gray Border #383e45 */
+    --input: 220 10% 25%; /* Darker Gray Input Border */
+    --ring: 190 70% 50%; /* Teal for Ring */
+    --chart-1: 190 70% 55%;
+    --chart-2: 35 90% 70%;
+    --chart-3: 210 60% 60%;
+    --chart-4: 10 80% 65%;
+    --chart-5: 270 50% 60%;
+
+    /* Sidebar Dark Theme */
+    --sidebar-background: 220 15% 10%; /* Even darker for sidebar */
+    --sidebar-foreground: 220 10% 80%;
+    --sidebar-primary: 190 70% 50%; /* Brighter primary for sidebar */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 20%; /* Darker accent for active items */
+    --sidebar-accent-foreground: 190 70% 60%; /* Brighter Primary for text on accent */
+    --sidebar-border: 220 10% 22%;
+    --sidebar-ring: 190 70% 50%;
   }
 }
 
