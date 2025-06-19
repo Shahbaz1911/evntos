@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Html5QrcodeScanner, Html5QrcodeError, Html5QrcodeResult } from 'html5-qrcode';
+import { Html5QrcodeScanner, type Html5QrcodeError, type Html5QrcodeResult } from 'html5-qrcode';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/auth-guard';
@@ -47,40 +47,51 @@ export default function ScanTicketPage() {
         }
         setEvent(foundEvent);
       } else {
-        toast({ title: "Event Not Found", description: "The event you are trying to scan for does not exist.", variant: "destructive" });
-        router.push('/');
-        return;
+        if (!eventContextLoading) { // Only show toast if data has loaded
+             toast({ title: "Event Not Found", description: "The event you are trying to scan for does not exist.", variant: "destructive" });
+             router.push('/');
+             return;
+        }
       }
       setPageLoading(false);
+    } else if (authLoading || eventContextLoading) {
+        setPageLoading(true);
     }
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const stopScanner = async () => {
-    if (!html5QrCodeScannerRef.current) {
-      setIsScanning(false); 
-      return;
-    }
+    const scanner = html5QrCodeScannerRef.current; // Get a local reference
 
-    const scanner = html5QrCodeScannerRef.current;
-    setIsScanning(false); 
+    if (scanner) {
+      html5QrCodeScannerRef.current = null; // Immediately nullify the ref to prevent race conditions or further use
 
-    if (typeof scanner.clear === 'function') {
       try {
-        await scanner.clear();
+        // Attempt to clear the scanner first. This should remove the scanner's UI elements.
+        // Check scanner state before attempting to clear to avoid errors if already stopped/cleared.
+        // Html5QrcodeScannerState: 1 (NOT_STARTED), 2 (SCANNING), 3 (PAUSED)
+        if (scanner.getState && (scanner.getState() === 2 || scanner.getState() === 3)) {
+           await scanner.clear();
+        }
       } catch (e) {
-        console.warn("Error calling scanner.clear():", e);
+        console.warn("Exception during scanner.clear():", e);
+        // This is where the "removeChild" error likely originates if scanner.clear() fails or is called on an invalid state.
+      } finally {
+        // Regardless of clear success or failure, update the React state.
+        setIsScanning(false);
       }
+    } else {
+      // If no current scanner ref, just ensure isScanning state is false.
+      setIsScanning(false);
     }
-    html5QrCodeScannerRef.current = null; 
   };
 
 
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (!isScanning) { 
+    if (!isScanning) {
       return;
     }
 
-    await stopScanner(); 
+    await stopScanner();
 
     setScanStatus("idle");
     setScannedData(null);
@@ -114,12 +125,13 @@ export default function ScanTicketPage() {
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
+    // Potentially add more user-friendly error display here if needed
   };
   
   const startScanner = async () => {
     setScanStatus("idle");
     setScannedData(null);
-    setScanMessage(null); // Clear previous scan messages, not camera messages
+    setScanMessage(null);
 
     try {
         await navigator.mediaDevices.getUserMedia({ video: true });
@@ -133,19 +145,16 @@ export default function ScanTicketPage() {
     if (!document.getElementById(SCANNER_REGION_ID)) {
         console.error(`${SCANNER_REGION_ID} not found in DOM.`);
         toast({ title: "Scanner Error", description: "Could not initialize scanner view.", variant: "destructive" });
-        setIsScanning(false);
-        return;
-    }
-
-    if (isScanning && html5QrCodeScannerRef.current) {
-      return;
+        return; // No setIsScanning(false) here, as it's already false or will be handled by stopScanner
     }
     
+    // If a scanner instance exists (even if isScanning is false due to some race), stop it.
     if (html5QrCodeScannerRef.current) {
         await stopScanner(); 
     }
+    // At this point, html5QrCodeScannerRef.current should be null.
     
-    html5QrCodeScannerRef.current = new Html5QrcodeScanner(
+    const newScanner = new Html5QrcodeScanner(
         SCANNER_REGION_ID,
         {
             fps: 10,
@@ -155,21 +164,25 @@ export default function ScanTicketPage() {
         },
         false 
     );
+    html5QrCodeScannerRef.current = newScanner; // Assign the new instance
     
     try {
-        html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
+        // render method is synchronous for UI setup. Callbacks handle async scan results.
+        newScanner.render(onScanSuccess, onScanFailure);
         setIsScanning(true); 
     } catch (renderError) {
         console.error("Error rendering scanner:", renderError);
         toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
+        html5QrCodeScannerRef.current = null; // Clean up ref if render fails
         setIsScanning(false); 
-        html5QrCodeScannerRef.current = null; 
     }
   };
 
 
   useEffect(() => {
     return () => {
+      // stopScanner is async, but in cleanup, we typically don't await.
+      // The goal is to initiate the cleanup.
       stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
     };
   }, []); 
@@ -177,7 +190,7 @@ export default function ScanTicketPage() {
 
   if (pageLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <LoadingSpinner size={48} />
       </div>
     );
@@ -187,7 +200,7 @@ export default function ScanTicketPage() {
     return (
       <AuthGuard>
         <div className="text-center py-10">
-          <p className="text-xl text-muted-foreground">Event details could not be loaded.</p>
+          <p className="text-xl text-muted-foreground">Event details could not be loaded or access denied.</p>
           <Button asChild className="mt-4">
             <Link href="/">Back to Dashboard</Link>
           </Button>
