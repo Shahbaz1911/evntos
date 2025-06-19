@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle } from 'lucide-react'; 
+import { Download, Phone, CheckCircle, User, Mail } from 'lucide-react'; 
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -107,6 +107,13 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     const textHsl = textHslMatch
       ? `hsl(${textHslMatch[1]}, ${textHslMatch[2]}%, ${textHslMatch[3]}%)`
       : '#333333';
+    
+    const mutedColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim();
+    const mutedHslMatch = mutedColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+    const mutedHsl = mutedHslMatch
+      ? `hsl(${mutedHslMatch[1]}, ${mutedHslMatch[2]}%, ${mutedHslMatch[3]}%)`
+      : '#71717A';
+
 
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -146,12 +153,13 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     ctx.fillText(`Guest: ${submittedRegistration.name}`, canvas.width / 2, currentY + mmToPx(4.5));
     currentY += mmToPx(8);
 
-    ctx.fillText(`Email: ${submittedRegistration.email}`, canvas.width / 2, currentY + mmToPx(4.5));
-    currentY += mmToPx(8);
+    ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
+    ctx.fillText(`Email: ${submittedRegistration.email}`, canvas.width / 2, currentY + mmToPx(4));
+    currentY += mmToPx(6);
     
     if (submittedRegistration.contactNumber) {
-      ctx.fillText(`Contact: ${submittedRegistration.contactNumber}`, canvas.width / 2, currentY + mmToPx(4.5));
-      currentY += mmToPx(8);
+      ctx.fillText(`Contact: ${submittedRegistration.contactNumber}`, canvas.width / 2, currentY + mmToPx(4));
+      currentY += mmToPx(6);
     }
     
     currentY += mmToPx(4); 
@@ -163,7 +171,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       ctx.drawImage(qrImage, (canvas.width - qrSizePx) / 2, currentY, qrSizePx, qrSizePx);
       currentY += qrSizePx + mmToPx(5);
 
-      ctx.fillStyle = textHsl;
+      ctx.fillStyle = mutedHsl;
       ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
       ctx.fillText("Present this QR code at the event.", canvas.width / 2, currentY + mmToPx(3.5));
 
@@ -181,8 +189,8 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
-      reset(); // Reset form fields for a potential next registration (if the component isn't unmounted)
-      setSubmittedRegistration(null); // Clear the submitted registration to hide the success view and show form again.
+      reset(); 
+      setSubmittedRegistration(null); 
     };
     qrImage.onerror = (err) => {
         console.error("Error loading QR code PNG for canvas drawing:", err);
@@ -205,60 +213,94 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
   if (submittedRegistration) {
     return (
-      <Card className="bg-green-50 border-green-200 shadow-md">
-        <CardHeader className="text-center">
-          <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
-          <CardTitle className="text-green-700 font-headline text-2xl">Registration Confirmed!</CardTitle>
-          <CardDescription className="text-green-600">
-            Thank you for registering for "{eventName}".<br/> Your ticket with a unique QR code can be downloaded below.
+      <Card className="shadow-xl border-t-4 border-accent">
+        <CardHeader className="text-center pt-8">
+          <CheckCircle className="mx-auto h-20 w-20 text-accent mb-4" />
+          <CardTitle className="text-foreground font-headline text-3xl">Registration Confirmed!</CardTitle>
+          <CardDescription className="text-muted-foreground text-base pt-2">
+            Thank you for registering for <span className="font-semibold text-primary">"{eventName}"</span>.<br/> Your ticket with a unique QR code can be downloaded below.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-4">
-          <p className="text-sm text-muted-foreground"><strong>Name:</strong> {submittedRegistration.name}</p>
-          <p className="text-sm text-muted-foreground"><strong>Email:</strong> {submittedRegistration.email}</p>
+        <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6">
+          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> {submittedRegistration.name}</p>
+          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> {submittedRegistration.email}</p>
           {submittedRegistration.contactNumber && (
-            <p className="text-sm text-muted-foreground"><strong>Contact:</strong> {submittedRegistration.contactNumber}</p>
+            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> {submittedRegistration.contactNumber}</p>
           )}
-          <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs pt-2">
-            <Button variant="default" onClick={handleDownloadTicket} className="w-full bg-accent hover:bg-accent/90">
-              <Download className="mr-2 h-4 w-4" /> Download Ticket (PDF)
-            </Button>
-            {/* Button to register another person removed as per request */}
-          </div>
         </CardContent>
+        <CardFooter className="flex flex-col gap-3 p-6 pt-2">
+            <Button 
+              variant="default" 
+              onClick={handleDownloadTicket} 
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            >
+              <Download className="mr-2 h-5 w-5" /> Download Your Ticket (PDF)
+            </Button>
+          </CardFooter>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-lg border-primary">
-      <CardHeader>
-        <CardTitle className="font-headline text-xl text-primary">Register for {eventName}</CardTitle>
-        <CardDescription>Fill in your details below to secure your spot.</CardDescription>
+    <Card className="shadow-xl border-t-4 border-primary">
+      <CardHeader className="pb-4">
+        <CardTitle className="font-headline text-2xl md:text-3xl text-primary text-center">Register for {eventName}</CardTitle>
+        <CardDescription className="text-center text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="name">Full Name</Label>
-            <Input id="name" {...register("name")} placeholder="John Doe" />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="email">Email Address</Label>
-            <Input id="email" type="email" {...register("email")} placeholder="you@example.com" />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="contactNumber" className="flex items-center">
-              <Phone className="mr-2 h-4 w-4 text-muted-foreground" /> Contact Number (Optional)
+        <CardContent className="space-y-6 px-6 md:px-8">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-base flex items-center">
+              <User className="mr-2 h-5 w-5 text-muted-foreground" />
+              Full Name
             </Label>
-            <Input id="contactNumber" type="tel" {...register("contactNumber")} placeholder="+1 123 456 7890" />
-            {errors.contactNumber && <p className="text-sm text-destructive">{errors.contactNumber.message}</p>}
+            <Input 
+              id="name" 
+              {...register("name")} 
+              placeholder="e.g., John Doe" 
+              className="py-6 text-base"
+              aria-invalid={errors.name ? "true" : "false"}
+            />
+            {errors.name && <p className="text-sm text-destructive pt-1">{errors.name.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-base flex items-center">
+              <Mail className="mr-2 h-5 w-5 text-muted-foreground" />
+              Email Address
+            </Label>
+            <Input 
+              id="email" 
+              type="email" 
+              {...register("email")} 
+              placeholder="e.g., you@example.com" 
+              className="py-6 text-base"
+              aria-invalid={errors.email ? "true" : "false"}
+            />
+            {errors.email && <p className="text-sm text-destructive pt-1">{errors.email.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contactNumber" className="text-base flex items-center">
+              <Phone className="mr-2 h-5 w-5 text-muted-foreground" /> 
+              Contact Number <span className="text-xs text-muted-foreground ml-1">(Optional)</span>
+            </Label>
+            <Input 
+              id="contactNumber" 
+              type="tel" 
+              {...register("contactNumber")} 
+              placeholder="e.g., +1 123 456 7890" 
+              className="py-6 text-base"
+              aria-invalid={errors.contactNumber ? "true" : "false"}
+            />
+            {errors.contactNumber && <p className="text-sm text-destructive pt-1">{errors.contactNumber.message}</p>}
           </div>
         </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
-            {isSubmitting && <LoadingSpinner size={16} className="mr-2" />}
+        <CardFooter className="p-6 md:p-8">
+          <Button 
+            type="submit" 
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting && <LoadingSpinner size={20} className="mr-2" />}
             {isSubmitting ? "Registering..." : "Register Now & Get PDF Ticket"}
           </Button>
         </CardFooter>
@@ -266,4 +308,4 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
-
+    
