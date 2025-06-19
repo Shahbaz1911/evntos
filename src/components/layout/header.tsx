@@ -18,25 +18,24 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from 'react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
-import { Separator } from '@/components/ui/separator'; // Added Separator
+import { Separator } from '@/components/ui/separator';
 
-const NavLink = ({ 
-  href, 
-  children, 
+const NavLink = ({
+  href,
+  children,
   onClick,
-  currentPathname
-}: { 
-  href: string; 
-  children: React.ReactNode; 
+  isActive
+}: {
+  href: string;
+  children: React.ReactNode;
   onClick?: () => void;
-  currentPathname: string;
+  isActive: boolean;
 }) => {
-  const isActive = currentPathname === href || (href.includes("#") && currentPathname === href.substring(0, href.indexOf("#")));
   return (
-    <Button 
-      variant="ghost" 
-      size="sm" 
-      asChild 
+    <Button
+      variant="ghost"
+      size="sm"
+      asChild
       className={`text-sm font-medium transition-colors hover:text-primary ${isActive ? 'text-primary bg-primary/10' : 'text-foreground/70 hover:text-foreground'} rounded-full px-4 py-1.5`}
       data-active={isActive}
       onClick={onClick}
@@ -51,6 +50,7 @@ export default function Header() {
   const { user, logOut, loading } = useAuth();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
     const headerElement = document.querySelector('header');
@@ -59,6 +59,64 @@ export default function Header() {
       document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
     }
   }, []);
+
+  const commonNavLinks = [
+    { href: "/#hero", label: "Home", id: "hero" },
+    { href: "/#about", label: "About", id: "about" },
+    { href: "/#services", label: "Services", id: "services" },
+    { href: "/#testimonials", label: "Testimonials", id: "testimonials" },
+  ];
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || pathname !== '/') return; // Only for root landing page
+
+    let initialSectionId = '';
+    if (window.location.hash && window.location.hash !== '#') {
+        initialSectionId = window.location.hash.substring(1);
+    } else if (commonNavLinks.length > 0) {
+        initialSectionId = commonNavLinks[0].id;
+    }
+    setActiveSection(initialSectionId);
+
+    const sectionElements = commonNavLinks
+      .map(link => document.getElementById(link.id))
+      .filter(el => el !== null) as HTMLElement[];
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const activationPoint = 100; // Pixels from the top of the viewport
+      let newActiveSectionId = '';
+
+      // Check from bottom to top, so the last "active" section is chosen
+      for (let i = sectionElements.length - 1; i >= 0; i--) {
+        const section = sectionElements[i];
+        if (section.offsetTop <= scrollY + activationPoint) {
+          newActiveSectionId = section.id;
+          break;
+        }
+      }
+
+      // If scrolled to the very top, default to the first section
+      if (!newActiveSectionId && scrollY < activationPoint && sectionElements.length > 0) {
+        newActiveSectionId = sectionElements[0].id;
+      }
+      
+      // If scrolled to the bottom of the page, ensure the last section is active
+      const bottomReached = window.innerHeight + scrollY >= document.body.offsetHeight - 50; // 50px buffer
+      if (bottomReached && sectionElements.length > 0) {
+         newActiveSectionId = sectionElements[sectionElements.length - 1].id;
+      }
+
+      setActiveSection(newActiveSectionId);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [pathname]); // commonNavLinks is stable
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -71,13 +129,6 @@ export default function Header() {
     }
     return email.substring(0, 2).toUpperCase();
   };
-
-  const commonNavLinks = [
-    { href: "/#hero", label: "Home" },
-    { href: "/#about", label: "About" },
-    { href: "/#services", label: "Services" },
-    { href: "/#testimonials", label: "Testimonials" },
-  ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -99,23 +150,38 @@ export default function Header() {
                   </>
                 ) : user ? (
                   <>
-                    <NavLink href="/dashboard" currentPathname={pathname}>
+                    <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </NavLink>
-                    <NavLink href="/events/create" currentPathname={pathname}>
+                    <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu}>
                       <CalendarPlus className="mr-2 h-4 w-4" />
                       Create Event
                     </NavLink>
                   </>
                 ) : (
-                  commonNavLinks.map(link => <NavLink key={link.href} href={link.href} currentPathname={pathname}>{link.label}</NavLink>)
+                  commonNavLinks.map(link => {
+                    let isLinkActive = false;
+                    if (pathname === '/') { // Apply scroll-spy only on landing page
+                      if (activeSection) {
+                        isLinkActive = activeSection === link.id;
+                      } else if (link.id === commonNavLinks[0].id) { // Default to first link if no activeSection
+                        isLinkActive = true;
+                      }
+                    } else {
+                      isLinkActive = pathname === link.href; // Fallback for other pages if needed
+                    }
+                    return (
+                      <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu}>
+                        {link.label}
+                      </NavLink>
+                    );
+                  })
                 )}
              </div>
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            {/* Added Separator here for desktop */}
             {!loading && <Separator orientation="vertical" className="h-6 mx-2" />} 
             <ThemeToggleButton />
             {loading ? (
@@ -211,12 +277,28 @@ export default function Header() {
                     </div>
                   ) : user ? (
                     <>
-                      <NavLink href="/dashboard" currentPathname={pathname} onClick={closeMobileMenu}><LayoutDashboard className="mr-2 h-5 w-5"/>My Dashboard</NavLink>
-                      <NavLink href="/events/create" currentPathname={pathname} onClick={closeMobileMenu}><CalendarPlus className="mr-2 h-5 w-5"/>Create Event</NavLink>
-                      <NavLink href="/scan-dashboard" currentPathname={pathname} onClick={closeMobileMenu}><QrCode className="mr-2 h-5 w-5"/>Scan Dashboard</NavLink>
+                      <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu}><LayoutDashboard className="mr-2 h-5 w-5"/>My Dashboard</NavLink>
+                      <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu}><CalendarPlus className="mr-2 h-5 w-5"/>Create Event</NavLink>
+                      <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu}><QrCode className="mr-2 h-5 w-5"/>Scan Dashboard</NavLink>
                     </>
                   ) : (
-                    commonNavLinks.map(link => <NavLink key={link.href} href={link.href} currentPathname={pathname} onClick={closeMobileMenu}>{link.label}</NavLink>)
+                     commonNavLinks.map(link => {
+                        let isLinkActive = false;
+                        if (pathname === '/') {
+                           if (activeSection) {
+                            isLinkActive = activeSection === link.id;
+                           } else if (link.id === commonNavLinks[0].id) {
+                            isLinkActive = true;
+                           }
+                        } else {
+                           isLinkActive = pathname === link.href;
+                        }
+                        return (
+                          <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu}>
+                            {link.label}
+                          </NavLink>
+                        );
+                      })
                   )}
                 </nav>
                 <div className="p-4 border-t mt-auto">
