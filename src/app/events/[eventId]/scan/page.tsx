@@ -31,7 +31,7 @@ export default function ScanTicketPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState<Registration | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error" | "not_found">("idle");
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null); // For ticket verification messages
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const html5QrCodeScannerRef = useRef<Html5QrcodeScanner | null>(null);
@@ -57,27 +57,26 @@ export default function ScanTicketPage() {
 
   const stopScanner = async () => {
     const scanner = html5QrCodeScannerRef.current;
-    // Check if the scanner instance and its clear method exist
     if (scanner && typeof scanner.clear === 'function') {
         try {
-            await scanner.clear();
+            // Check state before clearing if possible, to avoid errors if already cleared or not running
+            if (scanner.getState && (scanner.getState() === 1 /* PAUSED */ || scanner.getState() === 2 /* SCANNING */)) {
+                 await scanner.clear();
+            }
         } catch (e) {
             console.warn("Error calling scanner.clear():", e);
-            // "Code scanner not initialized" might be caught here if clear is called on an invalid instance state.
         }
     }
-    // Always update React state after attempting to clear or if no clear was needed.
     setIsScanning(false);
   };
 
 
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    // Prevent re-entry if already processing, though stopScanner should handle subsequent calls.
-    if (scanStatus !== 'idle' && !isScanning) return; 
+    if (scanStatus !== 'idle' && !isScanning) return;
 
-    await stopScanner(); 
+    await stopScanner();
 
-    setScanStatus("idle"); 
+    setScanStatus("idle");
     setScannedData(null);
     setScanMessage("Verifying ticket...");
 
@@ -112,18 +111,20 @@ export default function ScanTicketPage() {
   };
   
   const startScanner = async () => {
+    // Reset ticket-specific scan states, but not camera permission message
     setScanStatus("idle");
     setScannedData(null);
-    setScanMessage(null);
+    setScanMessage(null); // Clear previous ticket scan messages
 
+    // Check and request camera permission
     try {
         await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
+        setHasCameraPermission(true); // Permission granted
     } catch (err) {
-        setHasCameraPermission(false);
-        setScanMessage("Camera permission denied. Please enable camera access in your browser settings.");
+        setHasCameraPermission(false); // Permission denied
+        // Message for camera denial is handled by conditional rendering based on hasCameraPermission
         toast({ title: "Camera Error", description: "Camera permission is required to scan tickets.", variant: "destructive" });
-        return;
+        return; // Stop if no permission
     }
 
     if (!document.getElementById(SCANNER_REGION_ID)) {
@@ -145,8 +146,6 @@ export default function ScanTicketPage() {
         );
     }
     
-    // Check scanner state to avoid issues if already scanning
-    // This check needs html5QrCodeScannerRef.current to be valid.
     if (html5QrCodeScannerRef.current && 
         typeof html5QrCodeScannerRef.current.getState === 'function' && 
         html5QrCodeScannerRef.current.getState() === 2 /* Html5QrcodeScannerState.SCANNING */) {
@@ -160,15 +159,13 @@ export default function ScanTicketPage() {
     } catch (renderError) {
         console.error("Error rendering scanner:", renderError);
         toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
-        setIsScanning(false); // Ensure isScanning is false if render fails
+        setIsScanning(false);
     }
   };
 
 
   useEffect(() => {
-    // Cleanup function to stop the scanner when the component unmounts
     return () => {
-      // html5QrCodeScannerRef.current might be null if startScanner was never called or failed early
       if (html5QrCodeScannerRef.current) {
          stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
       }
@@ -215,15 +212,18 @@ export default function ScanTicketPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div id={SCANNER_REGION_ID} className="w-full border-dashed border-2 border-muted-foreground/50 rounded-lg aspect-square bg-muted/20 flex items-center justify-center">
-              {!isScanning && hasCameraPermission !== false && (
-                <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
-              )}
+              {/* Message if camera permission is explicitly denied */}
               {hasCameraPermission === false && (
                  <div className="text-center p-4 text-destructive">
                     <CameraOff size={48} className="mx-auto mb-2"/>
                     <p>Camera access denied. Please enable camera permissions in your browser settings to use the scanner.</p>
                 </div>
               )}
+              {/* Message to prompt user to start scanning, only if not scanning and permission not denied */}
+              {!isScanning && hasCameraPermission !== false && (
+                <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
+              )}
+              {/* The scanner will render here if active and permission granted */}
             </div>
 
             {isScanning ? (
@@ -231,11 +231,12 @@ export default function ScanTicketPage() {
                 Stop Scanning
               </Button>
             ) : (
-              <Button onClick={startScanner} className="w-full bg-primary hover:bg-primary/90">
+              <Button onClick={startScanner} className="w-full bg-primary hover:bg-primary/90" disabled={hasCameraPermission === false}>
                 <ScanLine className="mr-2 h-5 w-5" /> Start Scanning
               </Button>
             )}
 
+            {/* Alert for ticket verification messages */}
             {scanMessage && (
                 <Alert variant={scanStatus === "success" ? "default" : (scanStatus === "idle" ? "default" : "destructive")} className="mt-4">
                      {scanStatus === "success" && <UserCheck className="h-4 w-4" />}
