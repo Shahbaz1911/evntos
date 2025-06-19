@@ -86,7 +86,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="outline" size="sm" className="border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <Button asChild variant="outline" size="sm" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/20">
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
