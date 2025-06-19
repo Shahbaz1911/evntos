@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, LogIn, LogOut, UserPlus, UserCircle } from 'lucide-react';
+import { CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
@@ -76,6 +76,12 @@ export default function Header() {
                         Dashboard
                       </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                     <Link href="/scan-dashboard" className="flex items-center">
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Scan Dashboard
+                      </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator className="sm:hidden"/>
                   <DropdownMenuItem onClick={logOut} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -86,7 +92,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-accent hover:text-accent-foreground">
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
@@ -105,4 +111,3 @@ export default function Header() {
     </header>
   );
 }
-

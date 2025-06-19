@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Users, Eye, Trash2, QrCode } from 'lucide-react';
+import { ArrowLeft, Users, Eye, Trash2 } from 'lucide-react';
 import type { Event } from '@/types';
 import AuthGuard from '@/components/auth-guard';
 import { useAuth } from '@/context/AuthContext';
@@ -59,8 +59,6 @@ export default function EditEventPage() {
         }
         setEvent(foundEvent);
       } else {
-        // Event not found in context, might not exist or context hasn't loaded this specific one yet
-        // If events array is populated but event not found, it likely doesn't exist for this user or at all
          if (events.length > 0 || !eventContextLoading) {
             toast({
               title: "Event Not Found",
@@ -70,10 +68,8 @@ export default function EditEventPage() {
             router.push('/');
             return;
          }
-        // If context is still loading, this effect will re-run.
       }
     } else if (!authUser && !authLoading) {
-      // Should be caught by AuthGuard, but as a fallback
       router.push('/login');
       return;
     }
@@ -90,7 +86,6 @@ export default function EditEventPage() {
         ...data,
       };
       await updateEvent(updatedEventData);
-      // The event state will be updated via context re-fetch or optimistic update in context
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
@@ -127,9 +122,9 @@ export default function EditEventPage() {
     );
   }
 
-  if (!event) { // This implies event not found after loading and checks
+  if (!event) { 
      return (
-      <AuthGuard> {/* AuthGuard will handle redirect if !authUser */}
+      <AuthGuard> 
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access it.</p>
           <Button asChild className="mt-4">
@@ -160,11 +155,6 @@ export default function EditEventPage() {
                  <Button variant="outline" size="sm" asChild>
                   <Link href={`/events/${event.id}/guests`}>
                     <Users className="mr-2 h-4 w-4" /> Guest List
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/events/${event.id}/scan`}>
-                    <QrCode className="mr-2 h-4 w-4" /> Scan Tickets
                   </Link>
                 </Button>
                 <Button variant="secondary" size="sm" asChild>
