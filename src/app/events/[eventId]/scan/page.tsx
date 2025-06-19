@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Html5QrcodeScanner, type Html5QrcodeError, type Html5QrcodeResult } from 'html5-qrcode';
+import { Html5QrcodeScanner, type Html5QrcodeError, type Html5QrcodeResult, Html5QrcodeScanType } from 'html5-qrcode';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
 import AuthGuard from '@/components/auth-guard';
@@ -28,11 +28,12 @@ export default function ScanTicketPage() {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
-  const [isScanning, setIsScanning] = useState(false);
+  
   const [scannedData, setScannedData] = useState<Registration | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error" | "not_found">("idle");
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [showScannerUI, setShowScannerUI] = useState(false); // Controls scanner DOM presence
 
   const html5QrCodeScannerRef = useRef<Html5QrcodeScanner | null>(null);
 
@@ -47,7 +48,7 @@ export default function ScanTicketPage() {
         }
         setEvent(foundEvent);
       } else {
-        if (!eventContextLoading) { // Only show toast if data has loaded
+        if (!eventContextLoading) {
              toast({ title: "Event Not Found", description: "The event you are trying to scan for does not exist.", variant: "destructive" });
              router.push('/');
              return;
@@ -59,41 +60,8 @@ export default function ScanTicketPage() {
     }
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
-  const stopScanner = async () => {
-    const scannerInstance = html5QrCodeScannerRef.current; 
 
-    if (scannerInstance) {
-      html5QrCodeScannerRef.current = null; 
-
-      try {
-        // Html5QrcodeScannerState: 1 (NOT_STARTED), 2 (SCANNING), 3 (PAUSED)
-        // Check if scanner.getState() exists and if it's in a state that can be cleared
-        if (scannerInstance.getState && (scannerInstance.getState() === 2 || scannerInstance.getState() === 3)) {
-           await scannerInstance.clear();
-        }
-      } catch (e) {
-        console.warn("Exception during scanner.clear():", e);
-        // This error often means the DOM was already manipulated by React.
-        // The scanner instance is already nullified, and state will be set in finally.
-      } finally {
-        setIsScanning(false);
-      }
-    } else {
-      // If no current scanner ref, just ensure isScanning state is false.
-      setIsScanning(false);
-    }
-  };
-
-
-  const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    // Check if we are still in scanning mode before processing
-    // This helps prevent processing if stopScanner was called right before success.
-    if (!html5QrCodeScannerRef.current && !isScanning) { 
-      return;
-    }
-
-    await stopScanner(); // Stop the scanner once a QR is successfully scanned and read
-
+  const processScanResult = useCallback(async (decodedText: string) => {
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage("Verifying ticket...");
@@ -122,75 +90,114 @@ export default function ScanTicketPage() {
         setScanMessage("An error occurred during verification. Please try again.");
         toast({ title: "Verification System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
     }
-  };
+  }, [eventId, getRegistrationByIdFromFirestore, toast]);
 
-  const onScanFailure = (error: Html5QrcodeError | string) => {
-    // console.warn(`QR error = ${error}`);
-    // This callback is called frequently, so avoid heavy logging or state updates here
-    // unless specifically debugging QR read failures.
-  };
-  
-  const startScanner = async () => {
+
+  useEffect(() => {
+    if (showScannerUI && hasCameraPermission) {
+      // Ensure the target DOM element exists before trying to render the scanner
+      // This check is important because React might not have rendered the div yet.
+      // A small delay or a more robust check might be needed if errors persist.
+      const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
+      if (!scannerRegionElement) {
+          console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
+          // Attempt to re-check after a short delay, in case of race condition with React render
+          setTimeout(() => {
+            if (!document.getElementById(SCANNER_REGION_ID)) {
+                toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh.", variant: "destructive" });
+                setShowScannerUI(false); // Turn off scanner UI if element not found
+            } else {
+                 // Element found on retry, proceed with scanner initialization (logic duplicated for clarity)
+                const scanner = new Html5QrcodeScanner(
+                    SCANNER_REGION_ID,
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        rememberLastUsedCamera: true,
+                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                    },
+                    false 
+                );
+                html5QrCodeScannerRef.current = scanner;
+                scanner.render(
+                    (decodedText, result) => {
+                        setShowScannerUI(false); // This will trigger cleanup effect
+                        processScanResult(decodedText);
+                    }, 
+                    (errorMessage) => {
+                        // console.warn(`QR error = ${errorMessage}`);
+                    }
+                );
+            }
+          }, 100); 
+          return; // Exit effect if element not initially found
+      }
+
+
+      const scanner = new Html5QrcodeScanner(
+        SCANNER_REGION_ID,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          rememberLastUsedCamera: true,
+          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        },
+        false // verbose = false
+      );
+      html5QrCodeScannerRef.current = scanner;
+
+      scanner.render(
+        (decodedText, result) => { // onScanSuccess
+          setShowScannerUI(false); // This will trigger cleanup effect
+          processScanResult(decodedText);
+        }, 
+        (errorMessage) => { // onScanFailure
+          // console.warn(`QR error = ${errorMessage}`);
+        }
+      );
+    }
+
+    return () => {
+      if (html5QrCodeScannerRef.current) {
+        html5QrCodeScannerRef.current.clear()
+          .then(() => {
+            // console.log("Scanner cleared successfully");
+          })
+          .catch(err => {
+            console.warn("Error clearing scanner during cleanup:", err);
+          })
+          .finally(() => {
+            html5QrCodeScannerRef.current = null;
+          });
+      }
+    };
+  }, [showScannerUI, hasCameraPermission, processScanResult, toast]);
+
+
+  const handleStartScanning = async () => {
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage(null);
 
     try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      setHasCameraPermission(true);
+      setShowScannerUI(true); // Trigger effect to show and init scanner
     } catch (err) {
-        setHasCameraPermission(false);
-        toast({ title: "Camera Error", description: "Camera permission is required to scan tickets.", variant: "destructive" });
-        return;
-    }
-
-    // Ensure the target DOM element exists before trying to render the scanner
-    if (!document.getElementById(SCANNER_REGION_ID)) {
-        console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
-        toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh the page.", variant: "destructive" });
-        return; 
-    }
-    
-    // If a scanner instance might still exist (e.g. from a rapid stop/start or error), try to stop it first.
-    if (html5QrCodeScannerRef.current) {
-        await stopScanner(); 
-    }
-    // At this point, html5QrCodeScannerRef.current should be null.
-    
-    // Create a new scanner instance
-    const newScanner = new Html5QrcodeScanner(
-        SCANNER_REGION_ID,
-        {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            rememberLastUsedCamera: true,
-            supportedScanTypes: [0 /* SCAN_TYPE_CAMERA */], // 0 for Html5QrcodeScanType.SCAN_TYPE_CAMERA
-        },
-        false // verbose = false
-    );
-    html5QrCodeScannerRef.current = newScanner; // Store the new instance in the ref
-    
-    try {
-        // The render method is synchronous for UI setup. Callbacks handle async scan results.
-        newScanner.render(onScanSuccess, onScanFailure);
-        setIsScanning(true); // Update React state to reflect that scanning has started
-    } catch (renderError) {
-        console.error("Error rendering scanner:", renderError);
-        toast({ title: "Scanner Error", description: "Could not start the QR scanner. Please try again.", variant: "destructive"});
-        html5QrCodeScannerRef.current = null; // Clean up ref if render fails
-        setIsScanning(false); 
+      console.error('Error accessing camera:', err);
+      setHasCameraPermission(false);
+      setShowScannerUI(false);
+      toast({
+        variant: 'destructive',
+        title: 'Camera Access Denied',
+        description: 'Please enable camera permissions in your browser settings to use the scanner.',
+      });
     }
   };
 
-
-  useEffect(() => {
-    // Cleanup function: this will be called when the component unmounts
-    return () => {
-      // stopScanner is async, but in cleanup, we typically don't await.
-      // The goal is to initiate the cleanup process.
-      stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
-    };
-  }, []); // Empty dependency array ensures this runs only on mount and unmount
+  const handleStopScanning = () => {
+    setShowScannerUI(false); // Trigger effect to hide and clear scanner
+  };
 
 
   if (pageLoading || authLoading || eventContextLoading) {
@@ -214,7 +221,6 @@ export default function ScanTicketPage() {
     );
   }
 
-
   return (
     <AuthGuard>
       <div className="max-w-2xl mx-auto py-8">
@@ -231,24 +237,25 @@ export default function ScanTicketPage() {
             <CardDescription>For event: {event.title}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div id={SCANNER_REGION_ID} className="w-full border-dashed border-2 border-muted-foreground/50 rounded-lg aspect-square bg-muted/20 flex items-center justify-center">
-              {hasCameraPermission === false && (
+            <div className="w-full border-dashed border-2 border-muted-foreground/50 rounded-lg aspect-square bg-muted/20 flex items-center justify-center">
+              {showScannerUI && hasCameraPermission ? (
+                <div id={SCANNER_REGION_ID} className="w-full h-full" />
+              ) : hasCameraPermission === false ? (
                  <div className="text-center p-4 text-destructive">
                     <CameraOff size={48} className="mx-auto mb-2"/>
                     <p>Camera access denied. Please enable camera permissions in your browser settings to use the scanner.</p>
                 </div>
-              )}
-              {!isScanning && hasCameraPermission !== false && (
+              ) : (
                 <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
               )}
             </div>
 
-            {isScanning ? (
-              <Button onClick={stopScanner} variant="outline" className="w-full">
+            {showScannerUI ? (
+              <Button onClick={handleStopScanning} variant="outline" className="w-full">
                 Stop Scanning
               </Button>
             ) : (
-              <Button onClick={startScanner} className="w-full bg-primary hover:bg-primary/90" disabled={hasCameraPermission === false}>
+              <Button onClick={handleStartScanning} className="w-full bg-primary hover:bg-primary/90" disabled={hasCameraPermission === false}>
                 <ScanLine className="mr-2 h-5 w-5" /> Start Scanning
               </Button>
             )}
@@ -287,3 +294,4 @@ export default function ScanTicketPage() {
     </AuthGuard>
   );
 }
+
