@@ -14,9 +14,9 @@ import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Registration } from '@/types';
-import { Download, Phone } from 'lucide-react';
+import { Download, Phone, CheckCircle } from 'lucide-react'; // Added CheckCircle
 import jsPDF from 'jspdf';
-import { renderToStaticMarkup } from 'react-dom/server'; // Import renderToStaticMarkup
+import { renderToStaticMarkup } from 'react-dom/server';
 
 const registrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(100),
@@ -59,10 +59,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       if (newRegistration) {
         toast({
           title: "Registration Successful!",
-          description: `You're registered for "${eventName}". Your QR code ticket is below.`,
+          description: `You're registered for "${eventName}". Download your PDF ticket below.`,
         });
         setSubmittedRegistration(newRegistration);
-        // Do not reset form here, user might want to download ticket first
       } else {
         throw new Error("Failed to get registration details after creation.");
       }
@@ -119,7 +118,6 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     
-    // Wrap event name text
     const maxTextWidth = canvas.width - 2 * padding;
     const words = eventName.split(' ');
     let line = '';
@@ -158,9 +156,8 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     
     currentY += mmToPx(4); 
 
-    const qrSizePx = mmToPx(40); // Adjusted QR size slightly for potentially more text
+    const qrSizePx = mmToPx(40);
     
-    // Correctly generate SVG string using renderToStaticMarkup
     const qrCodeReactElement = <QRCodeSVG value={submittedRegistration.id} size={256} level="H" includeMargin={false} />;
     const qrSvgString = renderToStaticMarkup(qrCodeReactElement);
     
@@ -189,11 +186,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       pdf.save(fileName);
     };
     qrImage.onerror = (err) => {
-        console.error("Error loading QR SVG for canvas drawing:", err); // err might be an Event, not an Error object
+        console.error("Error loading QR SVG for canvas drawing:", err);
         toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
     }
-    // Convert SVG string to base64 data URL
-    // Ensure btoa works with potential Unicode characters in SVG (though unlikely for qrcode.react output)
     try {
         const base64Svg = btoa(unescape(encodeURIComponent(qrSvgString)));
         qrImage.src = `data:image/svg+xml;base64,${base64Svg}`;
@@ -208,21 +203,19 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     return (
       <Card className="bg-green-50 border-green-200 shadow-md">
         <CardHeader className="text-center">
+          <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
           <CardTitle className="text-green-700 font-headline text-2xl">Registration Confirmed!</CardTitle>
           <CardDescription className="text-green-600">
-            Thank you for registering for {eventName}.<br/> Present this QR code at the event or download your ticket.
+            Thank you for registering for "{eventName}".<br/> Your ticket with a unique QR code can be downloaded below.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4">
-          <div className="p-4 bg-white rounded-lg shadow-inner border border-green-300">
-            <QRCodeSVG value={submittedRegistration.id} size={192} includeMargin={true} level="H" />
-          </div>
           <p className="text-sm text-muted-foreground"><strong>Name:</strong> {submittedRegistration.name}</p>
           <p className="text-sm text-muted-foreground"><strong>Email:</strong> {submittedRegistration.email}</p>
           {submittedRegistration.contactNumber && (
             <p className="text-sm text-muted-foreground"><strong>Contact:</strong> {submittedRegistration.contactNumber}</p>
           )}
-          <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">
+          <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs pt-2">
             <Button variant="default" onClick={handleDownloadTicket} className="w-full bg-accent hover:bg-accent/90">
               <Download className="mr-2 h-4 w-4" /> Download Ticket (PDF)
             </Button>
@@ -264,7 +257,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         <CardFooter>
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
             {isSubmitting && <LoadingSpinner size={16} className="mr-2" />}
-            {isSubmitting ? "Registering..." : "Register Now & Get QR Ticket"}
+            {isSubmitting ? "Registering..." : "Register Now & Get PDF Ticket"}
           </Button>
         </CardFooter>
       </form>
