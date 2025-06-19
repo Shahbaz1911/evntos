@@ -38,7 +38,7 @@ const GoogleIcon = () => (
 export default function SignupPage() {
   const router = useRouter();
   const { signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
-  const { toast } } from '@/hooks/use-toast';
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
@@ -48,7 +48,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard'); 
+      router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
@@ -105,7 +105,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl border border-border">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4">
-             <span className="text-4xl font-bold text-primary font-headline">eventos</span>
+             <span className="text-4xl font-bold text-orange-500 font-headline">eventos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
           <CardDescription>Join eventos to start creating and managing events.</CardDescription>
