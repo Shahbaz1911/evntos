@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation'; 
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEvents } from '@/context/EventContext';
@@ -14,7 +15,7 @@ import type { Event } from '@/types';
 
 export default function PublicEventPage() {
   const params = useParams();
-  const router = useRouter();
+  
   const slug = params.slug as string;
   const { getEventBySlug } = useEvents();
   const [event, setEvent] = useState<Event | null>(null);
@@ -26,8 +27,6 @@ export default function PublicEventPage() {
       if (foundEvent) {
         setEvent(foundEvent);
       }
-      // No explicit "not found" toast here to avoid issues with initial load / slug generation delay
-      // It will just show the "Event not found" message if event remains null after loading
       setIsLoading(false); 
     }
   }, [slug, getEventBySlug]);
@@ -61,8 +60,8 @@ export default function PublicEventPage() {
           <Image 
             src={event.imageUrl || "https://placehold.co/1200x600.png"} 
             alt={event.title} 
-            layout="fill" 
-            objectFit="cover"
+            fill 
+            style={{objectFit: "cover"}} 
             priority
             data-ai-hint="event banner"
            />
@@ -91,7 +90,6 @@ export default function PublicEventPage() {
                     View on Google Maps <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
-                 {/* Basic map embed, may require more robust solution for production */}
                 <div className="mt-4 aspect-video rounded-md overflow-hidden border">
                   <iframe
                     width="100%"
@@ -99,7 +97,7 @@ export default function PublicEventPage() {
                     loading="lazy"
                     allowFullScreen
                     referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(event.mapLink.includes('goo.gl') ? event.title : event.mapLink)}`}
+                    src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(event.mapLink.includes('goo.gl') || event.mapLink.includes('maps.app.goo.gl') ? event.title : event.mapLink)}`}
                     title="Event Location"
                     data-ai-hint="map location"
                     >
@@ -136,3 +134,5 @@ export default function PublicEventPage() {
     </div>
   );
 }
+
+      

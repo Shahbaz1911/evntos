@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import AuthGuard from '@/components/auth-guard'; 
 
 const createEventSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters long." }).max(100, { message: "Title cannot exceed 100 characters." }),
@@ -56,41 +58,43 @@ export default function CreateEventPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Button variant="outline" size="sm" asChild className="mb-4">
-        <Link href="/">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Link>
-      </Button>
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">Create New Event</CardTitle>
-          <CardDescription>Start by giving your event a catchy title. You can add more details later.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-base">Event Title</Label>
-              <Input
-                id="title"
-                type="text"
-                placeholder="e.g., Summer Music Festival"
-                {...register("title")}
-                className={errors.title ? "border-destructive" : ""}
-                aria-invalid={errors.title ? "true" : "false"}
-              />
-              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting || isGeneratingSlug}>
-              {(isSubmitting || isGeneratingSlug) && <LoadingSpinner size={16} className="mr-2" />}
-              {isGeneratingSlug ? "Generating SEO URL..." : (isSubmitting ? "Creating Event..." : "Create Event & Continue")}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <AuthGuard> 
+      <div className="max-w-2xl mx-auto">
+        <Button variant="outline" size="sm" asChild className="mb-4">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl">Create New Event</CardTitle>
+            <CardDescription>Start by giving your event a catchy title. You can add more details later.</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-base">Event Title</Label>
+                <Input
+                  id="title"
+                  type="text"
+                  placeholder="e.g., Summer Music Festival"
+                  {...register("title")}
+                  className={errors.title ? "border-destructive" : ""}
+                  aria-invalid={errors.title ? "true" : "false"}
+                />
+                {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting || isGeneratingSlug}>
+                {(isSubmitting || isGeneratingSlug) && <LoadingSpinner size={16} className="mr-2" />}
+                {isGeneratingSlug ? "Generating SEO URL..." : (isSubmitting ? "Creating Event..." : "Create Event & Continue")}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </AuthGuard>
   );
 }

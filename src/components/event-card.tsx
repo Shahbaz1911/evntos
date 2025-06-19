@@ -1,8 +1,9 @@
+
 import type { Event } from '@/types';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Edit3, Eye, Users } from 'lucide-react';
+import { Edit3, Eye, Users } from 'lucide-react';
 import Image from 'next/image';
 
 interface EventCardProps {
@@ -17,8 +18,8 @@ export default function EventCard({ event }: EventCardProps) {
           <Image 
             src={event.imageUrl || "https://placehold.co/600x400.png"} 
             alt={event.title} 
-            layout="fill" 
-            objectFit="cover"
+            fill 
+            style={{objectFit:"cover"}} 
             data-ai-hint="event cover"
            />
         </div>
@@ -51,3 +52,4 @@ export default function EventCard({ event }: EventCardProps) {
     </Card>
   );
 }
+      

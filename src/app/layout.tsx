@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import Header from '@/components/layout/header';
 import { EventProvider } from '@/context/EventContext';
+import { AuthProvider } from '@/context/AuthContext'; 
 
 export const metadata: Metadata = {
   title: 'EventWave',
@@ -22,13 +24,15 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
-        <EventProvider>
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
-            {children}
-          </main>
-          <Toaster />
-        </EventProvider>
+        <AuthProvider> 
+          <EventProvider>
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-8">
+              {children}
+            </main>
+            <Toaster />
+          </EventProvider>
+        </AuthProvider>
       </body>
     </html>
   );

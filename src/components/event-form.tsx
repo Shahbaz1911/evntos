@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Event } from '@/types';
@@ -69,7 +70,13 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
           {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
           {currentImageUrl && (
             <div className="mt-2 relative w-full h-64 rounded-md overflow-hidden border">
-              <Image src={currentImageUrl} alt="Event preview" layout="fill" objectFit="cover" data-ai-hint="event poster" />
+              <Image 
+                src={currentImageUrl} 
+                alt="Event preview" 
+                fill 
+                style={{objectFit:"cover"}} 
+                data-ai-hint="event poster" 
+              />
             </div>
           )}
         </div>
@@ -99,3 +106,4 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
     </form>
   );
 }
+      

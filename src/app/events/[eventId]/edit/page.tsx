@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, Eye, Users } from 'lucide-react';
 import type { Event } from '@/types';
+import AuthGuard from '@/components/auth-guard'; 
 
 export default function EditEventPage() {
   const params = useParams();
@@ -48,7 +50,7 @@ export default function EditEventPage() {
         ...data,
       };
       await updateEvent(updatedEventData);
-      setEvent(updatedEventData); // Update local state to reflect changes, especially if slug changed
+      setEvent(updatedEventData); 
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
@@ -73,53 +75,61 @@ export default function EditEventPage() {
     );
   }
 
-  if (!event) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-xl text-muted-foreground">Event not found.</p>
-        <Button asChild className="mt-4">
-          <Link href="/">Go to Dashboard</Link>
-        </Button>
-      </div>
+  
+  if (!event && !isLoading) { 
+     return (
+      <AuthGuard> 
+        <div className="text-center py-10">
+          <p className="text-xl text-muted-foreground">Event not found.</p>
+          <Button asChild className="mt-4">
+            <Link href="/">Go to Dashboard</Link>
+          </Button>
+        </div>
+      </AuthGuard>
     );
   }
-
+  
+  
   return (
-    <div className="max-w-3xl mx-auto">
-      <Button variant="outline" size="sm" asChild className="mb-4">
-        <Link href="/">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Link>
-      </Button>
-      <Card className="shadow-lg">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle className="font-headline text-2xl">Edit: {event.title}</CardTitle>
-              <CardDescription>Update your event details and manage settings.</CardDescription>
+    <AuthGuard>
+      <div className="max-w-3xl mx-auto">
+        <Button variant="outline" size="sm" asChild className="mb-4">
+          <Link href="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="font-headline text-2xl">Edit: {event?.title}</CardTitle>
+                <CardDescription>Update your event details and manage settings.</CardDescription>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                 <Button variant="outline" size="sm" asChild>
+                  <Link href={`/events/${event?.id}/guests`}>
+                    <Users className="mr-2 h-4 w-4" /> Guest List
+                  </Link>
+                </Button>
+                <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
+                  <Link href={`/e/${event?.slug}`} target="_blank" rel="noopener noreferrer">
+                    <Eye className="mr-2 h-4 w-4" /> View Public Page
+                  </Link>
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-               <Button variant="outline" size="sm" asChild>
-                <Link href={`/events/${event.id}/guests`}>
-                  <Users className="mr-2 h-4 w-4" /> Guest List
-                </Link>
-              </Button>
-              <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
-                <Link href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer">
-                  <Eye className="mr-2 h-4 w-4" /> View Public Page
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <EventForm 
-          event={event} 
-          onSubmit={handleSubmit} 
-          isSubmitting={isSubmitting}
-          isGeneratingSlug={isGeneratingSlug} 
-        />
-      </Card>
-    </div>
+          </CardHeader>
+          {event && ( 
+            <EventForm 
+              event={event} 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+              isGeneratingSlug={isGeneratingSlug} 
+            />
+          )}
+        </Card>
+      </div>
+    </AuthGuard>
   );
 }
