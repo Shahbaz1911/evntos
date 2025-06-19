@@ -31,14 +31,14 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
+    <header className="bg-background text-foreground shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity text-accent">
           Eventos
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4">
           {loading ? (
-            <div className="h-10 w-24 bg-primary/80 animate-pulse rounded-md"></div>
+            <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div>
           ) : user ? (
             <>
               <Button asChild variant="secondary" size="sm" className="hidden sm:inline-flex">
@@ -54,7 +54,7 @@ export default function Header() {
                       {user.photoURL ? (
                         <AvatarImage src={user.photoURL} alt={user.displayName || user.email || 'User Avatar'} />
                       ) : null}
-                      <AvatarFallback className="bg-primary-foreground text-primary font-semibold">
+                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                         {getInitials(user.email)}
                       </AvatarFallback>
                     </Avatar>
@@ -100,7 +100,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-accent hover:text-accent-foreground">
+              <Button asChild variant="ghost" size="sm" className="hover:bg-accent hover:text-accent-foreground">
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
