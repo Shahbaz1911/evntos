@@ -103,31 +103,35 @@ export default function ScanTicketPage() {
   useEffect(() => {
     if (showScannerUI && hasCameraPermission) {
       const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
+      const scannerConfig = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        rememberLastUsedCamera: false, // Set to false to not prioritize last used camera
+        facingMode: "user", // Prefer front camera
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      };
+      const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
+        setShowScannerUI(false); 
+        processScanResult(decodedText);
+      };
+      const onScanFailure = (errorMessage: string, error: Html5QrcodeError) => { /* console.warn(`QR error = ${errorMessage}`); */ };
+
+
       if (!scannerRegionElement) {
           console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
-          setTimeout(() => {
-            if (!document.getElementById(SCANNER_REGION_ID)) {
+          setTimeout(() => { // Retry finding element after a short delay
+            const delayedScannerRegionElement = document.getElementById(SCANNER_REGION_ID);
+            if (!delayedScannerRegionElement) {
                 toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh.", variant: "destructive" });
                 setShowScannerUI(false); 
             } else {
                 const scanner = new Html5QrcodeScanner(
                     SCANNER_REGION_ID,
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        rememberLastUsedCamera: true,
-                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                    },
+                    scannerConfig,
                     false 
                 );
                 html5QrCodeScannerRef.current = scanner;
-                scanner.render(
-                    (decodedText, result) => {
-                        setShowScannerUI(false); 
-                        processScanResult(decodedText);
-                    }, 
-                    (errorMessage) => { /* console.warn(`QR error = ${errorMessage}`); */ }
-                );
+                scanner.render(onScanSuccess, onScanFailure);
             }
           }, 100); 
           return; 
@@ -135,23 +139,12 @@ export default function ScanTicketPage() {
 
       const scanner = new Html5QrcodeScanner(
         SCANNER_REGION_ID,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          rememberLastUsedCamera: true,
-          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-        },
+        scannerConfig,
         false 
       );
       html5QrCodeScannerRef.current = scanner;
 
-      scanner.render(
-        (decodedText, result) => { 
-          setShowScannerUI(false); 
-          processScanResult(decodedText);
-        }, 
-        (errorMessage) => { /* console.warn(`QR error = ${errorMessage}`); */ }
-      );
+      scanner.render(onScanSuccess, onScanFailure);
     }
 
     return () => {
