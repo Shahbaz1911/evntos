@@ -106,8 +106,8 @@ export default function ScanTicketPage() {
       const scannerConfig = {
         fps: 10,
         qrbox: { width: 250, height: 250 },
-        rememberLastUsedCamera: false, // Set to false to not prioritize last used camera
-        facingMode: "user", // Prefer front camera
+        rememberLastUsedCamera: false, 
+        facingMode: "environment", // Prefer back camera
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       };
       const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
