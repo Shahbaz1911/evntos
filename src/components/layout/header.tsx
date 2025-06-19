@@ -17,7 +17,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from 'react';
-import { ThemeToggleButton } from '@/components/theme-toggle-button'; // Added
+import { ThemeToggleButton } from '@/components/theme-toggle-button';
+import { Separator } from '@/components/ui/separator'; // Added Separator
 
 const NavLink = ({ 
   href, 
@@ -36,7 +37,7 @@ const NavLink = ({
       variant="ghost" 
       size="sm" 
       asChild 
-      className={`text-sm font-medium transition-colors hover:text-primary ${isActive ? 'text-primary' : 'text-foreground/70 hover:text-foreground'}`}
+      className={`text-sm font-medium transition-colors hover:text-primary ${isActive ? 'text-primary bg-primary/10' : 'text-foreground/70 hover:text-foreground'} rounded-full px-4 py-1.5`}
       data-active={isActive}
       onClick={onClick}
     >
@@ -88,7 +89,6 @@ export default function Header() {
             eventos
           </Link>
           
-          {/* Desktop Navigation - Centered Capsule Style */}
           <nav className="hidden md:flex flex-1 items-center justify-center">
              <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-sm border border-border/80">
                 {loading ? (
@@ -114,8 +114,9 @@ export default function Header() {
              </div>
           </nav>
 
-          {/* Desktop Auth and Theme Toggle */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Added Separator here for desktop */}
+            {!loading && <Separator orientation="vertical" className="h-6 mx-2" />} 
             <ThemeToggleButton />
             {loading ? (
               <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div>
@@ -166,7 +167,7 @@ export default function Header() {
               </DropdownMenu>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm" className="text-accent hover:text-accent/80 hover:bg-transparent text-orange-500">
+                <Button asChild variant="ghost" size="sm" className="text-accent hover:text-accent/80 hover:bg-transparent">
                   <Link href="/login">
                     Login
                   </Link>
@@ -180,7 +181,6 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Navigation Trigger */}
           <div className="md:hidden flex items-center gap-2">
              <ThemeToggleButton />
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -227,7 +227,7 @@ export default function Header() {
                      </Button>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <Button asChild variant="ghost" className="w-full text-accent hover:text-accent/80 text-orange-500" onClick={closeMobileMenu}>
+                      <Button asChild variant="ghost" className="w-full text-accent hover:text-accent/80" onClick={closeMobileMenu}>
                         <Link href="/login">Login</Link>
                       </Button>
                       <Button asChild variant="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={closeMobileMenu}>
