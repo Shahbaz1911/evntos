@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle, User, Mail, Ticket } from 'lucide-react';
+import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react'; // Renamed Ticket to avoid conflict
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -40,8 +40,8 @@ interface RegistrationFormProps {
 function hslToHex(hsl: string): string {
   const hslMatch = hsl.match(/hsl\((\d+)\s*[,]?\s*(\d+)%\s*[,]?\s*(\d+)%\)/i) || hsl.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/i);
   if (!hslMatch) {
-    console.warn(`Invalid HSL string for QR code: ${hsl}. Defaulting to black.`);
-    return '#000000'; // Default to black if HSL string is invalid
+    console.warn(`Invalid HSL string: ${hsl}. Defaulting to black.`);
+    return '#000000'; 
   }
 
   let h = parseInt(hslMatch[1]);
@@ -127,36 +127,64 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
     for (let n = 0; n < words.length; n++) {
       if (maxLines && linesDrawn >= maxLines) {
-        if (n < words.length -1) line += '...'; 
-        break;
+         // If we are at max lines and there are more words, add ellipsis to the current line
+        if (n < words.length) {
+            let lastLine = ctx.measureText(line.trim() + '...').width > maxWidth ? line.substring(0, line.length - 2).trim() + '...' : line.trim() + '...';
+            // Need to clear the previous line before drawing the truncated one
+            // This is complex as it requires knowing the previous line's exact y.
+            // Simplified: just draw the (potentially truncated) last line.
+            // This part of ellipsis for wrapped text is tricky. The current logic adds ellipsis if the *next* word makes it overflow.
+            // Let's ensure the current line gets ellipsis if it's the last allowed line and there's more text.
+            let tempLine = line.trim();
+            if (ctx.measureText(tempLine).width > maxWidth) { // if current line itself is too long
+                 while(ctx.measureText(tempLine + "...").width > maxWidth && tempLine.length > 0) {
+                    tempLine = tempLine.slice(0, -1);
+                 }
+                 tempLine += "...";
+            } else if (n < words.length -1 && linesDrawn === maxLines -1) { // last allowed line and more words
+                 tempLine += "...";
+                 while(ctx.measureText(tempLine).width > maxWidth && tempLine.length > 3) { // 3 for "..."
+                    tempLine = tempLine.slice(0, -4) + "..."; // remove char before "..."
+                 }
+            }
+            ctx.fillText(tempLine, x, currentY - lineHeight); // Redraw previous line with ellipsis if needed
+            ctx.fillText(tempLine, x, currentY);
+
+        }
+        break; 
       }
       const testLine = line + words[n] + ' ';
       const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
+      const testWidth = testLine.trim() === words[n] && metrics.width > maxWidth ? maxWidth : metrics.width; // Handle single very long word
+
       if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line.trim(), x, currentY);
+        let textToDraw = line.trim();
+        if (linesDrawn === maxLines - 1 && n < words.length -1 ) { // If this is the last allowed line and there are more words
+            while(ctx.measureText(textToDraw + "...").width > maxWidth && textToDraw.length > 0) {
+                textToDraw = textToDraw.slice(0, -1);
+            }
+            textToDraw += "...";
+        }
+        ctx.fillText(textToDraw, x, currentY);
         line = words[n] + ' ';
         currentY += lineHeight;
         linesDrawn++;
-        if (maxLines && linesDrawn >= maxLines && n < words.length -1) {
-             const lastLineText = line.trim();
-             let truncatedLastLine = '';
-             for(let i = 0; i < lastLineText.length; i++){
-                if(ctx.measureText(truncatedLastLine + lastLineText[i] + '...').width > maxWidth){
-                    break;
-                }
-                truncatedLastLine += lastLineText[i];
-             }
-             ctx.fillText(truncatedLastLine + '...', x, currentY);
-             return currentY + lineHeight;
-        }
-
       } else {
         line = testLine;
       }
     }
-    ctx.fillText(line.trim(), x, currentY);
-    return currentY + lineHeight;
+    // Draw the last line
+    if (!(maxLines && linesDrawn >= maxLines)) {
+        let finalText = line.trim();
+        if (linesDrawn === maxLines -1 && line.length > 0 && words.length > 0 && ctx.measureText(finalText).width > maxWidth){
+             while(ctx.measureText(finalText + "...").width > maxWidth && finalText.length > 0) {
+                finalText = finalText.slice(0, -1);
+            }
+            finalText += "...";
+        }
+       ctx.fillText(finalText, x, currentY);
+    }
+    return currentY + lineHeight; // Return Y for the next line
   };
 
 
@@ -172,112 +200,135 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
     const pdfTicketWidthMm = 70;
     const pdfTicketHeightMm = 120;
-    const dpi = 300;
+    const dpi = 300; // Good resolution for print
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
 
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
+    // Get theme colors
     const rootStyle = getComputedStyle(document.documentElement);
     const primaryHslRaw = rootStyle.getPropertyValue('--primary').trim();
-    const primaryHsl = `hsl(${primaryHslRaw})`;
-    const primaryHex = hslToHex(primaryHsl);
+    const primaryHex = hslToHex(`hsl(${primaryHslRaw})`);
     
     const primaryFgHslRaw = rootStyle.getPropertyValue('--primary-foreground').trim();
-    const primaryFgHsl = `hsl(${primaryFgHslRaw})`;
-    const primaryFgHex = hslToHex(primaryFgHsl);
+    const primaryFgHex = hslToHex(`hsl(${primaryFgHslRaw})`);
 
     const cardHslRaw = rootStyle.getPropertyValue('--card').trim();
-    const cardHsl = `hsl(${cardHslRaw})`;
-    const cardHex = hslToHex(cardHsl);
+    const cardHex = hslToHex(`hsl(${cardHslRaw})`);
 
     const textHslRaw = rootStyle.getPropertyValue('--card-foreground').trim();
-    const textHsl = `hsl(${textHslRaw})`;
-    const textHex = hslToHex(textHsl);
+    const textHex = hslToHex(`hsl(${textHslRaw})`);
     
     const mutedTextHslRaw = rootStyle.getPropertyValue('--muted-foreground').trim();
-    const mutedTextHsl = `hsl(${mutedTextHslRaw})`;
-    const mutedTextHex = hslToHex(mutedTextHsl);
+    const mutedTextHex = hslToHex(`hsl(${mutedTextHslRaw})`);
 
     const borderHslRaw = rootStyle.getPropertyValue('--border').trim();
-    const borderHsl = `hsl(${borderHslRaw})`;
-    const borderHex = hslToHex(borderHsl);
+    const borderHex = hslToHex(`hsl(${borderHslRaw})`);
 
+    // --- Drawing Start ---
 
+    // 1. Background
     ctx.fillStyle = cardHex;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // 2. Border
     ctx.strokeStyle = borderHex;
-    ctx.lineWidth = mmToPx(0.5);
+    ctx.lineWidth = mmToPx(0.3);
     ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
-
 
     const contentPadding = mmToPx(5);
     const contentWidth = canvas.width - 2 * contentPadding;
+    let currentY = contentPadding;
 
-    ctx.fillStyle = primaryHex;
+    // 3. Header Section (Event Title)
     const headerHeight = mmToPx(22);
-    ctx.fillRect(contentPadding, contentPadding, contentWidth, headerHeight);
+    ctx.fillStyle = primaryHex;
+    ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
 
     ctx.fillStyle = primaryFgHex;
     ctx.font = `bold ${mmToPx(5.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    let currentY = contentPadding + headerHeight / 2 + mmToPx(2); 
-    currentY = drawTextWithWrapping(ctx, eventName, canvas.width / 2, currentY - mmToPx(5.5)/2 , contentWidth - mmToPx(4), mmToPx(6), 2);
-    currentY = contentPadding + headerHeight + mmToPx(6);
+    const eventTitleText = `🎟️ ${eventName}`; // Unicode ticket emoji
+    // Vertically align text in header
+    const eventTitleMetrics = ctx.measureText("M"); // Approximate height
+    const eventTitleActualHeight = eventTitleMetrics.actualBoundingBoxAscent + eventTitleMetrics.actualBoundingBoxDescent || mmToPx(5.5);
+    drawTextWithWrapping(ctx, eventTitleText, canvas.width / 2, currentY + (headerHeight / 2) + (eventTitleActualHeight / 3) , contentWidth - mmToPx(6), mmToPx(6.5), 2);
+    currentY += headerHeight + mmToPx(8);
 
-
+    // 4. "GUEST TICKET" Sub-header
     ctx.fillStyle = textHex;
-    ctx.font = `normal ${mmToPx(4.5)}px Inter, sans-serif`;
+    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText("GUEST TICKET", canvas.width / 2, currentY);
-    currentY += mmToPx(7);
+    currentY += mmToPx(10);
 
+    // 5. Guest Details Section
     ctx.textAlign = 'left';
     const detailIndent = contentPadding + mmToPx(3);
-    const detailMaxWidth = contentWidth - mmToPx(6);
+    
+    const drawDetailItemPremium = (icon: string, labelText: string, valueText: string) => {
+        const iconSize = mmToPx(4.5);
+        const textStartX = detailIndent + iconSize + mmToPx(3); // Start X for text after icon
+        const availableTextWidth = contentWidth - (iconSize + mmToPx(5)); // Width for label and value
 
-    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
-    ctx.fillStyle = textHex;
-    ctx.fillText("Name:", detailIndent, currentY);
-    ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
-    currentY = drawTextWithWrapping(ctx, submittedRegistration.name, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
-    currentY += mmToPx(3);
+        // Icon (Emoji)
+        ctx.font = `${iconSize}px Inter, sans-serif`;
+        ctx.fillStyle = primaryHex; // Use primary color for icons
+        // Adjust Y for emoji baseline alignment - this is approximate
+        const iconMetrics = ctx.measureText(icon);
+        const iconActualHeight = iconMetrics.actualBoundingBoxAscent + iconMetrics.actualBoundingBoxDescent || iconSize;
+        ctx.fillText(icon, detailIndent, currentY + iconActualHeight * 0.7); 
 
-    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
-    ctx.fillText("Email:", detailIndent, currentY);
-    ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
-    currentY = drawTextWithWrapping(ctx, submittedRegistration.email, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
-    currentY += mmToPx(3);
+        // Label
+        ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
+        ctx.fillStyle = mutedTextHex; // Muted color for labels
+        ctx.fillText(labelText, textStartX, currentY);
+        currentY += mmToPx(4.5); // Line height for label
 
+        // Value
+        ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
+        ctx.fillStyle = textHex; // Standard text color for values
+        currentY = drawTextWithWrapping(ctx, valueText, textStartX, currentY, availableTextWidth, mmToPx(5), 2); // Max 2 lines for value
+        currentY += mmToPx(5); // Space after each item
+    };
+
+    drawDetailItemPremium("👤", "Guest Name:", submittedRegistration.name); // User emoji
+    drawDetailItemPremium("📧", "Email Address:", submittedRegistration.email); // Email emoji
     if (submittedRegistration.contactNumber) {
-      ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
-      ctx.fillText("Contact:", detailIndent, currentY);
-      ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
-      currentY = drawTextWithWrapping(ctx, submittedRegistration.contactNumber, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
-      currentY += mmToPx(3);
+      drawDetailItemPremium("📞", "Contact:", submittedRegistration.contactNumber); // Phone emoji
     }
-    currentY += mmToPx(5); 
+    currentY += mmToPx(3); 
 
+    // 6. QR Code
     const qrSizePx = mmToPx(40);
     const qrX = (canvas.width - qrSizePx) / 2;
-    const qrY = currentY;
+    const qrY = Math.min(currentY, canvas.height - contentPadding - qrSizePx - mmToPx(15)); // Ensure QR fits before instructions
 
     const qrImage = new Image();
     qrImage.onload = () => {
       ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
-      currentY = qrY + qrSizePx + mmToPx(7);
+      let postQrY = qrY + qrSizePx + mmToPx(7);
 
+      // 7. Instructions
       ctx.fillStyle = mutedTextHex;
       ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText("Present this QR code at the event entrance.", canvas.width / 2, currentY);
-      currentY += mmToPx(5);
-
+      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(4), mmToPx(4.5), 2);
+      
+      // 8. Footer Branding - Positioned at the very bottom
+      const footerY = canvas.height - contentPadding + mmToPx(1);
       ctx.font = `normal ${mmToPx(3)}px Inter, sans-serif`;
       ctx.fillStyle = mutedTextHex;
-      ctx.fillText("Powered by Eventos", canvas.width / 2, canvas.height - contentPadding + mmToPx(2));
+      // Ensure branding doesn't overlap with instructions if content is tall
+      if (postQrY < footerY - mmToPx(5)) {
+         ctx.fillText("Powered by Eventos", canvas.width / 2, footerY);
+      } else { // If not enough space, draw it just below instructions
+         ctx.fillText("Powered by Eventos", canvas.width / 2, postQrY + mmToPx(4));
+      }
 
+
+      // --- Drawing End ---
 
       const dataUrl = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -291,27 +342,27 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
-      reset();
-      setSubmittedRegistration(null);
+      reset(); 
+      setSubmittedRegistration(null); 
     };
     qrImage.onerror = (err) => {
-        console.error("Error loading QR code PNG for canvas drawing:", err);
+        console.error("Error loading QR code for canvas drawing:", err);
         toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
     }
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
-          errorCorrectionLevel: 'H',
-          width: 300, 
-          margin: 1,
+          errorCorrectionLevel: 'H', 
+          width: 400, 
+          margin: 1, 
           type: 'image/png',
           color: {
             dark: primaryHex, 
-            light: '#00000000' 
+            light: '#00000000' // Transparent background for QR
           }
         });
         qrImage.src = qrCodePngDataUrl;
     } catch (e) {
-        console.error("Error generating QR code PNG data URL:", e);
+        console.error("Error generating QR code data URL:", e);
         toast({ title: "Download Error", description: "Could not generate QR code data for PDF.", variant: "destructive" });
     }
   };
@@ -350,7 +401,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   return (
     <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
       <CardHeader className="pb-4 text-center">
-         <Ticket className="mx-auto h-12 w-12 text-primary mb-3" />
+         <TicketIconLucide className="mx-auto h-12 w-12 text-primary mb-3" />
         <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for {eventName}</CardTitle>
         <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
