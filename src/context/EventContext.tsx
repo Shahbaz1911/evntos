@@ -35,7 +35,7 @@ interface EventContextType {
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
-  checkInGuest: (registrationId: string, eventId: string) => Promise<boolean>;
+  // checkInGuest function is removed from here
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -49,14 +49,14 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const { user: authUser, loading: authLoading } = useAuth();
 
   const fetchData = useCallback(async () => {
-    const capturedAuthUserForError = authUser; // Capture authUser at the start of the function
+    const capturedAuthUserForError = authUser; 
 
     if (authLoading) {
       console.log("[EventContext] fetchData: Auth is loading, deferring fetch.");
       setContextLoading(true);
       return;
     }
-    console.log("[EventContext] fetchData: Auth loading complete. Current authUser:", capturedAuthUserForError ? capturedAuthUserForError.uid : "null");
+    console.log("[EventContext] fetchData: Auth loading complete. Current authUser for this fetch:", capturedAuthUserForError ? capturedAuthUserForError.uid : "null");
 
     setContextLoading(true);
     try {
@@ -86,12 +86,11 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       if (capturedAuthUserForError) {
         const userOwnedEvents = eventsList.filter(e => e.userId === capturedAuthUserForError.uid);
         const userOwnedEventIds = userOwnedEvents.map(e => e.id);
-        console.log(`[EventContext] fetchData: User ${capturedAuthUserForError.uid} owns ${userOwnedEventIds.length} events. IDs:`, userOwnedEventIds);
-
+        console.log(`[EventContext] fetchData: User ${capturedAuthUserForError.uid} owns ${userOwnedEventIds.length} events. IDs being queried for registrations:`, userOwnedEventIds);
 
         if (userOwnedEventIds.length > 0) {
           console.log("[EventContext] fetchData: Attempting to fetch registrations for user-owned events.");
-          const MAX_COMPARISONS_PER_IN_QUERY = 30;
+          const MAX_COMPARISONS_PER_IN_QUERY = 30; // Firestore 'in' query limit (actually 30 in recent versions)
           let fetchedRegistrations: Registration[] = [];
           
           for (let i = 0; i < userOwnedEventIds.length; i += MAX_COMPARISONS_PER_IN_QUERY) {
@@ -121,7 +120,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           setRegistrations(fetchedRegistrations);
           console.log(`[EventContext] fetchData: Total ${fetchedRegistrations.length} registrations fetched for user.`);
         } else {
-          console.log("[EventContext] fetchData: User owns no events, setting registrations to empty array.");
+          console.log("[EventContext] fetchData: User owns no events, or no event IDs to query. Setting registrations to empty array.");
           setRegistrations([]);
         }
       } else {
@@ -134,15 +133,15 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const firebaseError = error as import('firebase/app').FirebaseError;
 
       if (firebaseError.code === 'permission-denied') {
-          // Log details individually to avoid issues with object logging
           console.error("[EventContext] Detailed Permission Denied in fetchData:");
           console.error("[EventContext] User ID at time of error: ", capturedAuthUserForError?.uid || "N/A");
           console.error("[EventContext] Was authUser null at time of error: ", capturedAuthUserForError === null);
           console.error("[EventContext] Firebase Error Code: ", firebaseError.code);
           console.error("[EventContext] Firebase Error Message: ", firebaseError.message);
-          console.error("[EventContext] Raw Firebase Error Object: ", firebaseError);
+          console.error("[EventContext] Raw Firebase Error Object (next line):");
+          console.error(firebaseError);
 
-          toast({ title: "Permissions Error", description: "Could not load data due to access restrictions. Check Firestore rules.", variant: "destructive" });
+          toast({ title: "Permissions Error", description: "Could not load data due to access restrictions. Check Firestore rules and console for details.", variant: "destructive" });
       } else {
           toast({ title: "Data Load Error", description: "Could not load data from the cloud.", variant: "destructive" });
       }
@@ -363,39 +362,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [toast]);
 
-  const checkInGuest = useCallback(async (registrationId: string, eventId: string): Promise<boolean> => {
-    if (!authUser) {
-      toast({ title: "Authentication Error", description: "You must be logged in to check in guests.", variant: "destructive" });
-      return false;
-    }
-    const event = events.find(e => e.id === eventId);
-    if (!event || event.userId !== authUser.uid) {
-        toast({ title: "Authorization Error", description: "You are not authorized to check in guests for this event.", variant: "destructive" });
-        return false;
-    }
-
-    const regRef = doc(db, "registrations", registrationId);
-    const checkedInAtTime = new Date().toISOString();
-    try {
-      await updateDoc(regRef, {
-        checkedIn: true,
-        checkedInAt: checkedInAtTime,
-      });
-      setRegistrations(prevRegs => 
-        prevRegs.map(reg => 
-          reg.id === registrationId 
-            ? { ...reg, checkedIn: true, checkedInAt: checkedInAtTime } 
-            : reg
-        )
-      );
-      return true;
-    } catch (error) {
-      console.error("Error checking in guest:", error);
-      toast({ title: "Check-in Error", description: "Could not check in guest.", variant: "destructive" });
-      return false;
-    }
-  }, [authUser, events, toast]);
-
+  // checkInGuest function removed
 
   return (
     <EventContext.Provider
@@ -413,7 +380,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         recordSharedLinkVisit,
         getRegistrationsByEventId,
         getRegistrationByIdFromFirestore,
-        checkInGuest,
+        // checkInGuest removed from provider value
       }}
     >
       {children}
@@ -428,4 +395,3 @@ export const useEvents = () => {
   }
   return context;
 };
-
