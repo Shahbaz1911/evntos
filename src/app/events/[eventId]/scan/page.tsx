@@ -31,7 +31,7 @@ export default function ScanTicketPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState<Registration | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error" | "not_found">("idle");
-  const [scanMessage, setScanMessage] = useState<string | null>(null); // For ticket verification messages
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const html5QrCodeScannerRef = useRef<Html5QrcodeScanner | null>(null);
@@ -56,25 +56,35 @@ export default function ScanTicketPage() {
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const stopScanner = async () => {
-    const scanner = html5QrCodeScannerRef.current;
-    if (scanner && typeof scanner.clear === 'function') {
-        try {
-            // Check state before clearing if possible, to avoid errors if already cleared or not running
-            if (scanner.getState && (scanner.getState() === 1 /* PAUSED */ || scanner.getState() === 2 /* SCANNING */)) {
-                 await scanner.clear();
-            }
-        } catch (e) {
-            console.warn("Error calling scanner.clear():", e);
-        }
+    // If there's no scanner instance, or we're not actively scanning, do nothing more.
+    if (!html5QrCodeScannerRef.current) {
+      setIsScanning(false); // Ensure isScanning state is correct
+      return;
     }
-    setIsScanning(false);
+
+    const scanner = html5QrCodeScannerRef.current;
+    setIsScanning(false); // Set scanning state to false immediately
+
+    if (typeof scanner.clear === 'function') {
+      try {
+        await scanner.clear();
+        // console.log("Scanner cleared successfully.");
+      } catch (e) {
+        console.warn("Error calling scanner.clear():", e);
+        // Errors during clear are logged but don't stop execution of nullifying the ref.
+      }
+    }
+    html5QrCodeScannerRef.current = null; // Always nullify the ref after attempting to stop/clear
   };
 
 
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (scanStatus !== 'idle' && !isScanning) return;
+    if (!isScanning) { // Check if we are in a state to process (e.g. not already stopped)
+      // console.log("Scan success ignored: not in scanning state.");
+      return;
+    }
 
-    await stopScanner();
+    await stopScanner(); // This will set isScanning to false and nullify html5QrCodeScannerRef.current
 
     setScanStatus("idle");
     setScannedData(null);
@@ -108,69 +118,73 @@ export default function ScanTicketPage() {
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
+    // Potentially add more user-facing feedback here if needed, but often minor scan failures are common.
   };
   
   const startScanner = async () => {
-    // Reset ticket-specific scan states, but not camera permission message
     setScanStatus("idle");
     setScannedData(null);
-    setScanMessage(null); // Clear previous ticket scan messages
+    setScanMessage(null);
 
-    // Check and request camera permission
     try {
         await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true); // Permission granted
+        setHasCameraPermission(true);
     } catch (err) {
-        setHasCameraPermission(false); // Permission denied
-        // Message for camera denial is handled by conditional rendering based on hasCameraPermission
+        setHasCameraPermission(false);
         toast({ title: "Camera Error", description: "Camera permission is required to scan tickets.", variant: "destructive" });
-        return; // Stop if no permission
-    }
-
-    if (!document.getElementById(SCANNER_REGION_ID)) {
-        console.error("Scanner region not found in DOM.");
-        toast({ title: "Scanner Error", description: "Could not initialize scanner region.", variant: "destructive" });
         return;
     }
 
-    if (!html5QrCodeScannerRef.current) {
-        html5QrCodeScannerRef.current = new Html5QrcodeScanner(
-            SCANNER_REGION_ID,
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                rememberLastUsedCamera: true,
-                supportedScanTypes: [0], 
-            },
-            false 
-        );
+    if (!document.getElementById(SCANNER_REGION_ID)) {
+        console.error(`${SCANNER_REGION_ID} not found in DOM.`);
+        toast({ title: "Scanner Error", description: "Could not initialize scanner view.", variant: "destructive" });
+        setIsScanning(false);
+        return;
     }
-    
-    if (html5QrCodeScannerRef.current && 
-        typeof html5QrCodeScannerRef.current.getState === 'function' && 
-        html5QrCodeScannerRef.current.getState() === 2 /* Html5QrcodeScannerState.SCANNING */) {
-      setIsScanning(true);
+
+    // If already scanning, don't try to start again.
+    if (isScanning) {
+      // console.log("StartScanner called, but already scanning.");
       return;
     }
 
+    // Ensure any previous scanner is stopped and cleaned up before starting a new one.
+    if (html5QrCodeScannerRef.current) {
+        await stopScanner(); // stopScanner now nullifies the ref
+    }
+    
+    // Create a new scanner instance.
+    // html5QrCodeScannerRef.current should be null here if stopScanner worked.
+    html5QrCodeScannerRef.current = new Html5QrcodeScanner(
+        SCANNER_REGION_ID,
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true,
+            supportedScanTypes: [0 /* SCAN_TYPE_CAMERA */],
+        },
+        false // verbose
+    );
+    
     try {
         html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
-        setIsScanning(true);
+        setIsScanning(true); // Set to true only after render call is successful
     } catch (renderError) {
         console.error("Error rendering scanner:", renderError);
         toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
-        setIsScanning(false);
+        setIsScanning(false); // Ensure state is reset
+        html5QrCodeScannerRef.current = null; // Clean up the ref if render fails
     }
   };
 
 
   useEffect(() => {
+    // Cleanup function: will be called when the component unmounts.
     return () => {
-      if (html5QrCodeScannerRef.current) {
-         stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
-      }
+      // stopScanner handles nullifying the ref and internal state.
+      stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
     };
-  }, []);
+  }, []); // Empty dependency array means this effect runs once on mount and cleanup on unmount.
 
 
   if (pageLoading || authLoading || eventContextLoading) {
@@ -212,18 +226,15 @@ export default function ScanTicketPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div id={SCANNER_REGION_ID} className="w-full border-dashed border-2 border-muted-foreground/50 rounded-lg aspect-square bg-muted/20 flex items-center justify-center">
-              {/* Message if camera permission is explicitly denied */}
               {hasCameraPermission === false && (
                  <div className="text-center p-4 text-destructive">
                     <CameraOff size={48} className="mx-auto mb-2"/>
                     <p>Camera access denied. Please enable camera permissions in your browser settings to use the scanner.</p>
                 </div>
               )}
-              {/* Message to prompt user to start scanning, only if not scanning and permission not denied */}
               {!isScanning && hasCameraPermission !== false && (
                 <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
               )}
-              {/* The scanner will render here if active and permission granted */}
             </div>
 
             {isScanning ? (
@@ -236,7 +247,6 @@ export default function ScanTicketPage() {
               </Button>
             )}
 
-            {/* Alert for ticket verification messages */}
             {scanMessage && (
                 <Alert variant={scanStatus === "success" ? "default" : (scanStatus === "idle" ? "default" : "destructive")} className="mt-4">
                      {scanStatus === "success" && <UserCheck className="h-4 w-4" />}
