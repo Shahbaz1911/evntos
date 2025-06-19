@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff } from 'lucide-react';
 import type { Event, Registration } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 const SCANNER_REGION_ID = "qr-scanner-region";
 
@@ -23,7 +24,7 @@ export default function ScanTicketPage() {
   const eventId = params.eventId as string;
   const { getEventById, getRegistrationByIdFromFirestore, contextLoading: eventContextLoading } = useEvents();
   const { user: authUser, loading: authLoading } = useAuth();
-  const { toast } = useToast(); // Assuming useToast is globally available or import it
+  const { toast } = useToast();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -54,18 +55,28 @@ export default function ScanTicketPage() {
     }
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
-  const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (!isScanning) return;
-    setIsScanning(false); // Stop further scans until this one is processed
+  const stopScanner = async () => {
+    setIsScanning(false); // Update UI state immediately
     if (html5QrCodeScannerRef.current) {
-        try {
-            await html5QrCodeScannerRef.current.clear();
-        } catch (clearError) {
-            console.warn("Failed to clear scanner, it might have already been cleared:", clearError);
+        // Html5QrcodeScannerState: 0: NOT_STARTED, 1: PAUSED, 2: SCANNING
+        const scannerState = html5QrCodeScannerRef.current.getState ? html5QrCodeScannerRef.current.getState() : null;
+        if (scannerState === 2 /* SCANNING */ || scannerState === 1 /* PAUSED */) {
+            try {
+                await html5QrCodeScannerRef.current.clear();
+            } catch (e) {
+                console.warn("Error stopping/clearing scanner: ", e);
+                // This can happen if the DOM element was unexpectedly removed
+            }
         }
     }
-    
-    setScanStatus("idle");
+  };
+
+  const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
+    if (!isScanning && scanStatus !== 'idle') return; // Prevent re-entry if already processing or scan was stopped
+
+    await stopScanner(); // Stop scanning and clear UI first
+
+    setScanStatus("idle"); // Reset status for the new verification process
     setScannedData(null);
     setScanMessage("Verifying ticket...");
 
@@ -74,7 +85,6 @@ export default function ScanTicketPage() {
       if (registration.eventId === eventId) {
         setScannedData(registration);
         setScanStatus("success");
-        // TODO: Implement actual check-in logic here in a future step (mark as checkedIn in Firestore)
         setScanMessage(`Guest ${registration.name} Verified!`);
         toast({ title: "Guest Verified", description: `${registration.name} (${registration.email})`});
       } else {
@@ -91,8 +101,7 @@ export default function ScanTicketPage() {
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
-    // No need to show toast for every minor scan failure, could be annoying.
-    // Continuous scanning will retry.
+    // No need to show toast for every minor scan failure.
   };
   
   const startScanner = async () => {
@@ -110,6 +119,13 @@ export default function ScanTicketPage() {
         return;
     }
 
+    // Ensure the container exists
+    if (!document.getElementById(SCANNER_REGION_ID)) {
+        console.error("Scanner region not found in DOM.");
+        toast({ title: "Scanner Error", description: "Could not initialize scanner region.", variant: "destructive" });
+        return;
+    }
+
     if (!html5QrCodeScannerRef.current) {
         html5QrCodeScannerRef.current = new Html5QrcodeScanner(
             SCANNER_REGION_ID,
@@ -117,31 +133,27 @@ export default function ScanTicketPage() {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 rememberLastUsedCamera: true,
-                supportedScanTypes: [0], // SCAN_TYPE_CAMERA
+                supportedScanTypes: [0], 
             },
-            false // verbose
+            false 
         );
     }
+    
+    // Check if scanner is already in scanning state to avoid issues
+    if (html5QrCodeScannerRef.current.getState && html5QrCodeScannerRef.current.getState() === 2 /* SCANNING */) {
+        setIsScanning(true); // Ensure UI reflects this if already scanning
+        return;
+    }
+
     html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
     setIsScanning(true);
   };
 
-  const stopScanner = async () => {
-    setIsScanning(false);
-    if (html5QrCodeScannerRef.current && html5QrCodeScannerRef.current.getState() === 2) { // 2 is SCANNING state
-        try {
-            await html5QrCodeScannerRef.current.clear();
-        } catch (e) {
-            console.warn("Error stopping scanner: ", e);
-        }
-    }
-  };
 
   useEffect(() => {
-    // Cleanup scanner on component unmount
     return () => {
       if (html5QrCodeScannerRef.current) {
-        html5QrCodeScannerRef.current.clear().catch(err => console.warn("Cleanup error", err));
+         stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
       }
     };
   }, []);
@@ -210,8 +222,7 @@ export default function ScanTicketPage() {
             {scanMessage && (
                 <Alert variant={scanStatus === "success" ? "default" : (scanStatus === "idle" ? "default" : "destructive")} className="mt-4">
                      {scanStatus === "success" && <UserCheck className="h-4 w-4" />}
-                     {scanStatus === "error" && <UserX className="h-4 w-4" />}
-                     {scanStatus === "not_found" && <UserX className="h-4 w-4" />}
+                     {(scanStatus === "error" || scanStatus === "not_found") && <UserX className="h-4 w-4" />}
                     <AlertTitle>
                         {scanStatus === "success" ? "Scan Successful" : 
                          scanStatus === "error" ? "Scan Error" : 
@@ -238,16 +249,4 @@ export default function ScanTicketPage() {
       </div>
     </AuthGuard>
   );
-}
-
-// Helper to ensure useToast is available.
-// In a real app, ensure Toaster is in your RootLayout and useToast is correctly set up.
-function useToast() {
-    // This is a placeholder. Ensure you have a global toast context.
-    // For now, it will just console.log. Replace with your actual useToast hook.
-    return {
-        toast: (options: { title: string, description?: string, variant?: string }) => {
-            console.log("Toast:", options.title, options.description, options.variant);
-        }
-    };
 }
