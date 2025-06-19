@@ -14,7 +14,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import Image from 'next/image';
 
 const signupSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -106,7 +105,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4">
-             <Image src="https://placehold.co/150x50.png?text=Eventos" alt="Eventos Logo" width={150} height={50} data-ai-hint="logo company" />
+             <span className="text-4xl font-bold text-orange-500 font-headline">Eventos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
           <CardDescription>Join Eventos to start creating and managing events.</CardDescription>
