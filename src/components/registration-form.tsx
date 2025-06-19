@@ -36,6 +36,39 @@ interface RegistrationFormProps {
   eventName: string;
 }
 
+// Helper function to convert HSL string to HEX string
+function hslToHex(hsl: string): string {
+  const hslMatch = hsl.match(/hsl\((\d+)\s*[,]?\s*(\d+)%\s*[,]?\s*(\d+)%\)/i) || hsl.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/i);
+  if (!hslMatch) {
+    console.warn(`Invalid HSL string for QR code: ${hsl}. Defaulting to black.`);
+    return '#000000'; // Default to black if HSL string is invalid
+  }
+
+  let h = parseInt(hslMatch[1]);
+  let s = parseInt(hslMatch[2]);
+  let l = parseInt(hslMatch[3]);
+
+  s /= 100;
+  l /= 100;
+
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+
+  const toHexComponent = (c: number) => {
+    const hex = Math.round(c * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  const r = toHexComponent(f(0));
+  const g = toHexComponent(f(8));
+  const b = toHexComponent(f(4));
+
+  return `#${r}${g}${b}`;
+}
+
+
 export default function RegistrationForm({ eventId, eventName }: RegistrationFormProps) {
   const { addRegistration } = useEvents();
   const { toast } = useToast();
@@ -94,7 +127,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
     for (let n = 0; n < words.length; n++) {
       if (maxLines && linesDrawn >= maxLines) {
-        if (n < words.length -1) line += '...'; // Add ellipsis if text is truncated
+        if (n < words.length -1) line += '...'; 
         break;
       }
       const testLine = line + words[n] + ' ';
@@ -107,7 +140,6 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         linesDrawn++;
         if (maxLines && linesDrawn >= maxLines && n < words.length -1) {
              const lastLineText = line.trim();
-             const ellipsisWidth = ctx.measureText('...').width;
              let truncatedLastLine = '';
              for(let i = 0; i < lastLineText.length; i++){
                 if(ctx.measureText(truncatedLastLine + lastLineText[i] + '...').width > maxWidth){
@@ -146,21 +178,36 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
-    // Get theme colors
     const rootStyle = getComputedStyle(document.documentElement);
-    const primaryColor = `hsl(${rootStyle.getPropertyValue('--primary').trim()})`;
-    const primaryFgColor = `hsl(${rootStyle.getPropertyValue('--primary-foreground').trim()})`;
-    const cardColor = `hsl(${rootStyle.getPropertyValue('--card').trim()})`;
-    const textColor = `hsl(${rootStyle.getPropertyValue('--card-foreground').trim()})`;
-    const mutedTextColor = `hsl(${rootStyle.getPropertyValue('--muted-foreground').trim()})`;
-    const borderColor = `hsl(${rootStyle.getPropertyValue('--border').trim()})`;
+    const primaryHslRaw = rootStyle.getPropertyValue('--primary').trim();
+    const primaryHsl = `hsl(${primaryHslRaw})`;
+    const primaryHex = hslToHex(primaryHsl);
+    
+    const primaryFgHslRaw = rootStyle.getPropertyValue('--primary-foreground').trim();
+    const primaryFgHsl = `hsl(${primaryFgHslRaw})`;
+    const primaryFgHex = hslToHex(primaryFgHsl);
 
-    // Background
-    ctx.fillStyle = cardColor;
+    const cardHslRaw = rootStyle.getPropertyValue('--card').trim();
+    const cardHsl = `hsl(${cardHslRaw})`;
+    const cardHex = hslToHex(cardHsl);
+
+    const textHslRaw = rootStyle.getPropertyValue('--card-foreground').trim();
+    const textHsl = `hsl(${textHslRaw})`;
+    const textHex = hslToHex(textHsl);
+    
+    const mutedTextHslRaw = rootStyle.getPropertyValue('--muted-foreground').trim();
+    const mutedTextHsl = `hsl(${mutedTextHslRaw})`;
+    const mutedTextHex = hslToHex(mutedTextHsl);
+
+    const borderHslRaw = rootStyle.getPropertyValue('--border').trim();
+    const borderHsl = `hsl(${borderHslRaw})`;
+    const borderHex = hslToHex(borderHsl);
+
+
+    ctx.fillStyle = cardHex;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Outer Border (optional, for a defined edge)
-    ctx.strokeStyle = borderColor;
+    ctx.strokeStyle = borderHex;
     ctx.lineWidth = mmToPx(0.5);
     ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
 
@@ -168,33 +215,30 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     const contentPadding = mmToPx(5);
     const contentWidth = canvas.width - 2 * contentPadding;
 
-    // Header section
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = primaryHex;
     const headerHeight = mmToPx(22);
     ctx.fillRect(contentPadding, contentPadding, contentWidth, headerHeight);
 
-    ctx.fillStyle = primaryFgColor;
+    ctx.fillStyle = primaryFgHex;
     ctx.font = `bold ${mmToPx(5.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    let currentY = contentPadding + headerHeight / 2 + mmToPx(2); // Center vertically in header
+    let currentY = contentPadding + headerHeight / 2 + mmToPx(2); 
     currentY = drawTextWithWrapping(ctx, eventName, canvas.width / 2, currentY - mmToPx(5.5)/2 , contentWidth - mmToPx(4), mmToPx(6), 2);
     currentY = contentPadding + headerHeight + mmToPx(6);
 
 
-    // "Guest Ticket" Sub-header
-    ctx.fillStyle = textColor;
+    ctx.fillStyle = textHex;
     ctx.font = `normal ${mmToPx(4.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText("GUEST TICKET", canvas.width / 2, currentY);
     currentY += mmToPx(7);
 
-    // Guest Details
     ctx.textAlign = 'left';
     const detailIndent = contentPadding + mmToPx(3);
     const detailMaxWidth = contentWidth - mmToPx(6);
 
     ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
-    ctx.fillStyle = textColor;
+    ctx.fillStyle = textHex;
     ctx.fillText("Name:", detailIndent, currentY);
     ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
     currentY = drawTextWithWrapping(ctx, submittedRegistration.name, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
@@ -213,9 +257,8 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       currentY = drawTextWithWrapping(ctx, submittedRegistration.contactNumber, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
       currentY += mmToPx(3);
     }
-    currentY += mmToPx(5); // Extra space before QR
+    currentY += mmToPx(5); 
 
-    // QR Code
     const qrSizePx = mmToPx(40);
     const qrX = (canvas.width - qrSizePx) / 2;
     const qrY = currentY;
@@ -225,16 +268,14 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
       currentY = qrY + qrSizePx + mmToPx(7);
 
-      // Footer instruction
-      ctx.fillStyle = mutedTextColor;
+      ctx.fillStyle = mutedTextHex;
       ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText("Present this QR code at the event entrance.", canvas.width / 2, currentY);
       currentY += mmToPx(5);
 
-      // "Eventos" Branding (subtle)
       ctx.font = `normal ${mmToPx(3)}px Inter, sans-serif`;
-      ctx.fillStyle = mutedTextColor;
+      ctx.fillStyle = mutedTextHex;
       ctx.fillText("Powered by Eventos", canvas.width / 2, canvas.height - contentPadding + mmToPx(2));
 
 
@@ -260,12 +301,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
           errorCorrectionLevel: 'H',
-          width: 300, // Higher resolution for QR code generation
+          width: 300, 
           margin: 1,
           type: 'image/png',
           color: {
-            dark: primaryColor.startsWith('hsl') ? primaryColor : '#000000', // Use primary theme color for QR dots
-            light: '#00000000' // Transparent background for QR code
+            dark: primaryHex, 
+            light: '#00000000' 
           }
         });
         qrImage.src = qrCodePngDataUrl;
@@ -374,3 +415,4 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
+
