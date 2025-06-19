@@ -56,52 +56,59 @@ export default function ScanTicketPage() {
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const stopScanner = async () => {
-    setIsScanning(false); // Update UI state immediately
-    if (html5QrCodeScannerRef.current) {
-        // Html5QrcodeScannerState: 0: NOT_STARTED, 1: PAUSED, 2: SCANNING
-        const scannerState = html5QrCodeScannerRef.current.getState ? html5QrCodeScannerRef.current.getState() : null;
-        if (scannerState === 2 /* SCANNING */ || scannerState === 1 /* PAUSED */) {
-            try {
-                await html5QrCodeScannerRef.current.clear();
-            } catch (e) {
-                console.warn("Error stopping/clearing scanner: ", e);
-                // This can happen if the DOM element was unexpectedly removed
-            }
+    const scanner = html5QrCodeScannerRef.current;
+    // Check if the scanner instance and its clear method exist
+    if (scanner && typeof scanner.clear === 'function') {
+        try {
+            await scanner.clear();
+        } catch (e) {
+            console.warn("Error calling scanner.clear():", e);
+            // "Code scanner not initialized" might be caught here if clear is called on an invalid instance state.
         }
     }
+    // Always update React state after attempting to clear or if no clear was needed.
+    setIsScanning(false);
   };
 
+
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (!isScanning && scanStatus !== 'idle') return; // Prevent re-entry if already processing or scan was stopped
+    // Prevent re-entry if already processing, though stopScanner should handle subsequent calls.
+    if (scanStatus !== 'idle' && !isScanning) return; 
 
-    await stopScanner(); // Stop scanning and clear UI first
+    await stopScanner(); 
 
-    setScanStatus("idle"); // Reset status for the new verification process
+    setScanStatus("idle"); 
     setScannedData(null);
     setScanMessage("Verifying ticket...");
 
-    const registration = await getRegistrationByIdFromFirestore(decodedText);
-    if (registration) {
-      if (registration.eventId === eventId) {
-        setScannedData(registration);
-        setScanStatus("success");
-        setScanMessage(`Guest ${registration.name} Verified!`);
-        toast({ title: "Guest Verified", description: `${registration.name} (${registration.email})`});
-      } else {
+    try {
+        const registration = await getRegistrationByIdFromFirestore(decodedText);
+        if (registration) {
+        if (registration.eventId === eventId) {
+            setScannedData(registration);
+            setScanStatus("success");
+            setScanMessage(`Guest ${registration.name} Verified!`);
+            toast({ title: "Guest Verified", description: `${registration.name} (${registration.email})`});
+        } else {
+            setScanStatus("error");
+            setScanMessage("Ticket is for a different event.");
+            toast({ title: "Verification Error", description: "This ticket is not valid for the current event.", variant: "destructive" });
+        }
+        } else {
+        setScanStatus("not_found");
+        setScanMessage("Invalid Ticket: Guest not found.");
+        toast({ title: "Verification Error", description: "This QR code does not correspond to a valid registration.", variant: "destructive" });
+        }
+    } catch(error) {
+        console.error("Error verifying ticket:", error);
         setScanStatus("error");
-        setScanMessage("Ticket is for a different event.");
-        toast({ title: "Verification Error", description: "This ticket is not valid for the current event.", variant: "destructive" });
-      }
-    } else {
-      setScanStatus("not_found");
-      setScanMessage("Invalid Ticket: Guest not found.");
-      toast({ title: "Verification Error", description: "This QR code does not correspond to a valid registration.", variant: "destructive" });
+        setScanMessage("An error occurred during verification. Please try again.");
+        toast({ title: "Verification System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
     }
   };
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
-    // No need to show toast for every minor scan failure.
   };
   
   const startScanner = async () => {
@@ -119,7 +126,6 @@ export default function ScanTicketPage() {
         return;
     }
 
-    // Ensure the container exists
     if (!document.getElementById(SCANNER_REGION_ID)) {
         console.error("Scanner region not found in DOM.");
         toast({ title: "Scanner Error", description: "Could not initialize scanner region.", variant: "destructive" });
@@ -139,19 +145,30 @@ export default function ScanTicketPage() {
         );
     }
     
-    // Check if scanner is already in scanning state to avoid issues
-    if (html5QrCodeScannerRef.current.getState && html5QrCodeScannerRef.current.getState() === 2 /* SCANNING */) {
-        setIsScanning(true); // Ensure UI reflects this if already scanning
-        return;
+    // Check scanner state to avoid issues if already scanning
+    // This check needs html5QrCodeScannerRef.current to be valid.
+    if (html5QrCodeScannerRef.current && 
+        typeof html5QrCodeScannerRef.current.getState === 'function' && 
+        html5QrCodeScannerRef.current.getState() === 2 /* Html5QrcodeScannerState.SCANNING */) {
+      setIsScanning(true);
+      return;
     }
 
-    html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
-    setIsScanning(true);
+    try {
+        html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
+        setIsScanning(true);
+    } catch (renderError) {
+        console.error("Error rendering scanner:", renderError);
+        toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
+        setIsScanning(false); // Ensure isScanning is false if render fails
+    }
   };
 
 
   useEffect(() => {
+    // Cleanup function to stop the scanner when the component unmounts
     return () => {
+      // html5QrCodeScannerRef.current might be null if startScanner was never called or failed early
       if (html5QrCodeScannerRef.current) {
          stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
       }
@@ -250,3 +267,4 @@ export default function ScanTicketPage() {
     </AuthGuard>
   );
 }
+
