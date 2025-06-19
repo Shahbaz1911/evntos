@@ -18,6 +18,7 @@ export interface Registration {
   eventId: string;
   name: string;
   email: string;
+  contactNumber?: string; // Optional contact number
   registeredAt: string; // ISO date string
   source?: 'form' | 'shared_link'; // To track how the registration was created
   checkedIn?: boolean;

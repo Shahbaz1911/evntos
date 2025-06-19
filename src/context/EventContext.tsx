@@ -31,7 +31,7 @@ interface EventContextType {
   deleteEvent: (eventId: string) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
   getEventBySlug: (slug: string) => Event | undefined;
-  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => Promise<Registration | null>;
+  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'>) => Promise<Registration | null>;
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
@@ -85,6 +85,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
             eventId: data.eventId,
             name: data.name,
             email: data.email,
+            contactNumber: data.contactNumber,
             registeredAt: data.registeredAt,
             source: data.source,
             checkedIn: data.checkedIn || false,
@@ -110,8 +111,10 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   }, [authUser, authLoading, toast]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!authLoading) { // Only fetch if auth state is determined
+        fetchData();
+    }
+  }, [authLoading, fetchData]);
 
 
   const addEvent = useCallback(async (newEventData: Pick<Event, 'title'>): Promise<Event | null> => {
@@ -243,16 +246,19 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const getEventById = useCallback((id: string) => events.find((event) => event.id === id), [events]);
   const getEventBySlug = useCallback((slug: string) => events.find((event) => event.slug === slug), [events]);
 
-  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email'>): Promise<Registration | null> => {
-    const registrationDraft: Omit<Registration, 'id'> = {
-      ...newRegData,
+  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'>): Promise<Registration | null> => {
+    const registrationData: Omit<Registration, 'id'> = {
+      eventId: newRegData.eventId,
+      name: newRegData.name,
+      email: newRegData.email,
+      ...(newRegData.contactNumber && { contactNumber: newRegData.contactNumber }),
       registeredAt: new Date().toISOString(),
       source: 'form',
       checkedIn: false,
     };
     try {
-      const docRef = await addDoc(collection(db, "registrations"), registrationDraft);
-      const newRegistrationWithId: Registration = { ...registrationDraft, id: docRef.id };
+      const docRef = await addDoc(collection(db, "registrations"), registrationData);
+      const newRegistrationWithId: Registration = { ...registrationData, id: docRef.id };
       setRegistrations((prev) => [newRegistrationWithId, ...prev]);
       return newRegistrationWithId;
     } catch (error) {
@@ -278,7 +284,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error recording shared link visit in Firestore:", error);
     }
-  }, []); // Removed toast dependency as it wasn't used here
+  }, []); 
 
   const getRegistrationsByEventId = useCallback((eventId: string) =>
     registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form'), [registrations]);
@@ -294,6 +300,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           eventId: data.eventId,
           name: data.name,
           email: data.email,
+          contactNumber: data.contactNumber,
           registeredAt: data.registeredAt,
           source: data.source,
           checkedIn: data.checkedIn || false,
@@ -340,3 +347,4 @@ export const useEvents = () => {
   }
   return context;
 };
+

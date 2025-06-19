@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff, Phone, Mail } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,35 +56,31 @@ export default function ScanTicketPage() {
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const stopScanner = async () => {
-    // If there's no scanner instance, or we're not actively scanning, do nothing more.
     if (!html5QrCodeScannerRef.current) {
-      setIsScanning(false); // Ensure isScanning state is correct
+      setIsScanning(false); 
       return;
     }
 
     const scanner = html5QrCodeScannerRef.current;
-    setIsScanning(false); // Set scanning state to false immediately
+    setIsScanning(false); 
 
     if (typeof scanner.clear === 'function') {
       try {
         await scanner.clear();
-        // console.log("Scanner cleared successfully.");
       } catch (e) {
         console.warn("Error calling scanner.clear():", e);
-        // Errors during clear are logged but don't stop execution of nullifying the ref.
       }
     }
-    html5QrCodeScannerRef.current = null; // Always nullify the ref after attempting to stop/clear
+    html5QrCodeScannerRef.current = null; 
   };
 
 
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (!isScanning) { // Check if we are in a state to process (e.g. not already stopped)
-      // console.log("Scan success ignored: not in scanning state.");
+    if (!isScanning) { 
       return;
     }
 
-    await stopScanner(); // This will set isScanning to false and nullify html5QrCodeScannerRef.current
+    await stopScanner(); 
 
     setScanStatus("idle");
     setScannedData(null);
@@ -118,13 +114,12 @@ export default function ScanTicketPage() {
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
-    // Potentially add more user-facing feedback here if needed, but often minor scan failures are common.
   };
   
   const startScanner = async () => {
     setScanStatus("idle");
     setScannedData(null);
-    setScanMessage(null);
+    setScanMessage(null); // Clear previous scan messages, not camera messages
 
     try {
         await navigator.mediaDevices.getUserMedia({ video: true });
@@ -142,19 +137,14 @@ export default function ScanTicketPage() {
         return;
     }
 
-    // If already scanning, don't try to start again.
-    if (isScanning) {
-      // console.log("StartScanner called, but already scanning.");
+    if (isScanning && html5QrCodeScannerRef.current) {
       return;
     }
-
-    // Ensure any previous scanner is stopped and cleaned up before starting a new one.
+    
     if (html5QrCodeScannerRef.current) {
-        await stopScanner(); // stopScanner now nullifies the ref
+        await stopScanner(); 
     }
     
-    // Create a new scanner instance.
-    // html5QrCodeScannerRef.current should be null here if stopScanner worked.
     html5QrCodeScannerRef.current = new Html5QrcodeScanner(
         SCANNER_REGION_ID,
         {
@@ -163,28 +153,26 @@ export default function ScanTicketPage() {
             rememberLastUsedCamera: true,
             supportedScanTypes: [0 /* SCAN_TYPE_CAMERA */],
         },
-        false // verbose
+        false 
     );
     
     try {
         html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
-        setIsScanning(true); // Set to true only after render call is successful
+        setIsScanning(true); 
     } catch (renderError) {
         console.error("Error rendering scanner:", renderError);
         toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
-        setIsScanning(false); // Ensure state is reset
-        html5QrCodeScannerRef.current = null; // Clean up the ref if render fails
+        setIsScanning(false); 
+        html5QrCodeScannerRef.current = null; 
     }
   };
 
 
   useEffect(() => {
-    // Cleanup function: will be called when the component unmounts.
     return () => {
-      // stopScanner handles nullifying the ref and internal state.
       stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
     };
-  }, []); // Empty dependency array means this effect runs once on mount and cleanup on unmount.
+  }, []); 
 
 
   if (pageLoading || authLoading || eventContextLoading) {
@@ -265,10 +253,13 @@ export default function ScanTicketPage() {
                 <CardHeader>
                   <CardTitle className="text-green-700 font-headline">Guest Verified</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1">
-                  <p><strong>Name:</strong> {scannedData.name}</p>
-                  <p><strong>Email:</strong> {scannedData.email}</p>
-                  <p><strong>Registered:</strong> {new Date(scannedData.registeredAt).toLocaleString()}</p>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="flex items-center"><UserCheck className="mr-2 h-4 w-4 text-green-600" /><strong>Name:</strong> {scannedData.name}</p>
+                  <p className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" /><strong>Email:</strong> {scannedData.email}</p>
+                  {scannedData.contactNumber && (
+                     <p className="flex items-center"><Phone className="mr-2 h-4 w-4 text-muted-foreground" /><strong>Contact:</strong> {scannedData.contactNumber}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground pt-1"><strong>Registered:</strong> {new Date(scannedData.registeredAt).toLocaleString()}</p>
                 </CardContent>
               </Card>
             )}

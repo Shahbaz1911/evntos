@@ -39,10 +39,11 @@ export default function GuestListPage() {
   const downloadGuestListCSV = () => {
     if (!event || registrations.length === 0) return;
 
-    const headers = ["Name", "Email", "Registered At"];
+    const headers = ["Name", "Email", "Contact Number", "Registered At"];
     const rows = registrations.map(reg => [
       `"${reg.name.replace(/"/g, '""')}"`,
       `"${reg.email.replace(/"/g, '""')}"`,
+      `"${reg.contactNumber ? reg.contactNumber.replace(/"/g, '""') : ''}"`,
       new Date(reg.registeredAt).toLocaleString()
     ]);
 
@@ -129,3 +130,4 @@ export default function GuestListPage() {
     </AuthGuard>
   );
 }
+
