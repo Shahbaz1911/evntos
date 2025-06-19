@@ -76,7 +76,7 @@ export default function PublicEventPage() {
         setEvent(foundEvent);
         
         if (typeof window !== 'undefined' && recordSharedLinkVisit) {
-          const storageKey = `eventwave_shared_visit_${foundEvent.id}`;
+          const storageKey = `eventos_shared_visit_${foundEvent.id}`;
           if (!localStorage.getItem(storageKey)) {
             recordSharedLinkVisit(foundEvent.id, foundEvent.slug)
               .then(() => localStorage.setItem(storageKey, 'true'))
@@ -210,4 +210,3 @@ export default function PublicEventPage() {
     </div>
   );
 }
-

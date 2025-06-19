@@ -27,7 +27,7 @@ export default function Header() {
     <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity">
-          EventWave
+          Eventos
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4">
           {loading ? (

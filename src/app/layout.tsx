@@ -7,7 +7,7 @@ import { EventProvider } from '@/context/EventContext';
 import { AuthProvider } from '@/context/AuthContext'; 
 
 export const metadata: Metadata = {
-  title: 'EventWave',
+  title: 'Eventos',
   description: 'Create, promote, and manage your events effortlessly.',
 };
 

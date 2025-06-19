@@ -76,10 +76,10 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4">
-             <Image src="https://placehold.co/150x50.png?text=EventWave" alt="EventWave Logo" width={150} height={50} data-ai-hint="logo company" />
+             <Image src="https://placehold.co/150x50.png?text=Eventos" alt="Eventos Logo" width={150} height={50} data-ai-hint="logo company" />
           </Link>
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
-          <CardDescription>Join EventWave to start creating and managing events.</CardDescription>
+          <CardDescription>Join Eventos to start creating and managing events.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
