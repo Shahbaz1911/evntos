@@ -12,11 +12,11 @@ import { useEvents } from '@/context/EventContext';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
-import { QRCodeSVG } from 'qrcode.react';
 import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle } from 'lucide-react'; // Added CheckCircle
+import { Download, Phone, CheckCircle } from 'lucide-react'; 
 import jsPDF from 'jspdf';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { toDataURL as QRCodeToDataURL } from 'qrcode';
+
 
 const registrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(100),
@@ -78,7 +78,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     }
   };
 
-  const handleDownloadTicket = () => {
+  const handleDownloadTicket = async () => {
     if (!submittedRegistration) return;
 
     const canvas = document.createElement('canvas');
@@ -158,9 +158,6 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
     const qrSizePx = mmToPx(40);
     
-    const qrCodeReactElement = <QRCodeSVG value={submittedRegistration.id} size={256} level="H" includeMargin={false} />;
-    const qrSvgString = renderToStaticMarkup(qrCodeReactElement);
-    
     const qrImage = new Image();
     qrImage.onload = () => {
       ctx.drawImage(qrImage, (canvas.width - qrSizePx) / 2, currentY, qrSizePx, qrSizePx);
@@ -186,15 +183,20 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       pdf.save(fileName);
     };
     qrImage.onerror = (err) => {
-        console.error("Error loading QR SVG for canvas drawing:", err);
+        console.error("Error loading QR code PNG for canvas drawing:", err);
         toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
     }
     try {
-        const base64Svg = btoa(unescape(encodeURIComponent(qrSvgString)));
-        qrImage.src = `data:image/svg+xml;base64,${base64Svg}`;
+        const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
+          errorCorrectionLevel: 'H',
+          width: 256, 
+          margin: 1,
+          type: 'image/png'
+        });
+        qrImage.src = qrCodePngDataUrl;
     } catch (e) {
-        console.error("Error encoding SVG string:", e);
-        toast({ title: "Download Error", description: "Could not encode QR code for PDF.", variant: "destructive" });
+        console.error("Error generating QR code PNG data URL:", e);
+        toast({ title: "Download Error", description: "Could not generate QR code data for PDF.", variant: "destructive" });
     }
   };
 
