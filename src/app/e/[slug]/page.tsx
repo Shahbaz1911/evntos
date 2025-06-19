@@ -17,7 +17,7 @@ export default function PublicEventPage() {
   const params = useParams();
   
   const slug = params.slug as string;
-  const { getEventBySlug } = useEvents();
+  const { getEventBySlug, recordSharedLinkVisit } = useEvents();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,10 +26,19 @@ export default function PublicEventPage() {
       const foundEvent = getEventBySlug(slug);
       if (foundEvent) {
         setEvent(foundEvent);
+        
+        // Record shared link visit if not already recorded for this browser session
+        if (typeof window !== 'undefined' && recordSharedLinkVisit) {
+          const storageKey = `eventwave_shared_visit_${foundEvent.id}`;
+          if (!localStorage.getItem(storageKey)) {
+            recordSharedLinkVisit(foundEvent.id, foundEvent.slug);
+            localStorage.setItem(storageKey, 'true');
+          }
+        }
       }
       setIsLoading(false); 
     }
-  }, [slug, getEventBySlug]);
+  }, [slug, getEventBySlug, recordSharedLinkVisit]);
 
 
   if (isLoading) {
@@ -134,5 +143,3 @@ export default function PublicEventPage() {
     </div>
   );
 }
-
-      

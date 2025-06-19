@@ -2,7 +2,7 @@
 "use client";
 
 import type { Event, Registration } from '@/types';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { generateSeoFriendlyUrl } from '@/ai/flows/generate-seo-friendly-url';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,6 +15,7 @@ interface EventContextType {
   getEventById: (id: string) => Event | undefined;
   getEventBySlug: (slug: string) => Event | undefined;
   addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => void;
+  recordSharedLinkVisit: (eventId: string, eventSlug: string) => void;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   isGeneratingSlug: boolean;
 }
@@ -54,7 +55,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [registrations, isInitialized]);
 
-  const addEvent = async (newEventData: Pick<Event, 'title'>): Promise<Event | null> => {
+  const addEvent = useCallback(async (newEventData: Pick<Event, 'title'>): Promise<Event | null> => {
     setIsGeneratingSlug(true);
     try {
       const seoResult = await generateSeoFriendlyUrl({ title: newEventData.title });
@@ -88,9 +89,9 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       setEvents((prevEvents) => [newEvent, ...prevEvents]);
       return newEvent;
     }
-  };
+  }, [setEvents, setIsGeneratingSlug]);
 
-  const updateEvent = async (updatedEvent: Event) => {
+  const updateEvent = useCallback(async (updatedEvent: Event) => {
     const originalEvent = events.find(e => e.id === updatedEvent.id);
     if (originalEvent && originalEvent.title !== updatedEvent.title) {
       setIsGeneratingSlug(true);
@@ -107,9 +108,9 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     setEvents((prevEvents) =>
       prevEvents.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
     );
-  };
+  }, [events, setEvents, setIsGeneratingSlug]);
 
-  const deleteEvent = (eventId: string) => {
+  const deleteEvent = useCallback((eventId: string) => {
     const eventToDelete = events.find(event => event.id === eventId);
     if (eventToDelete) {
       setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
@@ -119,23 +120,36 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         description: `"${eventToDelete.title}" and its registrations have been removed.`,
       });
     }
-  };
+  }, [events, setEvents, setRegistrations, toast]);
 
-  const getEventById = (id: string) => events.find((event) => event.id === id);
-  const getEventBySlug = (slug: string) => events.find((event) => event.slug === slug);
+  const getEventById = useCallback((id: string) => events.find((event) => event.id === id), [events]);
+  const getEventBySlug = useCallback((slug: string) => events.find((event) => event.slug === slug), [events]);
 
-  const addRegistration = (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => {
+  const addRegistration = useCallback((newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => {
     const newRegistration: Registration = {
       id: crypto.randomUUID(),
       ...newRegistrationData,
       registeredAt: new Date().toISOString(),
+      source: 'form', 
     };
     setRegistrations((prevRegistrations) => [newRegistration, ...prevRegistrations]);
-    console.log(`Confirmation email sent to ${newRegistration.email} for event ${newRegistration.eventId}`);
-  };
+    // console.log(`Confirmation email sent to ${newRegistration.email} for event ${newRegistration.eventId}`);
+  }, [setRegistrations]);
 
-  const getRegistrationsByEventId = (eventId: string) =>
-    registrations.filter((reg) => reg.eventId === eventId);
+  const recordSharedLinkVisit = useCallback((eventId: string, eventSlug: string) => {
+    const newRegistration: Registration = {
+      id: crypto.randomUUID(),
+      eventId,
+      name: "Viewed via Shared Link",
+      email: `shared-view@${eventSlug}.local`, 
+      registeredAt: new Date().toISOString(),
+      source: 'shared_link',
+    };
+    setRegistrations((prevRegistrations) => [newRegistration, ...prevRegistrations]);
+  }, [setRegistrations]);
+
+  const getRegistrationsByEventId = useCallback((eventId: string) =>
+    registrations.filter((reg) => reg.eventId === eventId), [registrations]);
 
   return (
     <EventContext.Provider
@@ -148,6 +162,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         getEventById,
         getEventBySlug,
         addRegistration,
+        recordSharedLinkVisit,
         getRegistrationsByEventId,
         isGeneratingSlug,
       }}

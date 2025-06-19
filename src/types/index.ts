@@ -1,3 +1,4 @@
+
 export interface Event {
   id: string;
   title: string;
@@ -15,4 +16,5 @@ export interface Registration {
   name: string;
   email: string;
   registeredAt: string; // ISO date string
+  source?: 'form' | 'shared_link'; // To track how the registration was created
 }
