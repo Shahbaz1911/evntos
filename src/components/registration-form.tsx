@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle, User, Mail } from 'lucide-react'; 
+import { Download, Phone, CheckCircle, User, Mail, Ticket } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -41,7 +41,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRegistration, setSubmittedRegistration] = useState<Registration | null>(null);
-  
+
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -50,12 +50,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const onSubmit: SubmitHandler<RegistrationFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
-      const newRegistration = await addRegistration({ 
-        eventId, 
+      const newRegistration = await addRegistration({
+        eventId,
         name: data.name,
         email: data.email,
         contactNumber: data.contactNumber || undefined,
-      }); 
+      });
       if (newRegistration) {
         toast({
           title: "Registration Successful!",
@@ -78,6 +78,56 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     }
   };
 
+  const drawTextWithWrapping = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+    maxLines?: number
+  ) => {
+    const words = text.split(' ');
+    let line = '';
+    let currentY = y;
+    let linesDrawn = 0;
+
+    for (let n = 0; n < words.length; n++) {
+      if (maxLines && linesDrawn >= maxLines) {
+        if (n < words.length -1) line += '...'; // Add ellipsis if text is truncated
+        break;
+      }
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      const testWidth = metrics.width;
+      if (testWidth > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, currentY);
+        line = words[n] + ' ';
+        currentY += lineHeight;
+        linesDrawn++;
+        if (maxLines && linesDrawn >= maxLines && n < words.length -1) {
+             const lastLineText = line.trim();
+             const ellipsisWidth = ctx.measureText('...').width;
+             let truncatedLastLine = '';
+             for(let i = 0; i < lastLineText.length; i++){
+                if(ctx.measureText(truncatedLastLine + lastLineText[i] + '...').width > maxWidth){
+                    break;
+                }
+                truncatedLastLine += lastLineText[i];
+             }
+             ctx.fillText(truncatedLastLine + '...', x, currentY);
+             return currentY + lineHeight;
+        }
+
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line.trim(), x, currentY);
+    return currentY + lineHeight;
+  };
+
+
   const handleDownloadTicket = async () => {
     if (!submittedRegistration) return;
 
@@ -91,106 +141,117 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     const pdfTicketWidthMm = 70;
     const pdfTicketHeightMm = 120;
     const dpi = 300;
-    const mmToPx = (mm: number) => (mm / 25.4) * dpi;
+    const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
 
-    canvas.width = Math.round(mmToPx(pdfTicketWidthMm));
-    canvas.height = Math.round(mmToPx(pdfTicketHeightMm));
-    
-    const primaryColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    const primaryHslMatch = primaryColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-    const primaryHsl = primaryHslMatch 
-      ? `hsl(${primaryHslMatch[1]}, ${primaryHslMatch[2]}%, ${primaryHslMatch[3]}%)`
-      : '#4285F4';
+    canvas.width = mmToPx(pdfTicketWidthMm);
+    canvas.height = mmToPx(pdfTicketHeightMm);
 
-    const textColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-foreground').trim();
-    const textHslMatch = textColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-    const textHsl = textHslMatch
-      ? `hsl(${textHslMatch[1]}, ${textHslMatch[2]}%, ${textHslMatch[3]}%)`
-      : '#333333';
-    
-    const mutedColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim();
-    const mutedHslMatch = mutedColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
-    const mutedHsl = mutedHslMatch
-      ? `hsl(${mutedHslMatch[1]}, ${mutedHslMatch[2]}%, ${mutedHslMatch[3]}%)`
-      : '#71717A';
+    // Get theme colors
+    const rootStyle = getComputedStyle(document.documentElement);
+    const primaryColor = `hsl(${rootStyle.getPropertyValue('--primary').trim()})`;
+    const primaryFgColor = `hsl(${rootStyle.getPropertyValue('--primary-foreground').trim()})`;
+    const cardColor = `hsl(${rootStyle.getPropertyValue('--card').trim()})`;
+    const textColor = `hsl(${rootStyle.getPropertyValue('--card-foreground').trim()})`;
+    const mutedTextColor = `hsl(${rootStyle.getPropertyValue('--muted-foreground').trim()})`;
+    const borderColor = `hsl(${rootStyle.getPropertyValue('--border').trim()})`;
 
-
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || 'white';
+    // Background
+    ctx.fillStyle = cardColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const padding = mmToPx(6);
-    let currentY = padding;
+    // Outer Border (optional, for a defined edge)
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = mmToPx(0.5);
+    ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
 
-    ctx.fillStyle = primaryHsl;
-    ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
+
+    const contentPadding = mmToPx(5);
+    const contentWidth = canvas.width - 2 * contentPadding;
+
+    // Header section
+    ctx.fillStyle = primaryColor;
+    const headerHeight = mmToPx(22);
+    ctx.fillRect(contentPadding, contentPadding, contentWidth, headerHeight);
+
+    ctx.fillStyle = primaryFgColor;
+    ctx.font = `bold ${mmToPx(5.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    
-    const maxTextWidth = canvas.width - 2 * padding;
-    const words = eventName.split(' ');
-    let line = '';
-    const lines = [];
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxTextWidth && n > 0) {
-            lines.push(line);
-            line = words[n] + ' ';
-        } else {
-            line = testLine;
-        }
-    }
-    lines.push(line);
-
-    lines.forEach((l, index) => {
-        ctx.fillText(l.trim(), canvas.width / 2, currentY + mmToPx(6) + (index * mmToPx(6)));
-    });
-    currentY += mmToPx(6) * lines.length + mmToPx(6);
+    let currentY = contentPadding + headerHeight / 2 + mmToPx(2); // Center vertically in header
+    currentY = drawTextWithWrapping(ctx, eventName, canvas.width / 2, currentY - mmToPx(5.5)/2 , contentWidth - mmToPx(4), mmToPx(6), 2);
+    currentY = contentPadding + headerHeight + mmToPx(6);
 
 
-    ctx.fillStyle = textHsl;
+    // "Guest Ticket" Sub-header
+    ctx.fillStyle = textColor;
     ctx.font = `normal ${mmToPx(4.5)}px Inter, sans-serif`;
-    ctx.fillText(`Guest: ${submittedRegistration.name}`, canvas.width / 2, currentY + mmToPx(4.5));
-    currentY += mmToPx(8);
+    ctx.textAlign = 'center';
+    ctx.fillText("GUEST TICKET", canvas.width / 2, currentY);
+    currentY += mmToPx(7);
 
+    // Guest Details
+    ctx.textAlign = 'left';
+    const detailIndent = contentPadding + mmToPx(3);
+    const detailMaxWidth = contentWidth - mmToPx(6);
+
+    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
+    ctx.fillStyle = textColor;
+    ctx.fillText("Name:", detailIndent, currentY);
     ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
-    ctx.fillText(`Email: ${submittedRegistration.email}`, canvas.width / 2, currentY + mmToPx(4));
-    currentY += mmToPx(6);
-    
-    if (submittedRegistration.contactNumber) {
-      ctx.fillText(`Contact: ${submittedRegistration.contactNumber}`, canvas.width / 2, currentY + mmToPx(4));
-      currentY += mmToPx(6);
-    }
-    
-    currentY += mmToPx(4); 
+    currentY = drawTextWithWrapping(ctx, submittedRegistration.name, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
+    currentY += mmToPx(3);
 
+    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
+    ctx.fillText("Email:", detailIndent, currentY);
+    ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
+    currentY = drawTextWithWrapping(ctx, submittedRegistration.email, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
+    currentY += mmToPx(3);
+
+    if (submittedRegistration.contactNumber) {
+      ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
+      ctx.fillText("Contact:", detailIndent, currentY);
+      ctx.font = `normal ${mmToPx(4)}px Inter, sans-serif`;
+      currentY = drawTextWithWrapping(ctx, submittedRegistration.contactNumber, detailIndent + mmToPx(20), currentY, detailMaxWidth - mmToPx(20), mmToPx(5));
+      currentY += mmToPx(3);
+    }
+    currentY += mmToPx(5); // Extra space before QR
+
+    // QR Code
     const qrSizePx = mmToPx(40);
-    
+    const qrX = (canvas.width - qrSizePx) / 2;
+    const qrY = currentY;
+
     const qrImage = new Image();
     qrImage.onload = () => {
-      ctx.drawImage(qrImage, (canvas.width - qrSizePx) / 2, currentY, qrSizePx, qrSizePx);
-      currentY += qrSizePx + mmToPx(5);
+      ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
+      currentY = qrY + qrSizePx + mmToPx(7);
 
-      ctx.fillStyle = mutedHsl;
+      // Footer instruction
+      ctx.fillStyle = mutedTextColor;
       ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
-      ctx.fillText("Present this QR code at the event.", canvas.width / 2, currentY + mmToPx(3.5));
+      ctx.textAlign = 'center';
+      ctx.fillText("Present this QR code at the event entrance.", canvas.width / 2, currentY);
+      currentY += mmToPx(5);
+
+      // "Eventos" Branding (subtle)
+      ctx.font = `normal ${mmToPx(3)}px Inter, sans-serif`;
+      ctx.fillStyle = mutedTextColor;
+      ctx.fillText("Powered by Eventos", canvas.width / 2, canvas.height - contentPadding + mmToPx(2));
+
 
       const dataUrl = canvas.toDataURL('image/png');
-
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: [pdfTicketWidthMm, pdfTicketHeightMm]
       });
-
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfTicketWidthMm, pdfTicketHeightMm);
-      
+
       const safeEventName = eventName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
-      reset(); 
-      setSubmittedRegistration(null); 
+      reset();
+      setSubmittedRegistration(null);
     };
     qrImage.onerror = (err) => {
         console.error("Error loading QR code PNG for canvas drawing:", err);
@@ -199,9 +260,13 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
           errorCorrectionLevel: 'H',
-          width: 256, 
+          width: 300, // Higher resolution for QR code generation
           margin: 1,
-          type: 'image/png'
+          type: 'image/png',
+          color: {
+            dark: primaryColor.startsWith('hsl') ? primaryColor : '#000000', // Use primary theme color for QR dots
+            light: '#00000000' // Transparent background for QR code
+          }
         });
         qrImage.src = qrCodePngDataUrl;
     } catch (e) {
@@ -229,9 +294,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 p-6 pt-2 w-full max-w-sm">
-            <Button 
-              variant="default" 
-              onClick={handleDownloadTicket} 
+            <Button
+              variant="default"
+              onClick={handleDownloadTicket}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow"
             >
               <Download className="mr-2 h-5 w-5" /> Download Your Ticket (PDF)
@@ -244,6 +309,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   return (
     <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
       <CardHeader className="pb-4 text-center">
+         <Ticket className="mx-auto h-12 w-12 text-primary mb-3" />
         <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for {eventName}</CardTitle>
         <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
@@ -254,10 +320,10 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               <User className="mr-2 h-5 w-5 text-muted-foreground" />
               Full Name
             </Label>
-            <Input 
-              id="name" 
-              {...register("name")} 
-              placeholder="e.g., John Doe" 
+            <Input
+              id="name"
+              {...register("name")}
+              placeholder="e.g., John Doe"
               className="py-6 text-base"
               aria-invalid={errors.name ? "true" : "false"}
             />
@@ -268,11 +334,11 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               <Mail className="mr-2 h-5 w-5 text-muted-foreground" />
               Email Address
             </Label>
-            <Input 
-              id="email" 
-              type="email" 
-              {...register("email")} 
-              placeholder="e.g., you@example.com" 
+            <Input
+              id="email"
+              type="email"
+              {...register("email")}
+              placeholder="e.g., you@example.com"
               className="py-6 text-base"
               aria-invalid={errors.email ? "true" : "false"}
             />
@@ -280,14 +346,14 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           </div>
           <div className="space-y-2">
             <Label htmlFor="contactNumber" className="text-base flex items-center">
-              <Phone className="mr-2 h-5 w-5 text-muted-foreground" /> 
+              <Phone className="mr-2 h-5 w-5 text-muted-foreground" />
               Contact Number <span className="text-xs text-muted-foreground ml-1">(Optional)</span>
             </Label>
-            <Input 
-              id="contactNumber" 
-              type="tel" 
-              {...register("contactNumber")} 
-              placeholder="e.g., +1 123 456 7890" 
+            <Input
+              id="contactNumber"
+              type="tel"
+              {...register("contactNumber")}
+              placeholder="e.g., +1 123 456 7890"
               className="py-6 text-base"
               aria-invalid={errors.contactNumber ? "true" : "false"}
             />
@@ -295,9 +361,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           </div>
         </CardContent>
         <CardFooter className="p-6 md:p-8 mt-auto">
-          <Button 
-            type="submit" 
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow" 
+          <Button
+            type="submit"
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow"
             disabled={isSubmitting}
           >
             {isSubmitting && <LoadingSpinner size={20} className="mr-2" />}
@@ -308,4 +374,3 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
-    
