@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Eye, Users, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, Share2, Trash2 } from 'lucide-react';
 import type { Event } from '@/types';
-import AuthGuard from '@/components/auth-guard'; 
+import AuthGuard from '@/components/auth-guard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,7 +62,7 @@ export default function EditEventPage() {
         ...data,
       };
       await updateEvent(updatedEventData);
-      setEvent(updatedEventData); 
+      setEvent(updatedEventData);
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
@@ -112,10 +112,10 @@ export default function EditEventPage() {
       </div>
     );
   }
-  
-  if (!event && !isLoading) { 
+
+  if (!event && !isLoading) {
      return (
-      <AuthGuard> 
+      <AuthGuard>
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event not found.</p>
           <Button asChild className="mt-4">
@@ -125,7 +125,7 @@ export default function EditEventPage() {
       </AuthGuard>
     );
   }
-    
+
   return (
     <AuthGuard>
       <div className="max-w-3xl mx-auto">
@@ -151,21 +151,16 @@ export default function EditEventPage() {
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
-                <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
-                  <Link href={`/e/${event?.slug}`} target="_blank" rel="noopener noreferrer">
-                    <Eye className="mr-2 h-4 w-4" /> View Public Page
-                  </Link>
-                </Button>
               </div>
             </div>
           </CardHeader>
-          {event && ( 
+          {event && (
             <>
-              <EventForm 
-                event={event} 
-                onSubmit={handleSubmit} 
+              <EventForm
+                event={event}
+                onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
-                isGeneratingSlug={isGeneratingSlug} 
+                isGeneratingSlug={isGeneratingSlug}
               />
               <CardFooter className="border-t pt-6 mt-6 flex justify-end">
                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
