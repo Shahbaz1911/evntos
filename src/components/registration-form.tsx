@@ -213,22 +213,22 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
   if (submittedRegistration) {
     return (
-      <Card className="shadow-xl border-t-4 border-accent">
-        <CardHeader className="text-center pt-8">
+      <Card className="shadow-xl border-t-4 border-accent h-full flex flex-col items-center justify-center p-6 md:p-8">
+        <CardHeader className="text-center pt-8 pb-4">
           <CheckCircle className="mx-auto h-20 w-20 text-accent mb-4" />
           <CardTitle className="text-foreground font-headline text-3xl">Registration Confirmed!</CardTitle>
           <CardDescription className="text-muted-foreground text-base pt-2">
             Thank you for registering for <span className="font-semibold text-primary">"{eventName}"</span>.<br/> Your ticket with a unique QR code can be downloaded below.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6">
+        <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6 text-center">
           <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> {submittedRegistration.name}</p>
           <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> {submittedRegistration.email}</p>
           {submittedRegistration.contactNumber && (
             <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> {submittedRegistration.contactNumber}</p>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 p-6 pt-2">
+        <CardFooter className="flex flex-col gap-3 p-6 pt-2 w-full max-w-sm">
             <Button 
               variant="default" 
               onClick={handleDownloadTicket} 
@@ -242,13 +242,13 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   }
 
   return (
-    <Card className="shadow-xl border-t-4 border-primary">
-      <CardHeader className="pb-4">
-        <CardTitle className="font-headline text-2xl md:text-3xl text-primary text-center">Register for {eventName}</CardTitle>
-        <CardDescription className="text-center text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
+    <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
+      <CardHeader className="pb-4 text-center">
+        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for {eventName}</CardTitle>
+        <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-6 px-6 md:px-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow h-full">
+        <CardContent className="flex-grow space-y-6 px-6 md:px-8">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-base flex items-center">
               <User className="mr-2 h-5 w-5 text-muted-foreground" />
@@ -294,7 +294,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             {errors.contactNumber && <p className="text-sm text-destructive pt-1">{errors.contactNumber.message}</p>}
           </div>
         </CardContent>
-        <CardFooter className="p-6 md:p-8">
+        <CardFooter className="p-6 md:p-8 mt-auto">
           <Button 
             type="submit" 
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-6 text-lg rounded-lg shadow-md hover:shadow-lg transition-shadow" 
