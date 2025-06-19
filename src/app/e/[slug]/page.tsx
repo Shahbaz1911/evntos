@@ -10,7 +10,7 @@ import RegistrationForm from '@/components/registration-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
-import { Calendar, MapPin, Ticket, XCircle, ExternalLink, Clock, Share2 } from 'lucide-react';
+import { Calendar, MapPin, Ticket, XCircle, ExternalLink, Share2, Info } from 'lucide-react';
 import type { Event } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,7 +19,7 @@ const formatEventDateTime = (dateStr?: string, timeStr?: string) => {
   if (!dateStr || dateStr.trim() === "" || !timeStr || timeStr.trim() === "") {
     return "Date and time not specified.";
   }
-  const dateTime = new Date(`${dateStr}T${timeStr}:00`); 
+  const dateTime = new Date(`${dateStr.trim()}T${timeStr.trim()}:00`); 
 
   if (isNaN(dateTime.getTime())) {
     return "Invalid date or time format provided.";
@@ -116,8 +116,8 @@ export default function PublicEventPage() {
 
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="overflow-hidden shadow-xl">
+    <div className="max-w-5xl mx-auto space-y-8">
+      <Card className="overflow-hidden shadow-xl rounded-lg">
         <div className="relative w-full h-72 md:h-96">
           <Image 
             src={event.imageUrl || "https://placehold.co/1200x600.png"} 
@@ -127,46 +127,46 @@ export default function PublicEventPage() {
             priority
             data-ai-hint="event banner"
            />
-           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
            <div className="absolute top-4 right-4 z-10">
-              <Button variant="outline" size="sm" onClick={handleShare} className="bg-background/80 hover:bg-background">
+              <Button variant="outline" size="sm" onClick={handleShare} className="bg-background/80 hover:bg-background text-foreground">
                 <Share2 className="mr-2 h-4 w-4" /> Share Event
               </Button>
             </div>
            <div className="absolute bottom-0 left-0 p-6 md:p-8">
-            <h1 className="text-3xl md:text-5xl font-bold font-headline text-white drop-shadow-lg">{event.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-headline text-white drop-shadow-lg">{event.title}</h1>
            </div>
         </div>
         
         <CardContent className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-2 space-y-8">
             <div>
-              <h2 className="text-2xl font-semibold font-headline text-primary mb-2 flex items-center">
-                <Calendar className="mr-2 h-6 w-6" /> Date & Time
+              <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
+                <Calendar className="mr-3 h-6 w-6" /> Date & Time
               </h2>
-              <p className="text-foreground/80 text-lg">
+              <p className="text-foreground/90 text-lg">
                 {formatEventDateTime(event.eventDate, event.eventTime)}
               </p>
             </div>
             
             <div>
-              <h2 className="text-2xl font-semibold font-headline text-primary mb-2">About this Event</h2>
-              <p className="text-foreground/80 whitespace-pre-line leading-relaxed">
+              <h2 className="text-2xl font-semibold font-headline text-primary mb-3">About this Event</h2>
+              <p className="text-foreground/90 whitespace-pre-line leading-relaxed text-base md:text-lg">
                 {event.description || "No description provided."}
               </p>
             </div>
 
             {event.mapLink && (
               <div>
-                <h2 className="text-2xl font-semibold font-headline text-primary mb-2 flex items-center">
-                  <MapPin className="mr-2 h-6 w-6" /> Location
+                <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
+                  <MapPin className="mr-3 h-6 w-6" /> Location
                 </h2>
                 <Button variant="outline" asChild>
                   <a href={event.mapLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline">
                     View on Google Maps <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
-                <div className="mt-4 aspect-video rounded-md overflow-hidden border">
+                <div className="mt-4 aspect-video rounded-lg overflow-hidden border">
                   <iframe
                     width="100%"
                     height="100%"
@@ -178,14 +178,17 @@ export default function PublicEventPage() {
                     data-ai-hint="map location"
                     >
                   </iframe>
-                   <p className="text-xs text-muted-foreground mt-1">Note: Map preview is indicative. Please use the "View on Google Maps" link for accurate directions. {googleMapsApiKey === "YOUR_API_KEY" && "Replace YOUR_API_KEY with an actual Google Maps API key for full functionality."}</p>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                    Note: Map preview is indicative. Please use the "View on Google Maps" link for accurate directions. 
+                    {googleMapsApiKey === "YOUR_API_KEY" && " (Map functionality limited without a valid API key)."}
+                </p>
               </div>
             )}
 
-            <div className="flex items-center text-muted-foreground text-sm">
-              <Calendar className="mr-2 h-5 w-5" />
-              <span>Created on: {new Date(event.createdAt).toLocaleDateString()}</span>
+            <div className="flex items-center text-muted-foreground text-sm pt-4 border-t border-border">
+              <Info className="mr-2 h-5 w-5" />
+              <span>Event created on: {new Date(event.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
 
@@ -193,15 +196,12 @@ export default function PublicEventPage() {
             {event.registrationOpen ? (
               <RegistrationForm eventId={event.id} eventName={event.title} />
             ) : (
-              <Card className="bg-muted border-dashed shadow-none">
-                <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center text-muted-foreground">
-                    <Ticket className="mr-2 h-6 w-6" /> Registration Closed
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Registrations for this event are currently closed. Please check back later or contact the organizer.</p>
-                </CardContent>
+              <Card className="bg-secondary border-primary/20 shadow-none border-2 border-dashed p-6 text-center rounded-lg flex flex-col items-center justify-center h-full">
+                <Ticket className="h-16 w-16 text-primary mb-4" />
+                <CardTitle className="font-headline text-2xl text-primary mb-2">Registration Closed</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  We're sorry, but registrations for this event are currently closed. Please check back later or contact the event organizer for more information.
+                </CardDescription>
               </Card>
             )}
           </div>
@@ -210,3 +210,4 @@ export default function PublicEventPage() {
     </div>
   );
 }
+
