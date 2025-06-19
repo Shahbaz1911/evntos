@@ -10,12 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useEvents } from '@/context/EventContext';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Registration } from '@/types';
 import { Download, Phone } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { renderToStaticMarkup } from 'react-dom/server'; // Import renderToStaticMarkup
 
 const registrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters.").max(100),
@@ -61,7 +62,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           description: `You're registered for "${eventName}". Your QR code ticket is below.`,
         });
         setSubmittedRegistration(newRegistration);
-        reset();
+        // Do not reset form here, user might want to download ticket first
       } else {
         throw new Error("Failed to get registration details after creation.");
       }
@@ -88,82 +89,92 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       return;
     }
 
-    // PDF page/ticket dimensions in mm
     const pdfTicketWidthMm = 70;
-    const pdfTicketHeightMm = 120; // Adjusted for a common ticket aspect ratio
-
-    // DPI for rendering on canvas
+    const pdfTicketHeightMm = 120;
     const dpi = 300;
     const mmToPx = (mm: number) => (mm / 25.4) * dpi;
 
     canvas.width = Math.round(mmToPx(pdfTicketWidthMm));
     canvas.height = Math.round(mmToPx(pdfTicketHeightMm));
     
-    // Styling
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    const primaryHsl = primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/) 
-      ? `hsl(${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[1]}, ${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[2]}%, ${primaryColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[3]}%)`
-      : '#4285F4'; // Fallback primary color
+    const primaryColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const primaryHslMatch = primaryColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+    const primaryHsl = primaryHslMatch 
+      ? `hsl(${primaryHslMatch[1]}, ${primaryHslMatch[2]}%, ${primaryHslMatch[3]}%)`
+      : '#4285F4';
 
-    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--card-foreground').trim();
-     const textHsl = textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)
-      ? `hsl(${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[1]}, ${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[2]}%, ${textColor.match(/(\d+)\s+(\d+)%\s+(\d+)%/)?.[3]}%)`
-      : '#333333'; // Fallback text color
+    const textColorStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-foreground').trim();
+    const textHslMatch = textColorStyle.match(/(\d+)\s+(\d+)%\s+(\d+)%/);
+    const textHsl = textHslMatch
+      ? `hsl(${textHslMatch[1]}, ${textHslMatch[2]}%, ${textHslMatch[3]}%)`
+      : '#333333';
 
-
-    // Background
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Content
     const padding = mmToPx(6);
     let currentY = padding;
 
-    // Event Name (Larger, Bold)
     ctx.fillStyle = primaryHsl;
     ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(eventName, canvas.width / 2, currentY + mmToPx(6));
-    currentY += mmToPx(12);
+    
+    // Wrap event name text
+    const maxTextWidth = canvas.width - 2 * padding;
+    const words = eventName.split(' ');
+    let line = '';
+    const lines = [];
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxTextWidth && n > 0) {
+            lines.push(line);
+            line = words[n] + ' ';
+        } else {
+            line = testLine;
+        }
+    }
+    lines.push(line);
 
-    // Guest Name
+    lines.forEach((l, index) => {
+        ctx.fillText(l.trim(), canvas.width / 2, currentY + mmToPx(6) + (index * mmToPx(6)));
+    });
+    currentY += mmToPx(6) * lines.length + mmToPx(6);
+
+
     ctx.fillStyle = textHsl;
     ctx.font = `normal ${mmToPx(4.5)}px Inter, sans-serif`;
     ctx.fillText(`Guest: ${submittedRegistration.name}`, canvas.width / 2, currentY + mmToPx(4.5));
     currentY += mmToPx(8);
 
-    // Email
     ctx.fillText(`Email: ${submittedRegistration.email}`, canvas.width / 2, currentY + mmToPx(4.5));
     currentY += mmToPx(8);
     
-    // Contact Number (if available)
     if (submittedRegistration.contactNumber) {
       ctx.fillText(`Contact: ${submittedRegistration.contactNumber}`, canvas.width / 2, currentY + mmToPx(4.5));
       currentY += mmToPx(8);
     }
     
-    currentY += mmToPx(4); // Some space before QR
+    currentY += mmToPx(4); 
 
-    // QR Code
-    const qrSizePx = mmToPx(45); // 45mm QR code
-    const qrSvgString = new QRCodeSVG({ value: submittedRegistration.id, size: 256, level: "H", includeMargin: false }).props.children as string;
+    const qrSizePx = mmToPx(40); // Adjusted QR size slightly for potentially more text
     
-    // Create an image from SVG string to draw on canvas
+    // Correctly generate SVG string using renderToStaticMarkup
+    const qrCodeReactElement = <QRCodeSVG value={submittedRegistration.id} size={256} level="H" includeMargin={false} />;
+    const qrSvgString = renderToStaticMarkup(qrCodeReactElement);
+    
     const qrImage = new Image();
     qrImage.onload = () => {
-      // Draw QR code centered
       ctx.drawImage(qrImage, (canvas.width - qrSizePx) / 2, currentY, qrSizePx, qrSizePx);
       currentY += qrSizePx + mmToPx(5);
 
-      // "Present this at the event"
       ctx.fillStyle = textHsl;
       ctx.font = `italic ${mmToPx(3.5)}px Inter, sans-serif`;
       ctx.fillText("Present this QR code at the event.", canvas.width / 2, currentY + mmToPx(3.5));
 
-      // Convert canvas to image data
       const dataUrl = canvas.toDataURL('image/png');
 
-      // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -172,15 +183,24 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfTicketWidthMm, pdfTicketHeightMm);
       
-      const fileName = `${eventName.replace(/\s+/g, '_')}-Ticket-${submittedRegistration.name.replace(/\s+/g, '_')}.pdf`;
+      const safeEventName = eventName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
     };
     qrImage.onerror = (err) => {
-        console.error("Error loading QR SVG for canvas drawing:", err);
+        console.error("Error loading QR SVG for canvas drawing:", err); // err might be an Event, not an Error object
         toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
     }
     // Convert SVG string to base64 data URL
-    qrImage.src = `data:image/svg+xml;base64,${btoa(qrSvgString)}`;
+    // Ensure btoa works with potential Unicode characters in SVG (though unlikely for qrcode.react output)
+    try {
+        const base64Svg = btoa(unescape(encodeURIComponent(qrSvgString)));
+        qrImage.src = `data:image/svg+xml;base64,${base64Svg}`;
+    } catch (e) {
+        console.error("Error encoding SVG string:", e);
+        toast({ title: "Download Error", description: "Could not encode QR code for PDF.", variant: "destructive" });
+    }
   };
 
 
@@ -251,3 +271,4 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
+
