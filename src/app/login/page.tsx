@@ -44,7 +44,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/'); 
+      router.push('/dashboard'); 
     }
   }, [user, authLoading, router]);
 
@@ -54,9 +54,9 @@ export default function LoginPage() {
       await logIn(data.email, data.password);
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Welcome back! Redirecting to dashboard...",
       });
-      router.push('/'); 
+      // AuthContext will handle redirect
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -74,9 +74,9 @@ export default function LoginPage() {
       await signInWithGoogle();
       toast({
         title: "Signed in with Google",
-        description: "Welcome!",
+        description: "Welcome! Redirecting to dashboard...",
       });
-      router.push('/');
+      // AuthContext will handle redirect
     } catch (error: any) {
       toast({
         title: "Google Sign-In Failed",
@@ -90,18 +90,18 @@ export default function LoginPage() {
   
   if (authLoading || (!authLoading && user)) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))]">
         <LoadingSpinner size={48} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] py-12">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))] py-12 container px-4">
+      <Card className="w-full max-w-md shadow-xl border border-border">
         <CardHeader className="text-center">
            <Link href="/" className="mx-auto mb-4">
-             <span className="text-4xl font-bold text-orange-500 font-headline">eventos</span>
+             <span className="text-4xl font-bold text-primary font-headline">eventos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Welcome Back!</CardTitle>
           <CardDescription>Log in to manage your events.</CardDescription>
@@ -143,7 +143,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
@@ -154,7 +154,7 @@ export default function LoginPage() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Button variant="link" asChild className="p-0 h-auto">
+              <Button variant="link" asChild className="p-0 h-auto text-primary">
                 <Link href="/signup">Sign up</Link>
               </Button>
             </p>

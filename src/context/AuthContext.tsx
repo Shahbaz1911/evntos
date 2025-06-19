@@ -19,6 +19,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const PUBLIC_ROUTES = ['/login', '/signup', '/']; // Root path is now public landing
+const PUBLIC_PREFIXES = ['/e/', '/landing']; // Public event pages and explicit landing
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       setUser(userCredential.user);
+      router.push('/dashboard'); 
       return userCredential.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -53,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       setUser(userCredential.user);
+      router.push('/dashboard'); 
       return userCredential.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -69,6 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const result = await signInWithPopup(auth, provider);
       setUser(result.user);
+      router.push('/dashboard');
       return result.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -84,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       setUser(null);
-      router.push('/login');
+      router.push('/'); // Redirect to public landing page on logout
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -93,10 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   
-  if (loading && !['/login', '/signup'].includes(pathname) && !pathname.startsWith('/e/')) {
-    
+  // Adjusted loading screen logic
+  const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  if (loading && !isPublicPage) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-background">
         <LoadingSpinner size={48} />
       </div>
     );

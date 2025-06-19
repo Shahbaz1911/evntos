@@ -9,78 +9,78 @@ body {
 
 @layer base {
   :root {
-    --background: 220 20% 97%; /* Very Light Cool Gray #f5f7fa */
-    --foreground: 220 15% 15%; /* Very Dark Cool Gray #212529 */
+    --background: 39 100% 96%; /* Creamy: #FFF7ED */
+    --foreground: 24 10% 10%; /* Very Dark Brown/Almost Black */
     --card: 0 0% 100%; /* White */
-    --card-foreground: 220 15% 15%; /* Very Dark Cool Gray */
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 220 15% 15%; /* Very Dark Cool Gray */
-    --primary: 190 70% 40%; /* Deep Teal #218e8d */
+    --card-foreground: 24 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 10% 10%;
+    --primary: 25 95% 53%; /* Vibrant Orange: #F97316 */
     --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 190 60% 90%; /* Light Teal #d9f2f2 */
-    --secondary-foreground: 190 70% 30%; /* Darker Teal */
-    --muted: 220 15% 94%; /* Light Gray Muted #ebeef2 */
-    --muted-foreground: 220 10% 45%; /* Medium Gray Muted Text #6a7178 */
-    --accent: 35 90% 60%; /* Warm Amber #f7b84b */
-    --accent-foreground: 220 15% 15%; /* Dark Gray for contrast on Amber */
+    --secondary: 36 100% 90%; /* Light Peach: #FFEAD1 */
+    --secondary-foreground: 25 70% 35%; /* Darker Orange for text on peach */
+    --muted: 39 70% 92%; /* Lighter Cream: #FFF0E0 */
+    --muted-foreground: 25 30% 45%; /* Muted Brownish Orange */
+    --accent: 15 80% 45%; /* Deeper Orange: #D95D1E */
+    --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 75% 55%; /* Refined Red #d94747 */
     --destructive-foreground: 0 0% 100%; /* White */
-    --border: 220 15% 88%; /* Light Gray Border #d8dde3 */
-    --input: 220 15% 88%; /* Light Gray Input Border */
-    --ring: 190 70% 45%; /* Brighter Teal for Ring */
-    --chart-1: 190 70% 50%;
-    --chart-2: 35 90% 65%;
-    --chart-3: 210 60% 50%;
-    --chart-4: 10 80% 60%;
+    --border: 36 50% 80%; /* Light Peach Border: #FFDEC2 */
+    --input: 36 50% 80%;
+    --ring: 25 95% 53%; /* Orange */
+    --chart-1: 25 95% 50%;
+    --chart-2: 15 80% 50%;
+    --chart-3: 35 90% 60%;
+    --chart-4: 190 70% 45%;
     --chart-5: 270 50% 55%;
     --radius: 0.5rem;
 
-    /* Sidebar Light Theme */
-    --sidebar-background: 220 15% 95%; /* Slightly darker than main bg */
-    --sidebar-foreground: 220 15% 25%;
-    --sidebar-primary: 190 70% 38%; /* Slightly darker primary for sidebar */
+    /* Sidebar Light Theme (Orange & Cream based) */
+    --sidebar-background: 39 100% 94%; /* Slightly darker cream */
+    --sidebar-foreground: 24 10% 15%;
+    --sidebar-primary: 25 95% 50%; /* Main Orange */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 90%; /* Lighter accent for active items */
-    --sidebar-accent-foreground: 190 70% 35%; /* Primary for text on accent */
-    --sidebar-border: 220 15% 85%;
-    --sidebar-ring: 190 70% 45%;
+    --sidebar-accent: 36 100% 88%; /* Lighter peach for active items */
+    --sidebar-accent-foreground: 25 90% 45%; /* Darker Orange text on accent */
+    --sidebar-border: 36 60% 85%;
+    --sidebar-ring: 25 95% 53%;
   }
 
   .dark {
-    --background: 220 15% 12%; /* Very Dark Cool Gray #1a1d21 */
-    --foreground: 220 10% 85%; /* Light Gray #d3d6da */
-    --card: 220 15% 18%; /* Dark Gray Card #262a2e */
-    --card-foreground: 220 10% 85%; /* Light Gray */
-    --popover: 220 15% 18%; /* Dark Gray Popover */
-    --popover-foreground: 220 10% 85%; /* Light Gray */
-    --primary: 190 70% 48%; /* Brighter Deep Teal #32b1b0 */
-    --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 190 60% 25%; /* Darker Teal for secondary bg */
-    --secondary-foreground: 190 70% 75%; /* Lighter Teal text on secondary */
+    --background: 220 15% 10%; /* Very Dark Blue/Almost Black: #14161A */
+    --foreground: 39 80% 85%; /* Light Creamy Orange text: #FDDBC7 */
+    --card: 220 15% 15%; /* Darker Gray: #1E2126 */
+    --card-foreground: 39 80% 85%;
+    --popover: 220 15% 15%;
+    --popover-foreground: 39 80% 85%;
+    --primary: 30 100% 60%; /* Bright Orange: #FF9800 */
+    --primary-foreground: 220 15% 10%; /* Very Dark for text on bright orange */
+    --secondary: 25 50% 20%; /* Dark Muted Orange background: #4D2C1A */
+    --secondary-foreground: 30 90% 75%; /* Lighter Orange text on dark orange bg */
     --muted: 220 10% 20%; /* Dark Gray Muted #2d3238 */
     --muted-foreground: 220 10% 60%; /* Medium-Light Gray Muted Text #8c939c */
-    --accent: 35 90% 68%; /* Brighter Warm Amber #f9c971 */
-    --accent-foreground: 220 15% 15%; /* Dark Gray for contrast on Amber */
+    --accent: 35 100% 65%; /* Bright Yellow-Orange: #FFA726 */
+    --accent-foreground: 220 15% 10%;
     --destructive: 0 70% 60%; /* Slightly Brighter Red #ea5858 */
     --destructive-foreground: 0 0% 100%; /* White */
     --border: 220 10% 25%; /* Darker Gray Border #383e45 */
-    --input: 220 10% 25%; /* Darker Gray Input Border */
-    --ring: 190 70% 50%; /* Teal for Ring */
-    --chart-1: 190 70% 55%;
-    --chart-2: 35 90% 70%;
-    --chart-3: 210 60% 60%;
+    --input: 220 10% 25%;
+    --ring: 30 100% 60%; /* Bright Orange */
+    --chart-1: 30 100% 65%;
+    --chart-2: 35 100% 70%;
+    --chart-3: 25 90% 60%;
     --chart-4: 10 80% 65%;
     --chart-5: 270 50% 60%;
 
-    /* Sidebar Dark Theme */
-    --sidebar-background: 220 15% 10%; /* Even darker for sidebar */
-    --sidebar-foreground: 220 10% 80%;
-    --sidebar-primary: 190 70% 50%; /* Brighter primary for sidebar */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 20%; /* Darker accent for active items */
-    --sidebar-accent-foreground: 190 70% 60%; /* Brighter Primary for text on accent */
-    --sidebar-border: 220 10% 22%;
-    --sidebar-ring: 190 70% 50%;
+    /* Sidebar Dark Theme (Black & Orange based) */
+    --sidebar-background: 220 15% 8%; /* Even darker for sidebar */
+    --sidebar-foreground: 39 80% 80%;
+    --sidebar-primary: 30 100% 55%; /* Bright Orange for sidebar */
+    --sidebar-primary-foreground: 220 15% 10%;
+    --sidebar-accent: 220 15% 18%; /* Darker accent for active items */
+    --sidebar-accent-foreground: 30 100% 65%; /* Brighter Orange text on accent */
+    --sidebar-border: 220 10% 20%;
+    --sidebar-ring: 30 100% 60%;
   }
 }
 
@@ -90,5 +90,8 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  section {
+    @apply py-16 md:py-24;
   }
 }

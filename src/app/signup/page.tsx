@@ -38,7 +38,7 @@ const GoogleIcon = () => (
 export default function SignupPage() {
   const router = useRouter();
   const { signUp, signInWithGoogle, user, loading: authLoading } = useAuth();
-  const { toast } = useToast();
+  const { toast } } from '@/hooks/use-toast';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
@@ -48,7 +48,7 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/'); 
+      router.push('/dashboard'); 
     }
   }, [user, authLoading, router]);
 
@@ -58,9 +58,9 @@ export default function SignupPage() {
       await signUp(data.email, data.password);
       toast({
         title: "Signup Successful",
-        description: "Your account has been created. Welcome!",
+        description: "Your account has been created. Redirecting to dashboard...",
       });
-      router.push('/'); 
+      // AuthContext will handle redirect
     } catch (error: any) {
       toast({
         title: "Signup Failed",
@@ -78,9 +78,9 @@ export default function SignupPage() {
       await signInWithGoogle();
       toast({
         title: "Signed up with Google",
-        description: "Welcome!",
+        description: "Welcome! Redirecting to dashboard...",
       });
-      router.push('/');
+      // AuthContext will handle redirect
     } catch (error: any) {
       toast({
         title: "Google Sign-Up Failed",
@@ -94,21 +94,21 @@ export default function SignupPage() {
 
   if (authLoading || (!authLoading && user)) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))]">
         <LoadingSpinner size={48} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] py-12">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))] py-12 container px-4">
+      <Card className="w-full max-w-md shadow-xl border border-border">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4">
-             <span className="text-4xl font-bold text-orange-500 font-headline">eventos</span>
+             <span className="text-4xl font-bold text-primary font-headline">eventos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
-          <CardDescription>Join Eventos to start creating and managing events.</CardDescription>
+          <CardDescription>Join eventos to start creating and managing events.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
@@ -159,7 +159,7 @@ export default function SignupPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
@@ -170,7 +170,7 @@ export default function SignupPage() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Button variant="link" asChild className="p-0 h-auto">
+              <Button variant="link" asChild className="p-0 h-auto text-primary">
                 <Link href="/login">Log in</Link>
               </Button>
             </p>
