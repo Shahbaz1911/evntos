@@ -60,23 +60,22 @@ export default function ScanTicketPage() {
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const stopScanner = async () => {
-    const scanner = html5QrCodeScannerRef.current; // Get a local reference
+    const scannerInstance = html5QrCodeScannerRef.current; 
 
-    if (scanner) {
-      html5QrCodeScannerRef.current = null; // Immediately nullify the ref to prevent race conditions or further use
+    if (scannerInstance) {
+      html5QrCodeScannerRef.current = null; 
 
       try {
-        // Attempt to clear the scanner first. This should remove the scanner's UI elements.
-        // Check scanner state before attempting to clear to avoid errors if already stopped/cleared.
         // Html5QrcodeScannerState: 1 (NOT_STARTED), 2 (SCANNING), 3 (PAUSED)
-        if (scanner.getState && (scanner.getState() === 2 || scanner.getState() === 3)) {
-           await scanner.clear();
+        // Check if scanner.getState() exists and if it's in a state that can be cleared
+        if (scannerInstance.getState && (scannerInstance.getState() === 2 || scannerInstance.getState() === 3)) {
+           await scannerInstance.clear();
         }
       } catch (e) {
         console.warn("Exception during scanner.clear():", e);
-        // This is where the "removeChild" error likely originates if scanner.clear() fails or is called on an invalid state.
+        // This error often means the DOM was already manipulated by React.
+        // The scanner instance is already nullified, and state will be set in finally.
       } finally {
-        // Regardless of clear success or failure, update the React state.
         setIsScanning(false);
       }
     } else {
@@ -87,11 +86,13 @@ export default function ScanTicketPage() {
 
 
   const onScanSuccess = async (decodedText: string, result: Html5QrcodeResult) => {
-    if (!isScanning) {
+    // Check if we are still in scanning mode before processing
+    // This helps prevent processing if stopScanner was called right before success.
+    if (!html5QrCodeScannerRef.current && !isScanning) { 
       return;
     }
 
-    await stopScanner();
+    await stopScanner(); // Stop the scanner once a QR is successfully scanned and read
 
     setScanStatus("idle");
     setScannedData(null);
@@ -125,7 +126,8 @@ export default function ScanTicketPage() {
 
   const onScanFailure = (error: Html5QrcodeError | string) => {
     // console.warn(`QR error = ${error}`);
-    // Potentially add more user-friendly error display here if needed
+    // This callback is called frequently, so avoid heavy logging or state updates here
+    // unless specifically debugging QR read failures.
   };
   
   const startScanner = async () => {
@@ -142,37 +144,39 @@ export default function ScanTicketPage() {
         return;
     }
 
+    // Ensure the target DOM element exists before trying to render the scanner
     if (!document.getElementById(SCANNER_REGION_ID)) {
-        console.error(`${SCANNER_REGION_ID} not found in DOM.`);
-        toast({ title: "Scanner Error", description: "Could not initialize scanner view.", variant: "destructive" });
-        return; // No setIsScanning(false) here, as it's already false or will be handled by stopScanner
+        console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
+        toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh the page.", variant: "destructive" });
+        return; 
     }
     
-    // If a scanner instance exists (even if isScanning is false due to some race), stop it.
+    // If a scanner instance might still exist (e.g. from a rapid stop/start or error), try to stop it first.
     if (html5QrCodeScannerRef.current) {
         await stopScanner(); 
     }
     // At this point, html5QrCodeScannerRef.current should be null.
     
+    // Create a new scanner instance
     const newScanner = new Html5QrcodeScanner(
         SCANNER_REGION_ID,
         {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             rememberLastUsedCamera: true,
-            supportedScanTypes: [0 /* SCAN_TYPE_CAMERA */],
+            supportedScanTypes: [0 /* SCAN_TYPE_CAMERA */], // 0 for Html5QrcodeScanType.SCAN_TYPE_CAMERA
         },
-        false 
+        false // verbose = false
     );
-    html5QrCodeScannerRef.current = newScanner; // Assign the new instance
+    html5QrCodeScannerRef.current = newScanner; // Store the new instance in the ref
     
     try {
-        // render method is synchronous for UI setup. Callbacks handle async scan results.
+        // The render method is synchronous for UI setup. Callbacks handle async scan results.
         newScanner.render(onScanSuccess, onScanFailure);
-        setIsScanning(true); 
+        setIsScanning(true); // Update React state to reflect that scanning has started
     } catch (renderError) {
         console.error("Error rendering scanner:", renderError);
-        toast({ title: "Scanner Error", description: "Could not start the QR scanner.", variant: "destructive"});
+        toast({ title: "Scanner Error", description: "Could not start the QR scanner. Please try again.", variant: "destructive"});
         html5QrCodeScannerRef.current = null; // Clean up ref if render fails
         setIsScanning(false); 
     }
@@ -180,12 +184,13 @@ export default function ScanTicketPage() {
 
 
   useEffect(() => {
+    // Cleanup function: this will be called when the component unmounts
     return () => {
       // stopScanner is async, but in cleanup, we typically don't await.
-      // The goal is to initiate the cleanup.
+      // The goal is to initiate the cleanup process.
       stopScanner().catch(err => console.warn("Error during scanner cleanup on unmount:", err));
     };
-  }, []); 
+  }, []); // Empty dependency array ensures this runs only on mount and unmount
 
 
   if (pageLoading || authLoading || eventContextLoading) {
@@ -282,4 +287,3 @@ export default function ScanTicketPage() {
     </AuthGuard>
   );
 }
-
