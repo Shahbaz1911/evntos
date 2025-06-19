@@ -1,14 +1,17 @@
+
 "use client";
 
 import type { Event, Registration } from '@/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { generateSeoFriendlyUrl } from '@/ai/flows/generate-seo-friendly-url';
+import { useToast } from '@/hooks/use-toast';
 
 interface EventContextType {
   events: Event[];
   registrations: Registration[];
   addEvent: (newEventData: Pick<Event, 'title'>) => Promise<Event | null>;
   updateEvent: (updatedEvent: Event) => Promise<void>;
+  deleteEvent: (eventId: string) => void;
   getEventById: (id: string) => Event | undefined;
   getEventBySlug: (slug: string) => Event | undefined;
   addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email'>) => void;
@@ -23,6 +26,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isGeneratingSlug, setIsGeneratingSlug] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -70,8 +74,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error generating slug or creating event:", error);
       setIsGeneratingSlug(false);
-      // Fallback slug generation if AI fails
-       const fallbackSlug = newEventData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 50);
+      const fallbackSlug = newEventData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 50);
        const newEvent: Event = {
         id: crypto.randomUUID(),
         ...newEventData,
@@ -96,7 +99,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         updatedEvent.slug = seoResult.slug;
       } catch (error) {
         console.error("Error regenerating slug:", error);
-        // Fallback if AI fails during update
         updatedEvent.slug = updatedEvent.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 50);
       }
       setIsGeneratingSlug(false);
@@ -105,6 +107,18 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     setEvents((prevEvents) =>
       prevEvents.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
     );
+  };
+
+  const deleteEvent = (eventId: string) => {
+    const eventToDelete = events.find(event => event.id === eventId);
+    if (eventToDelete) {
+      setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+      setRegistrations((prevRegistrations) => prevRegistrations.filter((reg) => reg.eventId !== eventId));
+      toast({
+        title: "Event Deleted",
+        description: `"${eventToDelete.title}" and its registrations have been removed.`,
+      });
+    }
   };
 
   const getEventById = (id: string) => events.find((event) => event.id === id);
@@ -117,7 +131,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       registeredAt: new Date().toISOString(),
     };
     setRegistrations((prevRegistrations) => [newRegistration, ...prevRegistrations]);
-    // Simulate email confirmation
     console.log(`Confirmation email sent to ${newRegistration.email} for event ${newRegistration.eventId}`);
   };
 
@@ -131,6 +144,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         registrations,
         addEvent,
         updateEvent,
+        deleteEvent,
         getEventById,
         getEventBySlug,
         addRegistration,

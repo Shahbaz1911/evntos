@@ -7,22 +7,34 @@ import Link from 'next/link';
 import { useEvents } from '@/context/EventContext';
 import EventForm, { type EventFormValues } from '@/components/event-form';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Eye, Users } from 'lucide-react';
+import { ArrowLeft, Eye, Users, Share2, Trash2 } from 'lucide-react';
 import type { Event } from '@/types';
 import AuthGuard from '@/components/auth-guard'; 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function EditEventPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, updateEvent, isGeneratingSlug } = useEvents();
+  const { getEventById, updateEvent, deleteEvent, isGeneratingSlug } = useEvents();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (eventId) {
@@ -67,6 +79,32 @@ export default function EditEventPage() {
     }
   };
 
+  const handleDelete = () => {
+    if (!event) return;
+    deleteEvent(event.id);
+    setIsDeleteDialogOpen(false);
+    router.push('/');
+  };
+
+  const handleShare = async () => {
+    if (!event) return;
+    const shareUrl = `${window.location.origin}/e/${event.slug}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Event share link copied to clipboard.",
+      });
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast({
+        title: "Error",
+        description: "Could not copy link. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -74,7 +112,6 @@ export default function EditEventPage() {
       </div>
     );
   }
-
   
   if (!event && !isLoading) { 
      return (
@@ -88,8 +125,7 @@ export default function EditEventPage() {
       </AuthGuard>
     );
   }
-  
-  
+    
   return (
     <AuthGuard>
       <div className="max-w-3xl mx-auto">
@@ -112,6 +148,9 @@ export default function EditEventPage() {
                     <Users className="mr-2 h-4 w-4" /> Guest List
                   </Link>
                 </Button>
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 className="mr-2 h-4 w-4" /> Share
+                </Button>
                 <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
                   <Link href={`/e/${event?.slug}`} target="_blank" rel="noopener noreferrer">
                     <Eye className="mr-2 h-4 w-4" /> View Public Page
@@ -121,12 +160,37 @@ export default function EditEventPage() {
             </div>
           </CardHeader>
           {event && ( 
-            <EventForm 
-              event={event} 
-              onSubmit={handleSubmit} 
-              isSubmitting={isSubmitting}
-              isGeneratingSlug={isGeneratingSlug} 
-            />
+            <>
+              <EventForm 
+                event={event} 
+                onSubmit={handleSubmit} 
+                isSubmitting={isSubmitting}
+                isGeneratingSlug={isGeneratingSlug} 
+              />
+              <CardFooter className="border-t pt-6 mt-6 flex justify-end">
+                 <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the event "{event?.title}" and all its registrations.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+              </CardFooter>
+            </>
           )}
         </Card>
       </div>
