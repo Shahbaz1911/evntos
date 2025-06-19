@@ -20,6 +20,13 @@ export default function Header() {
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
+    const nameParts = user?.displayName?.split(' ') || [];
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+    if (nameParts.length === 1 && nameParts[0].length > 0) {
+      return nameParts[0].substring(0,2).toUpperCase();
+    }
     return email.substring(0, 2).toUpperCase();
   };
 
@@ -44,8 +51,9 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                     <Avatar className="h-9 w-9">
-                      
-                      
+                      {user.photoURL ? (
+                        <AvatarImage src={user.photoURL} alt={user.displayName || user.email || 'User Avatar'} />
+                      ) : null}
                       <AvatarFallback className="bg-primary-foreground text-primary font-semibold">
                         {getInitials(user.email)}
                       </AvatarFallback>
