@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -181,6 +181,8 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
+      reset(); // Reset form fields for a potential next registration (if the component isn't unmounted)
+      setSubmittedRegistration(null); // Clear the submitted registration to hide the success view and show form again.
     };
     qrImage.onerror = (err) => {
         console.error("Error loading QR code PNG for canvas drawing:", err);
@@ -221,9 +223,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             <Button variant="default" onClick={handleDownloadTicket} className="w-full bg-accent hover:bg-accent/90">
               <Download className="mr-2 h-4 w-4" /> Download Ticket (PDF)
             </Button>
-            <Button variant="outline" onClick={() => { setSubmittedRegistration(null); reset(); }} className="w-full">
-              Register another person
-            </Button>
+            {/* Button to register another person removed as per request */}
           </div>
         </CardContent>
       </Card>
