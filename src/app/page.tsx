@@ -19,8 +19,8 @@ export default function HomePage() {
         <Card className="shadow-md">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
-              <CardTitle className="text-3xl font-bold font-headline text-primary">Your Events</CardTitle>
-              <CardDescription>Manage your existing events or create a new one.</CardDescription>
+              <CardTitle className="text-3xl font-bold font-headline text-primary">Eventos Dashboard</CardTitle>
+              <CardDescription>Manage your events or create a new one.</CardDescription>
             </div>
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90">
               <Link href="/events/create">
@@ -57,3 +57,4 @@ export default function HomePage() {
     </AuthGuard>
   );
 }
+
