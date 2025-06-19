@@ -9,9 +9,20 @@ import { PlusCircle, CalendarX2 } from 'lucide-react';
 import AuthGuard from '@/components/auth-guard'; 
 import LoadingSpinner from '@/components/loading-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import type { Event } from '@/types';
+import { useMemo } from 'react';
 
 export default function HomePage() {
   const { events, contextLoading } = useEvents();
+  const { user: authUser, loading: authLoading } = useAuth();
+
+  const userEvents = useMemo(() => {
+    if (!authUser || !events) return [];
+    return events.filter(event => event.userId === authUser.uid);
+  }, [events, authUser]);
+
+  const isLoading = contextLoading || authLoading;
 
   return (
     <AuthGuard> 
@@ -31,11 +42,11 @@ export default function HomePage() {
           </CardHeader>
         </Card>
 
-        {contextLoading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <LoadingSpinner size={64} />
           </div>
-        ) : events.length === 0 ? (
+        ) : userEvents.length === 0 ? (
           <Card className="shadow-md">
             <CardContent className="py-12 flex flex-col items-center text-center">
               <CalendarX2 className="mx-auto h-20 w-20 text-muted-foreground mb-6" />
@@ -48,7 +59,7 @@ export default function HomePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
+            {userEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>
@@ -57,4 +68,3 @@ export default function HomePage() {
     </AuthGuard>
   );
 }
-

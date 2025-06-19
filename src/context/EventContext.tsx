@@ -73,28 +73,44 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           eventTime: data.eventTime,
         } as Event;
       });
-      setEvents(eventsList);
+      setEvents(eventsList); // Keep all events available for public pages
 
       if (authUser) {
-        const regsCol = collection(db, 'registrations');
-        const regSnapshot = await getDocs(regsCol);
-        const regsList = regSnapshot.docs.map(docSnapshot => {
-          const data = docSnapshot.data();
-          return {
-            id: docSnapshot.id,
-            eventId: data.eventId,
-            name: data.name,
-            email: data.email,
-            contactNumber: data.contactNumber,
-            registeredAt: data.registeredAt,
-            source: data.source,
-            checkedIn: data.checkedIn || false,
-            checkedInAt: data.checkedInAt,
-          } as Registration;
-        });
-        setRegistrations(regsList);
+        const userOwnedEvents = eventsList.filter(e => e.userId === authUser.uid);
+        const userOwnedEventIds = userOwnedEvents.map(e => e.id);
+
+        if (userOwnedEventIds.length > 0) {
+          const MAX_COMPARISONS_PER_IN_QUERY = 30; // Firestore limitation for 'in' array
+          let fetchedRegistrations: Registration[] = [];
+          
+          for (let i = 0; i < userOwnedEventIds.length; i += MAX_COMPARISONS_PER_IN_QUERY) {
+            const chunkOfEventIds = userOwnedEventIds.slice(i, i + MAX_COMPARISONS_PER_IN_QUERY);
+            if (chunkOfEventIds.length > 0) {
+              const regsQuery = query(collection(db, 'registrations'), where("eventId", "in", chunkOfEventIds));
+              const regSnapshot = await getDocs(regsQuery);
+              const regsListChunk = regSnapshot.docs.map(docSnapshot => {
+                const data = docSnapshot.data();
+                return {
+                  id: docSnapshot.id,
+                  eventId: data.eventId,
+                  name: data.name,
+                  email: data.email,
+                  contactNumber: data.contactNumber,
+                  registeredAt: data.registeredAt,
+                  source: data.source,
+                  checkedIn: data.checkedIn || false,
+                  checkedInAt: data.checkedInAt,
+                } as Registration;
+              });
+              fetchedRegistrations.push(...regsListChunk);
+            }
+          }
+          setRegistrations(fetchedRegistrations);
+        } else {
+          setRegistrations([]); // User has no events, so no registrations to fetch for them
+        }
       } else {
-        setRegistrations([]);
+        setRegistrations([]); // No authenticated user, so no user-specific registrations
       }
 
     } catch (error) {
@@ -111,7 +127,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   }, [authUser, authLoading, toast]);
 
   useEffect(() => {
-    if (!authLoading) { // Only fetch if auth state is determined
+    if (!authLoading) { 
         fetchData();
     }
   }, [authLoading, fetchData]);
@@ -142,7 +158,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collection(db, "events"), eventToSave);
       const newEventWithId: Event = { ...eventToSave, id: docRef.id };
       
-      setEvents((prevEvents) => [newEventWithId, ...prevEvents]);
+      setEvents((prevEvents) => [newEventWithId, ...prevEvents].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setIsGeneratingSlug(false);
       return newEventWithId;
 
@@ -166,7 +182,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       try {
         const docRef = await addDoc(collection(db, "events"), eventToSave);
         const newEventWithId: Event = { ...eventToSave, id: docRef.id };
-        setEvents((prevEvents) => [newEventWithId, ...prevEvents]);
+        setEvents((prevEvents) => [newEventWithId, ...prevEvents].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
         return newEventWithId;
       } catch (dbError) {
          console.error("Error saving event with fallback slug:", dbError);
@@ -204,6 +220,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       await updateDoc(eventRef, { ...finalUpdatedEvent });
       setEvents((prevEvents) =>
         prevEvents.map((event) => (event.id === finalUpdatedEvent.id ? finalUpdatedEvent : event))
+        .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       );
     } catch (error) {
       console.error("Error updating event in Firestore:", error);
@@ -231,6 +248,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       await batch.commit();
 
       setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+      // Registrations are already scoped, but to be safe, filter them out too if they somehow existed.
       setRegistrations((prevRegistrations) => prevRegistrations.filter((reg) => reg.eventId !== eventId));
       
       toast({
@@ -259,14 +277,23 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     try {
       const docRef = await addDoc(collection(db, "registrations"), registrationData);
       const newRegistrationWithId: Registration = { ...registrationData, id: docRef.id };
-      setRegistrations((prev) => [newRegistrationWithId, ...prev]);
+      // Check if this registration belongs to an event owned by the current user before adding to context state
+      const eventForRegistration = events.find(e => e.id === newRegData.eventId);
+      if (authUser && eventForRegistration && eventForRegistration.userId === authUser.uid) {
+         setRegistrations((prev) => [newRegistrationWithId, ...prev].sort((a,b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()));
+      } else if (!authUser && eventForRegistration) { // Public registration
+         // For public registrations, we might not add them to the general `registrations` state
+         // if it's meant to be user-specific. Or, handle this differently.
+         // For now, let's assume `addRegistration` primarily affects `registrations` state if relevant to current user
+         // or if it's a direct user action on their own event.
+      }
       return newRegistrationWithId;
     } catch (error) {
       console.error("Error adding registration to Firestore:", error);
       toast({ title: "Registration Error", description: "Could not save registration.", variant: "destructive" });
-      throw error; // Re-throw to be caught by the form
+      throw error; 
     }
-  }, [toast]);
+  }, [toast, authUser, events]);
 
   const recordSharedLinkVisit = useCallback(async (eventId: string, eventSlug: string) => {
     const registrationDraft: Omit<Registration, 'id'> = {
@@ -280,14 +307,17 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     try {
       const docRef = await addDoc(collection(db, "registrations"), registrationDraft);
       const newRegistrationWithId: Registration = { ...registrationDraft, id: docRef.id };
-      setRegistrations((prev) => [newRegistrationWithId, ...prev]);
+      // Shared link visits are typically not added to the primary user-facing 'registrations' list
+      // unless specifically required for display. They are recorded for analytics.
+      // setRegistrations((prev) => [newRegistrationWithId, ...prev]);
     } catch (error) {
       console.error("Error recording shared link visit in Firestore:", error);
     }
   }, []); 
 
   const getRegistrationsByEventId = useCallback((eventId: string) =>
-    registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form'), [registrations]);
+    registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form')
+    .sort((a,b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()), [registrations]);
 
   const getRegistrationByIdFromFirestore = useCallback(async (registrationId: string): Promise<Registration | null> => {
     try {
@@ -347,4 +377,3 @@ export const useEvents = () => {
   }
   return context;
 };
-

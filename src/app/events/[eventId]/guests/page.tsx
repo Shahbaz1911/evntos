@@ -12,29 +12,58 @@ import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, Users, FileText } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 import AuthGuard from '@/components/auth-guard'; 
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GuestListPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, getRegistrationsByEventId } = useEvents();
+  const { getEventById, getRegistrationsByEventId, contextLoading: eventContextLoading } = useEvents();
+  const { user: authUser, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   
   const [event, setEvent] = useState<Event | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (eventId) {
+    if (authLoading || eventContextLoading) {
+      setIsLoading(true);
+      return;
+    }
+
+    if (eventId && authUser) {
       const foundEvent = getEventById(eventId);
       if (foundEvent) {
+        if (foundEvent.userId !== authUser.uid) {
+          toast({
+            title: "Access Denied",
+            description: "You are not authorized to view guests for this event.",
+            variant: "destructive",
+          });
+          router.push('/');
+          return;
+        }
         setEvent(foundEvent);
         setRegistrations(getRegistrationsByEventId(eventId));
       } else {
-        
+         if (!eventContextLoading) { // Only show not found if context is actually loaded
+            toast({
+              title: "Event Not Found",
+              description: "The event for which you are trying to view guests does not exist.",
+              variant: "destructive",
+            });
+            router.push('/');
+            return;
+         }
       }
-      setIsLoading(false);
+    } else if (!authUser && !authLoading) {
+      router.push('/login');
+      return;
     }
-  }, [eventId, getEventById, getRegistrationsByEventId, router]);
+    setIsLoading(false);
+  }, [eventId, getEventById, getRegistrationsByEventId, authUser, authLoading, eventContextLoading, router, toast]);
 
   const downloadGuestListCSV = () => {
     if (!event || registrations.length === 0) return;
@@ -60,20 +89,19 @@ export default function GuestListPage() {
     document.body.removeChild(link);
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <LoadingSpinner size={48} />
       </div>
     );
   }
   
-  
-  if (!event && !isLoading) {
+  if (!event) { // Implies event not found or no permission after loading and checks
     return (
       <AuthGuard>
         <div className="text-center py-10">
-          <p className="text-xl text-muted-foreground">Event not found.</p>
+          <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access its guest list.</p>
            <Button variant="outline" size="sm" asChild className="mt-4">
               <Link href="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -84,7 +112,6 @@ export default function GuestListPage() {
       </AuthGuard>
     );
   }
-
 
   return (
     <AuthGuard> 
@@ -130,4 +157,3 @@ export default function GuestListPage() {
     </AuthGuard>
   );
 }
-

@@ -13,6 +13,7 @@ import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, Users, Eye, Trash2, QrCode } from 'lucide-react';
 import type { Event } from '@/types';
 import AuthGuard from '@/components/auth-guard';
+import { useAuth } from '@/context/AuthContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,8 @@ export default function EditEventPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, updateEvent, deleteEvent, isGeneratingSlug, events } = useEvents();
+  const { getEventById, updateEvent, deleteEvent, isGeneratingSlug, events, contextLoading: eventContextLoading } = useEvents();
+  const { user: authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,33 +39,46 @@ export default function EditEventPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (eventId) {
-      // Try to get event from context first (faster if already loaded)
-      let foundEvent = getEventById(eventId);
-      
-      // If not in context (e.g., direct navigation), try to find in the full events list if available
-      // This is a fallback, ideally context should be up-to-date or refetch mechanism robust
-      if (!foundEvent && events.length > 0) {
-        foundEvent = events.find(e => e.id === eventId) || null;
-      }
+    if (authLoading || eventContextLoading) {
+      setIsLoading(true);
+      return;
+    }
+    
+    if (eventId && authUser) {
+      const foundEvent = getEventById(eventId);
 
       if (foundEvent) {
+        if (foundEvent.userId !== authUser.uid) {
+          toast({
+            title: "Access Denied",
+            description: "You are not authorized to edit this event.",
+            variant: "destructive",
+          });
+          router.push('/');
+          return;
+        }
         setEvent(foundEvent);
       } else {
-        // If still not found after context check and full list, then show error or redirect.
-        // This might indicate the event doesn't exist or there's a delay in context loading.
-        // For simplicity, we assume if it's not in getEventById, it might not be loaded yet or doesn't exist.
-        // A more robust solution might involve a dedicated fetch if not found.
-        toast({
-          title: "Notice",
-          description: "Event details are loading or event not found.",
-          variant: "default",
-        });
-        // Consider router.push('/') if event is definitively not found after loading.
+        // Event not found in context, might not exist or context hasn't loaded this specific one yet
+        // If events array is populated but event not found, it likely doesn't exist for this user or at all
+         if (events.length > 0 || !eventContextLoading) {
+            toast({
+              title: "Event Not Found",
+              description: "The event you are trying to edit does not exist.",
+              variant: "destructive",
+            });
+            router.push('/');
+            return;
+         }
+        // If context is still loading, this effect will re-run.
       }
-      setIsLoading(false); // Set loading to false once check is done
+    } else if (!authUser && !authLoading) {
+      // Should be caught by AuthGuard, but as a fallback
+      router.push('/login');
+      return;
     }
-  }, [eventId, getEventById, events, router, toast]);
+    setIsLoading(false);
+  }, [eventId, getEventById, events, authUser, authLoading, eventContextLoading, router, toast]);
 
 
   const handleSubmit = async (data: EventFormValues) => {
@@ -75,7 +90,7 @@ export default function EditEventPage() {
         ...data,
       };
       await updateEvent(updatedEventData);
-      setEvent(updatedEventData); // Optimistically update local state
+      // The event state will be updated via context re-fetch or optimistic update in context
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
@@ -96,23 +111,27 @@ export default function EditEventPage() {
     if (!event) return;
     deleteEvent(event.id);
     setIsDeleteDialogOpen(false);
+    toast({
+        title: "Event Deleted",
+        description: `"${event.title}" has been successfully deleted.`,
+      });
     router.push('/');
   };
 
 
-  if (isLoading) {
+  if (isLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <LoadingSpinner size={48} />
       </div>
     );
   }
 
-  if (!event && !isLoading) {
+  if (!event) { // This implies event not found after loading and checks
      return (
-      <AuthGuard>
+      <AuthGuard> {/* AuthGuard will handle redirect if !authUser */}
         <div className="text-center py-10">
-          <p className="text-xl text-muted-foreground">Event not found or still loading.</p>
+          <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access it.</p>
           <Button asChild className="mt-4">
             <Link href="/">Go to Dashboard</Link>
           </Button>
@@ -121,20 +140,6 @@ export default function EditEventPage() {
     );
   }
   
-  // Ensure event is not null before rendering form or actions
-  if (!event) {
-    // This case should ideally be covered by the loading/not found logic above,
-    // but as a fallback:
-    return (
-      <AuthGuard>
-        <div className="flex justify-center items-center h-64">
-          <p>Loading event details...</p> <LoadingSpinner size={24} className="ml-2"/>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-
   return (
     <AuthGuard>
       <div className="max-w-3xl mx-auto">
