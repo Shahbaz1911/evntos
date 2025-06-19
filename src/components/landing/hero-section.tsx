@@ -49,13 +49,13 @@ export default function HeroSection() {
           <Card className="relative overflow-hidden shadow-2xl rounded-xl border-2 border-transparent hover:border-primary/30 transition-all duration-300">
             <CardContent className="p-0">
               <Image
-                src="https://placehold.co/800x600.png"
+                src="https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwYXJ0eXxlbnwwfHx8fDE3NTAyNjM5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Dynamic Event Showcase"
                 width={800}
                 height={600}
                 className="rounded-xl object-cover aspect-[4/3]"
                 priority
-                data-ai-hint="event collage celebration"
+                data-ai-hint="party celebration"
               />
             </CardContent>
           </Card>
@@ -74,3 +74,4 @@ export default function HeroSection() {
     </section>
   );
 }
+
