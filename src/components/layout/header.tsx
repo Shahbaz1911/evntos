@@ -86,7 +86,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="outline" size="sm" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/20">
+              <Button asChild variant="ghost" size="sm">
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
@@ -105,3 +105,4 @@ export default function Header() {
     </header>
   );
 }
+
