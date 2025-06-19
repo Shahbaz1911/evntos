@@ -20,13 +20,13 @@ import { getFirestore } from 'firebase/firestore';
 // 6. Copy those values and paste them here.
 // ==============================================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // <--- REPLACE THIS
-  authDomain: "YOUR_AUTH_DOMAIN", // <--- REPLACE THIS
-  projectId: "YOUR_PROJECT_ID", // <--- REPLACE THIS
-  storageBucket: "YOUR_STORAGE_BUCKET", // <--- REPLACE THIS
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // <--- REPLACE THIS
-  appId: "YOUR_APP_ID", // <--- REPLACE THIS
-  measurementId: "YOUR_MEASUREMENT_ID" // <--- REPLACE THIS (Optional)
+  apiKey: "AIzaSyA6FCx0TdqvsFnwGR35D-C4AdSK6UNV2gc",
+  authDomain: "eventos-74593.firebaseapp.com",
+  projectId: "eventos-74593",
+  storageBucket: "eventos-74593.firebasestorage.app",
+  messagingSenderId: "480526111994",
+  appId: "1:480526111994:web:d40e1e290f454a190c2543",
+  measurementId: "G-HCLCXQR3J0"
 };
 
 // Initialize Firebase

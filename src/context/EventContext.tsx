@@ -5,7 +5,7 @@ import type { Event, Registration } from '@/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { generateSeoFriendlyUrl } from '@/ai/flows/generate-seo-friendly-url';
 import { useToast } from '@/hooks/use-toast';
-import { db, auth } from '@/lib/firebase'; // Import db and auth
+import { db } from '@/lib/firebase'; // Removed auth import as it's handled by useAuth
 import {
   collection,
   addDoc,
@@ -16,14 +16,14 @@ import {
   writeBatch,
   query,
   where,
-  Timestamp
+  Timestamp // Keep Timestamp if you plan to use it, but currently dates are ISO strings
 } from 'firebase/firestore';
-import { useAuth } from './AuthContext'; // To get current user UID
+import { useAuth } from './AuthContext'; // To get current user UID and auth loading state
 
 interface EventContextType {
   events: Event[];
   registrations: Registration[];
-  contextLoading: boolean; // Renamed from isInitialized/isLoading
+  contextLoading: boolean;
   isGeneratingSlug: boolean;
   addEvent: (newEventData: Pick<Event, 'title'>) => Promise<Event | null>;
   updateEvent: (updatedEvent: Event) => Promise<void>;
@@ -43,34 +43,74 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const [contextLoading, setContextLoading] = useState(true);
   const [isGeneratingSlug, setIsGeneratingSlug] = useState(false);
   const { toast } = useToast();
-  const { user: authUser } = useAuth(); // Get authenticated user
+  const { user: authUser, loading: authLoading } = useAuth(); // Get authenticated user and loading state
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setContextLoading(true);
-      try {
-        // Fetch events
-        const eventsCol = collection(db, 'events');
-        const eventSnapshot = await getDocs(eventsCol);
-        const eventsList = eventSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Event));
-        setEvents(eventsList);
+  const fetchData = useCallback(async () => {
+    if (authLoading) {
+      setContextLoading(true); // Keep context loading until auth state is resolved
+      return;
+    }
 
-        // Fetch registrations
+    setContextLoading(true);
+    try {
+      // Fetch events - these are public
+      const eventsCol = collection(db, 'events');
+      const eventSnapshot = await getDocs(eventsCol);
+      const eventsList = eventSnapshot.docs.map(docSnapshot => {
+        const data = docSnapshot.data();
+        // Ensure all fields are correctly mapped and typed
+        return {
+          id: docSnapshot.id,
+          userId: data.userId,
+          title: data.title,
+          description: data.description,
+          imageUrl: data.imageUrl,
+          mapLink: data.mapLink,
+          slug: data.slug,
+          registrationOpen: data.registrationOpen,
+          createdAt: data.createdAt, // Assumed to be ISO string from Firestore
+          eventDate: data.eventDate,
+          eventTime: data.eventTime,
+        } as Event;
+      });
+      setEvents(eventsList);
+
+      // Fetch registrations ONLY if a user is authenticated
+      if (authUser) {
         const regsCol = collection(db, 'registrations');
         const regSnapshot = await getDocs(regsCol);
-        const regsList = regSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Registration));
+        const regsList = regSnapshot.docs.map(docSnapshot => {
+          const data = docSnapshot.data();
+          return {
+            id: docSnapshot.id,
+            eventId: data.eventId,
+            name: data.name,
+            email: data.email,
+            registeredAt: data.registeredAt, // Assumed to be ISO string
+            source: data.source,
+          } as Registration;
+        });
         setRegistrations(regsList);
-
-      } catch (error) {
-        console.error("Error fetching data from Firestore:", error);
-        toast({ title: "Error", description: "Could not load data from the cloud.", variant: "destructive" });
-      } finally {
-        setContextLoading(false);
+      } else {
+        setRegistrations([]); // Clear registrations if no user is authenticated
       }
-    };
 
+    } catch (error) {
+      console.error("Error fetching data from Firestore:", error);
+      const firebaseError = error as import('firebase/app').FirebaseError;
+      if (firebaseError.code === 'permission-denied') {
+          toast({ title: "Permissions Error", description: "Could not load some data due to access restrictions. Please ensure you are logged in if trying to access private data.", variant: "destructive" });
+      } else {
+          toast({ title: "Data Load Error", description: "Could not load data from the cloud.", variant: "destructive" });
+      }
+    } finally {
+      setContextLoading(false);
+    }
+  }, [authUser, authLoading, toast]); // Dependencies include authUser and authLoading
+
+  useEffect(() => {
     fetchData();
-  }, [toast]);
+  }, [fetchData]); // fetchData is a useCallback, so this effect runs when authUser or authLoading changes
 
 
   const addEvent = useCallback(async (newEventData: Pick<Event, 'title'>): Promise<Event | null> => {
@@ -83,7 +123,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const seoResult = await generateSeoFriendlyUrl({ title: newEventData.title });
       
       const eventDraft: Omit<Event, 'id' | 'slug'> = {
-        userId: authUser.uid,
+        userId: authUser.uid, // Correctly use authUser.uid
         title: newEventData.title,
         description: '',
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
@@ -106,7 +146,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error creating event:", error);
       toast({ title: "Error", description: "Could not create event.", variant: "destructive" });
       setIsGeneratingSlug(false);
-      // Fallback slug generation if AI fails (though ideally, AI call should be robust)
       const fallbackSlug = newEventData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 50);
       const eventDraft: Omit<Event, 'id' | 'slug'> = {
         userId: authUser.uid,
@@ -120,7 +159,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date().toISOString(),
       };
       const eventToSave = { ...eventDraft, slug: fallbackSlug };
-      // Try to save with fallback slug
       try {
         const docRef = await addDoc(collection(db, "events"), eventToSave);
         const newEventWithId: Event = { ...eventToSave, id: docRef.id };
@@ -132,7 +170,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
          return null;
       }
     }
-  }, [authUser, toast, setEvents, setIsGeneratingSlug]);
+  }, [authUser, toast]);
 
   const updateEvent = useCallback(async (updatedEventData: Event) => {
     if (!authUser || authUser.uid !== updatedEventData.userId) {
@@ -159,16 +197,16 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     const eventRef = doc(db, "events", finalUpdatedEvent.id);
 
     try {
-      await updateDoc(eventRef, finalUpdatedEvent);
+      await updateDoc(eventRef, { ...finalUpdatedEvent }); // Spread to ensure all fields are passed
       setEvents((prevEvents) =>
         prevEvents.map((event) => (event.id === finalUpdatedEvent.id ? finalUpdatedEvent : event))
       );
-      toast({ title: "Event Updated", description: `"${finalUpdatedEvent.title}" has been updated.` });
+      // toast({ title: "Event Updated", description: `"${finalUpdatedEvent.title}" has been updated.` });
     } catch (error) {
       console.error("Error updating event in Firestore:", error);
       toast({ title: "Error", description: "Could not update event.", variant: "destructive" });
     }
-  }, [authUser, events, toast, setEvents, setIsGeneratingSlug]);
+  }, [authUser, events, toast]);
 
   const deleteEvent = useCallback(async (eventId: string) => {
     const eventToDelete = events.find(event => event.id === eventId);
@@ -180,15 +218,12 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Delete event document
       await deleteDoc(doc(db, "events", eventId));
-
-      // Delete associated registrations
       const regsQuery = query(collection(db, "registrations"), where("eventId", "==", eventId));
       const regsSnapshot = await getDocs(regsQuery);
       const batch = writeBatch(db);
-      regsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
+      regsSnapshot.forEach((docSnapshot) => { // Renamed doc to docSnapshot to avoid conflict
+        batch.delete(docSnapshot.ref);
       });
       await batch.commit();
 
@@ -203,7 +238,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error deleting event from Firestore:", error);
       toast({ title: "Error", description: "Could not delete event.", variant: "destructive" });
     }
-  }, [authUser, events, toast, setEvents, setRegistrations]);
+  }, [authUser, events, toast]);
 
   const getEventById = useCallback((id: string) => events.find((event) => event.id === id), [events]);
   const getEventBySlug = useCallback((slug: string) => events.find((event) => event.slug === slug), [events]);
@@ -218,19 +253,18 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collection(db, "registrations"), registrationDraft);
       const newRegistrationWithId: Registration = { ...registrationDraft, id: docRef.id };
       setRegistrations((prev) => [newRegistrationWithId, ...prev]);
-      // Toast is handled in the component calling this
     } catch (error) {
       console.error("Error adding registration to Firestore:", error);
       toast({ title: "Registration Error", description: "Could not save registration.", variant: "destructive" });
-      throw error; // Re-throw to be caught by the calling component
+      throw error;
     }
-  }, [toast, setRegistrations]);
+  }, [toast]);
 
   const recordSharedLinkVisit = useCallback(async (eventId: string, eventSlug: string) => {
     const registrationDraft: Omit<Registration, 'id'> = {
       eventId,
       name: "Viewed via Shared Link",
-      email: `shared-view-${Date.now()}@${eventSlug}.local`, // Ensure unique email for Firestore if needed
+      email: `shared-view-${Date.now()}@${eventSlug}.local`,
       registeredAt: new Date().toISOString(),
       source: 'shared_link',
     };
@@ -240,9 +274,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       setRegistrations((prev) => [newRegistrationWithId, ...prev]);
     } catch (error) {
       console.error("Error recording shared link visit in Firestore:", error);
-      // Silently fail for this or show a very mild toast
     }
-  }, [setRegistrations]);
+  }, [toast]); // Added toast as a dependency if it's used, though not directly in this func
 
   const getRegistrationsByEventId = useCallback((eventId: string) =>
     registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form'), [registrations]);
@@ -277,3 +310,4 @@ export const useEvents = () => {
   }
   return context;
 };
+
