@@ -13,12 +13,15 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
 import Image from 'next/image';
+import { CalendarDays, Clock } from 'lucide-react';
 
 const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters.").max(100, "Title cannot exceed 100 characters."),
   description: z.string().max(5000, "Description cannot exceed 5000 characters.").optional(),
   imageUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
   mapLink: z.string().url("Must be a valid Google Maps URL.").optional().or(z.literal('')),
+  eventDate: z.string().min(1, "Event date is required.").regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD."),
+  eventTime: z.string().min(1, "Event time is required.").regex(/^\d{2}:\d{2}$/, "Invalid time format. Use HH:MM."),
   registrationOpen: z.boolean(),
 });
 
@@ -36,9 +39,11 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       title: event.title,
-      description: event.description,
-      imageUrl: event.imageUrl,
-      mapLink: event.mapLink,
+      description: event.description || '',
+      imageUrl: event.imageUrl || '',
+      mapLink: event.mapLink || '',
+      eventDate: event.eventDate || '',
+      eventTime: event.eventTime || '',
       registrationOpen: event.registrationOpen,
     },
   });
@@ -62,6 +67,35 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
           <Label htmlFor="description">Description</Label>
           <Textarea id="description" {...register("description")} placeholder="Tell us more about your event..." rows={5} />
           {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="eventDate" className="flex items-center">
+              <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
+              Event Date
+            </Label>
+            <Input 
+              id="eventDate" 
+              type="date" 
+              {...register("eventDate")} 
+              className={errors.eventDate ? "border-destructive" : ""}
+            />
+            {errors.eventDate && <p className="text-sm text-destructive">{errors.eventDate.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="eventTime" className="flex items-center">
+              <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+              Event Time
+            </Label>
+            <Input 
+              id="eventTime" 
+              type="time" 
+              {...register("eventTime")} 
+              className={errors.eventTime ? "border-destructive" : ""}
+            />
+            {errors.eventTime && <p className="text-sm text-destructive">{errors.eventTime.message}</p>}
+          </div>
         </div>
 
         <div className="space-y-2">

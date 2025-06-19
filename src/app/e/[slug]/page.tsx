@@ -10,8 +10,34 @@ import RegistrationForm from '@/components/registration-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
-import { Calendar, MapPin, Ticket, XCircle, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, Ticket, XCircle, ExternalLink, Clock } from 'lucide-react';
 import type { Event } from '@/types';
+
+const formatEventDateTime = (dateStr?: string, timeStr?: string) => {
+  if (!dateStr || dateStr.trim() === "" || !timeStr || timeStr.trim() === "") {
+    return "Date and time not specified.";
+  }
+  const dateTime = new Date(`${dateStr}T${timeStr}:00`); 
+
+  if (isNaN(dateTime.getTime())) {
+    return "Invalid date or time format provided.";
+  }
+
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  };
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  };
+
+  return `${dateTime.toLocaleDateString(undefined, dateOptions)} at ${dateTime.toLocaleTimeString(undefined, timeOptions)}`;
+};
+
 
 export default function PublicEventPage() {
   const params = useParams();
@@ -27,7 +53,6 @@ export default function PublicEventPage() {
       if (foundEvent) {
         setEvent(foundEvent);
         
-        // Record shared link visit if not already recorded for this browser session
         if (typeof window !== 'undefined' && recordSharedLinkVisit) {
           const storageKey = `eventwave_shared_visit_${foundEvent.id}`;
           if (!localStorage.getItem(storageKey)) {
@@ -83,6 +108,15 @@ export default function PublicEventPage() {
         <CardContent className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
             <div>
+              <h2 className="text-2xl font-semibold font-headline text-primary mb-2 flex items-center">
+                <Calendar className="mr-2 h-6 w-6" /> Date & Time
+              </h2>
+              <p className="text-foreground/80 text-lg">
+                {formatEventDateTime(event.eventDate, event.eventTime)}
+              </p>
+            </div>
+            
+            <div>
               <h2 className="text-2xl font-semibold font-headline text-primary mb-2">About this Event</h2>
               <p className="text-foreground/80 whitespace-pre-line leading-relaxed">
                 {event.description || "No description provided."}
@@ -116,7 +150,7 @@ export default function PublicEventPage() {
               </div>
             )}
 
-            <div className="flex items-center text-muted-foreground">
+            <div className="flex items-center text-muted-foreground text-sm">
               <Calendar className="mr-2 h-5 w-5" />
               <span>Created on: {new Date(event.createdAt).toLocaleDateString()}</span>
             </div>

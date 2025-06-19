@@ -66,6 +66,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
         mapLink: '',
         slug: seoResult.slug,
+        eventDate: '', // Initialize as empty
+        eventTime: '', // Initialize as empty
         registrationOpen: true,
         createdAt: new Date().toISOString(),
       };
@@ -83,6 +85,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
         mapLink: '',
         slug: fallbackSlug,
+        eventDate: '', 
+        eventTime: '', 
         registrationOpen: true,
         createdAt: new Date().toISOString(),
       };

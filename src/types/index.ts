@@ -8,6 +8,8 @@ export interface Event {
   slug: string;
   registrationOpen: boolean;
   createdAt: string; // ISO date string
+  eventDate: string; // YYYY-MM-DD
+  eventTime: string; // HH:MM
 }
 
 export interface Registration {
