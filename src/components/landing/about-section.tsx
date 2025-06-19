@@ -46,7 +46,7 @@ export default function AboutSection() {
           <div>
             <Card className="overflow-hidden shadow-xl rounded-lg border-border">
               <Image
-                src="https://placehold.co/700x500.png"
+                src="https://images.unsplash.com/photo-1503428593586-e225b39bddfe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNXx8ZXZlbnR8ZW58MHx8fHwxNzUwMzYxMzU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Team working on Eventos platform"
                 width={700}
                 height={500}
@@ -77,3 +77,4 @@ export default function AboutSection() {
     </section>
   );
 }
+
