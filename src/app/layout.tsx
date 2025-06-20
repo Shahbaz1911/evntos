@@ -7,7 +7,7 @@ import Footer from '@/components/layout/footer';
 import { EventProvider } from '@/context/EventContext';
 import { AuthProvider } from '@/context/AuthContext'; 
 import { ThemeProvider } from 'next-themes';
-import { SidebarProvider } from '@/components/ui/sidebar'; // Import SidebarProvider
+import { SidebarProvider } from '@/components/ui/sidebar'; 
 
 export const metadata: Metadata = {
   title: 'eventos',
@@ -35,12 +35,15 @@ export default function RootLayout({
         >
           <AuthProvider> 
             <EventProvider>
-              <SidebarProvider> {/* Wrap with SidebarProvider */}
-                <Header />
-                <main className="flex-grow">
-                  {children}
-                </main>
-                <Footer />
+              <SidebarProvider>
+                {/* This new div ensures Header, main, and Footer stack vertically */}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <Header />
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                  <Footer />
+                </div>
               </SidebarProvider>
               <Toaster />
             </EventProvider>
