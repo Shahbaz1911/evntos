@@ -13,12 +13,14 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
 import Image from 'next/image';
-import { CalendarDays, Clock, MapPin } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, UploadCloud } from 'lucide-react';
+import React, { useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters.").max(100, "Title cannot exceed 100 characters."),
   description: z.string().max(5000, "Description cannot exceed 5000 characters.").optional(),
-  imageUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  imageUrl: z.string().url("Must be a valid URL or local file placeholder.").or(z.string().startsWith("local-file://")).optional().or(z.literal('')),
   venueName: z.string().max(200, "Venue name cannot exceed 200 characters.").optional().or(z.literal('')),
   venueAddress: z.string().max(300, "Venue address cannot exceed 300 characters.").optional().or(z.literal('')),
   mapLink: z.string().url("Must be a valid Google Maps URL.").optional().or(z.literal('')),
@@ -37,6 +39,8 @@ interface EventFormProps {
 }
 
 export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingSlug }: EventFormProps) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -55,7 +59,34 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
   const currentImageUrl = watch("imageUrl");
 
   const handleFormSubmit: SubmitHandler<EventFormValues> = async (data) => {
+    // If imageUrl still starts with local-file://, remind user it's not a real upload.
+    if (data.imageUrl?.startsWith("local-file://")) {
+        toast({
+            title: "Using Placeholder Image URL",
+            description: "The selected local image is a placeholder. For a live event, ensure you upload the image to a hosting service and use that URL.",
+            variant: "default", // Use default or a custom 'warning' if available
+        });
+    }
     await onSubmit(data);
+  };
+
+  const handleImageUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setValue("imageUrl", `local-file://${file.name}`, { shouldValidate: true });
+      toast({
+        title: "Local Image Selected",
+        description: `${file.name} selected. This is a local preview only. Upload to a hosting service for a live URL.`,
+      });
+       // Reset file input to allow selecting the same file again if needed
+      if(fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
   
   return (
@@ -104,17 +135,45 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
 
         <div className="space-y-2">
           <Label htmlFor="imageUrl">Image URL</Label>
-          <Input id="imageUrl" {...register("imageUrl")} placeholder="https://example.com/image.png" />
+          <div className="flex items-center gap-2">
+            <Input 
+              id="imageUrl" 
+              {...register("imageUrl")} 
+              placeholder="https://example.com/image.png or upload" 
+              className="flex-grow"
+            />
+            <Button type="button" variant="outline" onClick={handleImageUploadClick}>
+              <UploadCloud className="mr-2 h-4 w-4" /> Upload
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
           {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
-          {currentImageUrl && (
+          {currentImageUrl && !currentImageUrl.startsWith("local-file://") && (
             <div className="mt-2 relative w-full h-64 rounded-md overflow-hidden border">
               <Image 
                 src={currentImageUrl} 
                 alt="Event preview" 
                 fill 
                 style={{objectFit:"cover"}} 
-                data-ai-hint="event poster" 
+                data-ai-hint="event poster"
+                onError={(e) => {
+                  // Fallback for invalid URLs, maybe show placeholder or hide
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  // Optionally, set a placeholder here
+                }}
               />
+            </div>
+          )}
+           {currentImageUrl && currentImageUrl.startsWith("local-file://") && (
+            <div className="mt-2 p-4 text-sm text-muted-foreground border rounded-md bg-secondary">
+              Local image selected: {currentImageUrl.replace("local-file://", "")}. <br/>
+              Preview is not available for local files. Please upload to a hosting service and paste the URL for a live preview.
             </div>
           )}
         </div>
