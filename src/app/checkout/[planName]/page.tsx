@@ -16,16 +16,16 @@ import LoadingSpinner from '@/components/loading-spinner';
 import { CreditCard, CalendarDays, Lock } from 'lucide-react';
 
 // Define dummy card details for validation
-const DUMMY_CARD_NUMBER = "123456781234";
-const DUMMY_EXPIRY_DATE = "19/30";
-const DUMMY_CVC = "786";
+const DUMMY_CARD_NUMBER = "123456784567";
+const DUMMY_EXPIRY_DATE = "01/01";
+const DUMMY_CVC = "123";
 
 const checkoutSchema = z.object({
   cardNumber: z.string().refine(val => val === DUMMY_CARD_NUMBER, {
     message: "Invalid card number. Use the dummy number.",
   }),
   expiryDate: z.string().refine(val => val === DUMMY_EXPIRY_DATE, {
-    message: "Invalid expiry date. Use MM/YY format (dummy: 19/30).",
+    message: "Invalid expiry date. Use MM/YY format (dummy: 01/01).",
   }),
   cvc: z.string().refine(val => val === DUMMY_CVC, {
     message: "Invalid CVC. Use the dummy CVC.",
@@ -136,7 +136,7 @@ export default function CheckoutPage() {
               <Input
                 id="cardNumber"
                 type="text"
-                placeholder="123456781234"
+                placeholder="123456784567"
                 {...register("cardNumber")}
                 className={errors.cardNumber ? "border-destructive" : ""}
                 aria-invalid={errors.cardNumber ? "true" : "false"}
@@ -152,7 +152,7 @@ export default function CheckoutPage() {
                 <Input
                   id="expiryDate"
                   type="text"
-                  placeholder="19/30"
+                  placeholder="01/01"
                   {...register("expiryDate")}
                   className={errors.expiryDate ? "border-destructive" : ""}
                   aria-invalid={errors.expiryDate ? "true" : "false"}
@@ -167,7 +167,7 @@ export default function CheckoutPage() {
                 <Input
                   id="cvc"
                   type="text"
-                  placeholder="786"
+                  placeholder="123"
                   {...register("cvc")}
                   className={errors.cvc ? "border-destructive" : ""}
                   aria-invalid={errors.cvc ? "true" : "false"}
