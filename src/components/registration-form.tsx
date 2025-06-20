@@ -36,38 +36,6 @@ interface RegistrationFormProps {
   eventName: string;
 }
 
-// Helper function to convert HSL string to HEX string
-function hslToHex(hsl: string): string {
-  const hslMatch = hsl.match(/hsl\((\d+)\s*[,]?\s*(\d+)%\s*[,]?\s*(\d+)%\)/i) || hsl.match(/hsl\((\d+)\s+(\d+)%\s+(\d+)%\)/i);
-  if (!hslMatch) {
-    console.warn(`Invalid HSL string: ${hsl}. Defaulting to black.`);
-    return '#000000'; 
-  }
-
-  let h = parseInt(hslMatch[1]);
-  let s = parseInt(hslMatch[2]);
-  let l = parseInt(hslMatch[3]);
-
-  s /= 100;
-  l /= 100;
-
-  const k = (n: number) => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) =>
-    l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-
-  const toHexComponent = (c: number) => {
-    const hex = Math.round(c * 255).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  };
-
-  const r = toHexComponent(f(0));
-  const g = toHexComponent(f(8));
-  const b = toHexComponent(f(4));
-
-  return `#${r}${g}${b}`;
-}
-
 
 export default function RegistrationForm({ eventId, eventName }: RegistrationFormProps) {
   const { addRegistration } = useEvents();
@@ -120,7 +88,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     lineHeight: number,
     maxLines: number = 99,
     addEllipsis: boolean = false
-  ): number => { // Returns the Y position *after* the last line drawn
+  ): number => { 
     const words = text.split(' ');
     let line = '';
     let currentY = y;
@@ -132,7 +100,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       const testLineAttempt = line + words[i] + ' ';
       const testWidth = ctx.measureText(testLineAttempt).width;
 
-      if (testWidth > maxWidth && line !== '') { // Current line + new word overflows, and current line is not empty
+      if (testWidth > maxWidth && line !== '') { 
         let lineToPrint = line.trim();
         if (addEllipsis && linesDrawn === maxLines - 1 && i < words.length) { 
           while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
@@ -147,15 +115,15 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           line = ''; 
           break;
         }
-        line = words[i] + ' '; // Start new line with current word
-      } else { // Current line + new word fits, or current line is empty
+        line = words[i] + ' '; 
+      } else { 
         line = testLineAttempt;
       }
     }
 
     if (line.trim() !== '' && linesDrawn < maxLines) {
       let lineToPrint = line.trim();
-      if (ctx.measureText(lineToPrint).width > maxWidth) { // Last line itself overflows
+      if (ctx.measureText(lineToPrint).width > maxWidth) { 
         if (addEllipsis) {
             while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
                 lineToPrint = lineToPrint.slice(0, -1);
@@ -185,26 +153,20 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     }
 
     const pdfTicketWidthMm = 70;
-    const pdfTicketHeightMm = 120; // Increased height slightly for better spacing
+    const pdfTicketHeightMm = 120;
     const dpi = 300; 
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
 
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
-    const rootStyle = getComputedStyle(document.documentElement);
-    const primaryHslRaw = rootStyle.getPropertyValue('--primary').trim();
-    const primaryHex = hslToHex(`hsl(${primaryHslRaw})`);
-    const primaryFgHslRaw = rootStyle.getPropertyValue('--primary-foreground').trim();
-    const primaryFgHex = hslToHex(`hsl(${primaryFgHslRaw})`);
-    const cardHslRaw = rootStyle.getPropertyValue('--card').trim();
-    const cardHex = hslToHex(`hsl(${cardHslRaw})`);
-    const textHslRaw = rootStyle.getPropertyValue('--card-foreground').trim();
-    const textHex = hslToHex(`hsl(${textHslRaw})`);
-    const mutedTextHslRaw = rootStyle.getPropertyValue('--muted-foreground').trim();
-    const mutedTextHex = hslToHex(`hsl(${mutedTextHslRaw})`);
-    const borderHslRaw = rootStyle.getPropertyValue('--border').trim();
-    const borderHex = hslToHex(`hsl(${borderHslRaw})`);
+    // Fixed Light Theme Colors for PDF
+    const primaryHex = '#F97316';       // Vibrant Orange (from light theme --primary)
+    const primaryFgHex = '#FFFFFF';     // White (from light theme --primary-foreground)
+    const cardHex = '#FFFFFF';          // White (from light theme --card)
+    const textHex = '#1A1A1A';          // Very Dark Brown/Almost Black (approximated from --foreground 24 10% 10%)
+    const mutedTextHex = '#785A48';     // Muted Brownish Orange (approximated from --muted-foreground 25 30% 45%)
+    const borderHex = '#FFDEC2';        // Light Peach Border (from light theme --border)
 
     // --- Drawing Start ---
     ctx.fillStyle = cardHex;
@@ -219,44 +181,44 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     let currentY = contentPadding;
 
     // 1. Header Section (Event Title)
-    const headerHeight = mmToPx(20); // Reduced header height slightly
+    const headerHeight = mmToPx(20);
     ctx.fillStyle = primaryHex;
     ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
 
     ctx.fillStyle = primaryFgHex;
-    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`; // Slightly smaller title font
+    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     const eventTitleLineHeight = mmToPx(6);
-    const eventTitleTextY = currentY + (headerHeight / 2) - eventTitleLineHeight + (eventTitleLineHeight * 0.9); // Adjusted for 2 lines centered
+    const eventTitleTextY = currentY + (headerHeight / 2) - eventTitleLineHeight + (eventTitleLineHeight * 0.9);
     drawTextWithWrapping(ctx, `Event: ${eventName}`, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(8), eventTitleLineHeight, 2, true);
-    currentY += headerHeight + mmToPx(6); // Space after header
+    currentY += headerHeight + mmToPx(6); 
 
     // 2. "GUEST TICKET" Sub-header
     ctx.fillStyle = textHex;
-    ctx.font = `bold ${mmToPx(4.2)}px Inter, sans-serif`; // Slightly smaller sub-header
+    ctx.font = `bold ${mmToPx(4.2)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
     currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(5), 1);
-    currentY += mmToPx(7); // Increased space after sub-header
+    currentY += mmToPx(7); 
 
     // 3. Guest Details Section
-    const detailIndent = contentPadding + mmToPx(2); // Reduced indent slightly
+    const detailIndent = contentPadding + mmToPx(2);
 
     const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2) => {
         const textStartX = detailIndent;
-        const availableTextWidth = contentWidth - mmToPx(4); // (detailIndent - contentPadding);
+        const availableTextWidth = contentWidth - mmToPx(4); 
 
         // Label
-        ctx.font = `bold ${mmToPx(3.2)}px Inter, sans-serif`; // Smaller label font
+        ctx.font = `bold ${mmToPx(3.2)}px Inter, sans-serif`;
         ctx.fillStyle = mutedTextHex;
         ctx.textAlign = 'left';
         currentY = drawTextWithWrapping(ctx, labelText, textStartX, currentY, availableTextWidth, mmToPx(4), 1);
 
         // Value
-        ctx.font = `normal ${mmToPx(3.5)}px Inter, sans-serif`; // Smaller value font
+        ctx.font = `normal ${mmToPx(3.5)}px Inter, sans-serif`;
         ctx.fillStyle = textHex;
         ctx.textAlign = 'left';
         currentY = drawTextWithWrapping(ctx, valueText, textStartX, currentY, availableTextWidth, mmToPx(4.5), valueMaxLines, false);
-        currentY += mmToPx(3.5); // Space after each full item
+        currentY += mmToPx(3.5); 
     };
 
     drawDetailItem("Guest Name:", submittedRegistration.name, 2);
@@ -264,10 +226,10 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     if (submittedRegistration.contactNumber) {
       drawDetailItem("Contact:", submittedRegistration.contactNumber, 1);
     }
-    currentY += mmToPx(3); // Extra space before QR
+    currentY += mmToPx(3); 
 
     // 4. QR Code
-    const qrSizePx = mmToPx(35); // Adjusted QR size
+    const qrSizePx = mmToPx(35);
     const qrX = (canvas.width - qrSizePx) / 2;
     const qrY = currentY;
 
@@ -278,20 +240,20 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
       // 5. Instructions
       ctx.fillStyle = mutedTextHex;
-      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`; // Smaller instructions font
+      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(3.8), 2);
       
       // 6. Footer Branding - Positioned at the very bottom
-      const footerTextY = canvas.height - contentPadding + mmToPx(0.5); // Fine-tune footer position
-      ctx.font = `normal ${mmToPx(2.5)}px Inter, sans-serif`; // Smaller footer font
+      const footerTextY = canvas.height - contentPadding + mmToPx(0.5); 
+      ctx.font = `normal ${mmToPx(2.5)}px Inter, sans-serif`;
       ctx.fillStyle = mutedTextHex;
       ctx.textAlign = 'center';
-      // Ensure footer doesn't overlap if content above is tall
+      
       if (postQrY < footerTextY - mmToPx(5)) { 
          ctx.fillText("Powered by Evntos", canvas.width / 2, footerTextY);
       } else {
-         ctx.fillText("Powered by Evntos", canvas.width / 2, postQrY + mmToPx(4)); // Fallback if too close
+         ctx.fillText("Powered by Evntos", canvas.width / 2, postQrY + mmToPx(4)); 
       }
 
       // --- Drawing End ---
@@ -317,12 +279,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
           errorCorrectionLevel: 'H', 
-          width: 300, // Reduced width for smaller QR on PDF
+          width: 300, 
           margin: 1, 
           type: 'image/png',
           color: {
-            dark: primaryHex, 
-            light: '#00000000' 
+            dark: primaryHex, // Use the fixed light theme primary color
+            light: '#00000000' // Transparent background for the light part
           }
         });
         qrImage.src = qrCodePngDataUrl;
@@ -431,3 +393,4 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
+
