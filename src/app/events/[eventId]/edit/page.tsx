@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, Eye, Trash2, Share2 } from 'lucide-react';
 import type { Event } from '@/types';
 import AuthGuard from '@/components/auth-guard';
 import { useAuth } from '@/context/AuthContext';
@@ -113,6 +113,25 @@ export default function EditEventPage() {
     router.push('/');
   };
 
+  const handleShare = async () => {
+    if (!event || !event.slug) return;
+    const shareUrl = `${window.location.origin}/e/${event.slug}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Public event link copied to clipboard.",
+      });
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast({
+        title: "Error",
+        description: "Could not copy link. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   if (isLoading || authLoading || eventContextLoading) {
     return (
@@ -152,7 +171,9 @@ export default function EditEventPage() {
                 <CardDescription>Update your event details and manage settings.</CardDescription>
               </div>
               <div className="flex gap-2 flex-wrap">
-                 {/* Guest List button removed from here */}
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 className="mr-2 h-4 w-4" /> Share Link
+                </Button>
                 <Button variant="secondary" size="sm" asChild>
                   <Link href={`/e/${event.slug}`} target="_blank">
                     <Eye className="mr-2 h-4 w-4" /> View Public Page

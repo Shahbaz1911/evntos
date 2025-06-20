@@ -6,6 +6,8 @@ export interface Event {
   description: string;
   imageUrl: string;
   mapLink: string;
+  venueName?: string; // Optional venue name
+  venueAddress?: string; // Optional venue address
   slug: string;
   registrationOpen: boolean;
   createdAt: string; // ISO date string

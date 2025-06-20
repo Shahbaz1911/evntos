@@ -13,12 +13,14 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
 import Image from 'next/image';
-import { CalendarDays, Clock } from 'lucide-react';
+import { CalendarDays, Clock, MapPin } from 'lucide-react';
 
 const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters.").max(100, "Title cannot exceed 100 characters."),
   description: z.string().max(5000, "Description cannot exceed 5000 characters.").optional(),
   imageUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  venueName: z.string().max(200, "Venue name cannot exceed 200 characters.").optional().or(z.literal('')),
+  venueAddress: z.string().max(300, "Venue address cannot exceed 300 characters.").optional().or(z.literal('')),
   mapLink: z.string().url("Must be a valid Google Maps URL.").optional().or(z.literal('')),
   eventDate: z.string().min(1, "Event date is required.").regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD."),
   eventTime: z.string().min(1, "Event time is required.").regex(/^\d{2}:\d{2}$/, "Invalid time format. Use HH:MM."),
@@ -41,6 +43,8 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
       title: event.title,
       description: event.description || '',
       imageUrl: event.imageUrl || '',
+      venueName: event.venueName || '',
+      venueAddress: event.venueAddress || '',
       mapLink: event.mapLink || '',
       eventDate: event.eventDate || '',
       eventTime: event.eventTime || '',
@@ -115,13 +119,32 @@ export default function EventForm({ event, onSubmit, isSubmitting, isGeneratingS
           )}
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="mapLink">Google Maps Link</Label>
-          <Input id="mapLink" {...register("mapLink")} placeholder="https://maps.app.goo.gl/example" />
-          {errors.mapLink && <p className="text-sm text-destructive">{errors.mapLink.message}</p>}
+        <div className="border-t border-border pt-6 space-y-6">
+            <h3 className="text-lg font-medium text-foreground flex items-center">
+                <MapPin className="mr-2 h-5 w-5 text-primary" />
+                Event Location
+            </h3>
+            <div className="space-y-2">
+                <Label htmlFor="venueName">Venue Name (Optional)</Label>
+                <Input id="venueName" {...register("venueName")} placeholder="e.g., The Grand Hall" />
+                {errors.venueName && <p className="text-sm text-destructive">{errors.venueName.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="venueAddress">Venue Address (Optional)</Label>
+                <Textarea id="venueAddress" {...register("venueAddress")} placeholder="e.g., 123 Main Street, Anytown, USA" rows={3} />
+                {errors.venueAddress && <p className="text-sm text-destructive">{errors.venueAddress.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="mapLink">Google Maps Link (Optional)</Label>
+                <Input id="mapLink" {...register("mapLink")} placeholder="https://maps.app.goo.gl/example" />
+                {errors.mapLink && <p className="text-sm text-destructive">{errors.mapLink.message}</p>}
+            </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+
+        <div className="flex items-center space-x-2 pt-6 border-t border-border">
           <Switch 
             id="registrationOpen" 
             checked={watch("registrationOpen")}

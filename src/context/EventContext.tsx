@@ -35,7 +35,6 @@ interface EventContextType {
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
-  // checkInGuest function is removed from here
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -72,6 +71,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           description: data.description,
           imageUrl: data.imageUrl,
           mapLink: data.mapLink,
+          venueName: data.venueName,
+          venueAddress: data.venueAddress,
           slug: data.slug,
           registrationOpen: data.registrationOpen,
           createdAt: data.createdAt,
@@ -90,7 +91,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
 
         if (userOwnedEventIds.length > 0) {
           console.log("[EventContext] fetchData: Attempting to fetch registrations for user-owned events.");
-          const MAX_COMPARISONS_PER_IN_QUERY = 30; // Firestore 'in' query limit (actually 30 in recent versions)
+          const MAX_COMPARISONS_PER_IN_QUERY = 30; 
           let fetchedRegistrations: Registration[] = [];
           
           for (let i = 0; i < userOwnedEventIds.length; i += MAX_COMPARISONS_PER_IN_QUERY) {
@@ -175,6 +176,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         description: '',
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
         mapLink: '',
+        venueName: '',
+        venueAddress: '',
         eventDate: '',
         eventTime: '',
         registrationOpen: true,
@@ -200,6 +203,8 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         description: '',
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(newEventData.title)}`,
         mapLink: '',
+        venueName: '',
+        venueAddress: '',
         eventDate: '',
         eventTime: '',
         registrationOpen: true,
@@ -244,7 +249,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     const eventRef = doc(db, "events", finalUpdatedEvent.id);
 
     try {
-      await updateDoc(eventRef, { ...finalUpdatedEvent });
+      await updateDoc(eventRef, { ...finalUpdatedEvent }); // Ensure all fields are passed
       setEvents((prevEvents) =>
         prevEvents.map((event) => (event.id === finalUpdatedEvent.id ? finalUpdatedEvent : event))
         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -362,7 +367,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [toast]);
 
-  // checkInGuest function removed
 
   return (
     <EventContext.Provider
@@ -380,7 +384,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         recordSharedLinkVisit,
         getRegistrationsByEventId,
         getRegistrationByIdFromFirestore,
-        // checkInGuest removed from provider value
       }}
     >
       {children}

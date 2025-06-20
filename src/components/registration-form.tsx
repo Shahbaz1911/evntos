@@ -160,12 +160,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         const primaryOrange = rgb(249 / 255, 115 / 255, 22 / 255); 
         const blackColor = rgb(0, 0, 0);
         const whiteColor = rgb(1, 1, 1);
-        const grayColor = rgb(0.4, 0.4, 0.4); 
-        const lightGrayColor = rgb(0.6, 0.6, 0.6);
+        const grayColor = rgb(0.3, 0.3, 0.3); 
+        const lightGrayColor = rgb(0.5, 0.5, 0.5);
 
         const ticketWidthMm = 80;
         const ticketHeightMm = 150;
-        const mmToPoints = (mm: number) => mm * 2.83465; // 1mm = 2.83465 points
+        const mmToPoints = (mm: number) => mm * 2.83465; 
 
         const pageTicketWidth = mmToPoints(ticketWidthMm);
         const pageTicketHeight = mmToPoints(ticketHeightMm);
@@ -173,13 +173,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         // --- Page 1: Main Ticket ---
         const page1 = pdfDoc.addPage([pageTicketWidth, pageTicketHeight]);
         const { width: p1W, height: p1H } = page1.getSize();
-        const p1Margin = mmToPoints(5); 
+        const p1Margin = mmToPoints(6); 
         const p1ContentWidth = p1W - 2 * p1Margin;
-        let p1Y = p1H - p1Margin - mmToPoints(5); // Top position for first element
+        let p1Y = p1H - p1Margin - mmToPoints(5); 
 
-        // Evntos Logo (Orange)
         const logoText = "evntos";
-        const logoSize = 24;
+        const logoSize = 22;
         page1.drawText(logoText, {
             x: p1W / 2 - helveticaBoldFont.widthOfTextAtSize(logoText, logoSize) / 2,
             y: p1Y,
@@ -187,28 +186,24 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             size: logoSize,
             color: primaryOrange,
         });
-        p1Y -= (logoSize + mmToPoints(7)); 
+        p1Y -= (logoSize + mmToPoints(6)); 
 
-        // Event Title Banner
-        const eventTitleBannerHeight = mmToPoints(10);
-        const eventTitleFontSize = 12;
-        p1Y -= mmToPoints(2); 
+        const eventTitleBannerHeight = mmToPoints(12);
+        const eventTitleFontSize = 11;
+        
         page1.drawRectangle({
             x: p1Margin,
             y: p1Y - eventTitleBannerHeight,
             width: p1ContentWidth,
             height: eventTitleBannerHeight,
             color: blackColor,
-            borderColor: blackColor,
-            borderWidth: 1,
         });
         
         const eventTitleText = eventDetails.title;
-        p1Y = drawWrappedText(page1, eventTitleText, p1Margin, p1Y - (eventTitleBannerHeight / 2) + (eventTitleFontSize / 2.5), p1ContentWidth, eventTitleFontSize + 2, helveticaBoldFont, eventTitleFontSize, whiteColor, {textAlign: 'center'});
-        p1Y = p1H - p1Margin - mmToPoints(5) - logoSize - mmToPoints(7) - mmToPoints(2) - eventTitleBannerHeight; // Reset Y after banner
-        p1Y -= mmToPoints(8); 
+        const titleTextYOffset = (eventTitleBannerHeight - eventTitleFontSize) / 2 + (eventTitleFontSize * 0.1); // Fine tune vertical centering
+        drawWrappedText(page1, eventTitleText, p1Margin + mmToPoints(1), p1Y - titleTextYOffset , p1ContentWidth - mmToPoints(2), eventTitleFontSize + 2, helveticaBoldFont, eventTitleFontSize, whiteColor, {textAlign: 'center'});
+        p1Y -= (eventTitleBannerHeight + mmToPoints(7)); 
 
-        // "GUEST TICKET"
         const guestTicketText = "GUEST TICKET";
         const guestTicketSize = 14;
         page1.drawText(guestTicketText, {
@@ -218,40 +213,36 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             size: guestTicketSize,
             color: blackColor,
         });
-        p1Y -= (guestTicketSize + mmToPoints(8));
+        p1Y -= (guestTicketSize + mmToPoints(5));
 
-        // QR Code
         const qrCodeDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
-            errorCorrectionLevel: 'H', width: 300, margin: 1, type: 'image/png',
+            errorCorrectionLevel: 'H', width: 350, margin: 1, type: 'image/png',
             color: { dark: '#000000', light: '#FFFFFF' }
         });
         const qrImageBytes = Uint8Array.from(atob(qrCodeDataUrl.split(',')[1]), c => c.charCodeAt(0));
         const qrImage = await pdfDoc.embedPng(qrImageBytes);
-        const qrDisplaySize = mmToPoints(35); 
+        const qrDisplaySize = mmToPoints(40); 
         page1.drawImage(qrImage, {
             x: p1W / 2 - qrDisplaySize / 2,
             y: p1Y - qrDisplaySize,
             width: qrDisplaySize,
             height: qrDisplaySize,
         });
-        p1Y -= (qrDisplaySize + mmToPoints(5));
+        p1Y -= (qrDisplaySize + mmToPoints(4));
 
-        // Guest Name
         const nameText = submittedRegistration.name;
         const nameSize = 12;
-        const nameLineHeight = nameSize + 2;
+        const nameLineHeight = nameSize + 3;
         p1Y = drawWrappedText(page1, nameText, p1Margin, p1Y, p1ContentWidth, nameLineHeight, helveticaBoldFont, nameSize, blackColor, {textAlign: 'center'});
         p1Y -= mmToPoints(3);
         
-        // Ticket ID
         const ticketIdText = `Ticket ID: ${submittedRegistration.id}`;
         const ticketIdSize = 9;
         const ticketIdLineHeight = ticketIdSize + 2;
         p1Y = drawWrappedText(page1, ticketIdText, p1Margin, p1Y, p1ContentWidth, ticketIdLineHeight, helveticaFont, ticketIdSize, grayColor, {textAlign: 'center'});
-        p1Y -= mmToPoints(8);
+        p1Y -= mmToPoints(6);
         
-        // Brief instruction
-        const instructionText = "Present this QR code for entry.";
+        const instructionText = "Present this page for entry.";
         const instructionSize = 9;
         page1.drawText(instructionText, {
             x: p1W / 2 - helveticaFont.widthOfTextAtSize(instructionText, instructionSize) / 2,
@@ -264,32 +255,37 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         // --- Page 2: Additional Details ---
         const page2 = pdfDoc.addPage([pageTicketWidth, pageTicketHeight]);
         const { width: p2W, height: p2H } = page2.getSize();
-        const p2Margin = mmToPoints(7); 
+        const p2Margin = mmToPoints(8); 
         const p2ContentWidth = p2W - 2 * p2Margin;
-        let p2Y = p2H - p2Margin - mmToPoints(5);
+        let p2Y = p2H - p2Margin - mmToPoints(6);
 
         const sectionHeaderFontSize = 13;
         const detailLabelFontSize = 9;
         const detailValueFontSize = 9;
-        const detailLineHeight = detailValueFontSize + 3;
-        const sectionSpacing = mmToPoints(6);
-        const itemSpacing = mmToPoints(3);
+        const detailLineHeight = detailValueFontSize + 4; 
+        const sectionSpacing = mmToPoints(7);
+        const itemSpacing = mmToPoints(3.5);
 
 
         const drawDetailItemPage2 = (label: string, value: string) => {
+            if (p2Y < p2Margin + sectionHeaderFontSize + detailLineHeight * 2) { // check if enough space for label + value + some buffer
+                 // This is a basic check; real multi-page content flow is complex.
+                 // For now, we'll just stop if out of space on page 2.
+                console.warn("Not enough space on page 2 for detail:", label);
+                return;
+            }
             page2.drawText(label, { x: p2Margin, y: p2Y, font: helveticaBoldFont, size: detailLabelFontSize, color: blackColor });
             p2Y -= detailLineHeight;
             p2Y = drawWrappedText(page2, value, p2Margin, p2Y, p2ContentWidth, detailLineHeight, helveticaFont, detailValueFontSize, grayColor );
             p2Y -= itemSpacing; 
         };
         
-        // Guest Information Section
         page2.drawText("Guest Information", {
             x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange
         });
-        p2Y -= (sectionHeaderFontSize + mmToPoints(3));
-        page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.5, color: lightGrayColor});
-        p2Y -= mmToPoints(4);
+        p2Y -= (sectionHeaderFontSize + mmToPoints(2));
+        page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.7, color: lightGrayColor});
+        p2Y -= mmToPoints(5);
 
         drawDetailItemPage2("Full Name:", submittedRegistration.name);
         drawDetailItemPage2("Email:", submittedRegistration.email);
@@ -299,27 +295,37 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         drawDetailItemPage2("Registered At:", new Date(submittedRegistration.registeredAt).toLocaleString());
         drawDetailItemPage2("Ticket ID:", submittedRegistration.id);
         
-        p2Y -= (sectionSpacing - itemSpacing); // Extra space before next section
+        p2Y -= (sectionSpacing - itemSpacing); 
 
-        // Event Details Section
          page2.drawText("Event Details", {
             x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange
         });
-        p2Y -= (sectionHeaderFontSize + mmToPoints(3));
-        page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.5, color: lightGrayColor});
-        p2Y -= mmToPoints(4);
+        p2Y -= (sectionHeaderFontSize + mmToPoints(2));
+        page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.7, color: lightGrayColor});
+        p2Y -= mmToPoints(5);
 
         drawDetailItemPage2("Event Name:", eventDetails.title);
         drawDetailItemPage2("Date & Time:", formatEventDateTimeForPdf(eventDetails.eventDate, eventDetails.eventTime));
-        const venueText = eventDetails.mapLink ? "Details on event page / map link" : "Not specified";
-        drawDetailItemPage2("Venue:", venueText);
+        if (eventDetails.venueName) {
+            drawDetailItemPage2("Venue Name:", eventDetails.venueName);
+        }
+        if (eventDetails.venueAddress) {
+            // Replace newlines with spaces for better PDF display of address
+            drawDetailItemPage2("Venue Address:", eventDetails.venueAddress.replace(/\n/g, ', '));
+        }
+        if (eventDetails.mapLink) {
+            drawDetailItemPage2("Directions:", "Use map link on event page");
+        }
+        if (!eventDetails.venueName && !eventDetails.venueAddress && !eventDetails.mapLink) {
+             drawDetailItemPage2("Location:", "Not specified");
+        }
 
-        // Powered by evntos - Footer on last page
+
         const footerText = "Powered by evntos";
-        const footerSize = 8;
+        const footerSize = 7;
         page2.drawText(footerText, {
             x: p2W / 2 - helveticaFont.widthOfTextAtSize(footerText, footerSize) / 2,
-            y: p2Margin, 
+            y: p2Margin - mmToPoints(2), 
             font: helveticaFont,
             size: footerSize,
             color: lightGrayColor,
@@ -445,4 +451,3 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
-
