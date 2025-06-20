@@ -13,7 +13,7 @@ import { z } from 'genkit';
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 import { Resend } from 'resend';
-import { streamToBuffer } from '@jorgeferrero/stream-to-buffer'; // Using a community package for this
+// import { streamToBuffer } from '@jorgeferrero/stream-to-buffer'; // Not strictly needed as pdfDoc.save() returns Uint8Array
 import type { Event } from '@/types'; // Assuming Event type is available
 
 // Helper function from registration-form, slightly adapted
@@ -22,12 +22,12 @@ const formatEventDateTimeForPdf = (dateStr?: string, timeStr?: string) => {
     return "N/A";
   }
   try {
-    const dateTime = new Date(\`\${dateStr.trim()}T\${timeStr.trim()}:00\`);
+    const dateTime = new Date(`${dateStr.trim()}T${timeStr.trim()}:00`);
     if (isNaN(dateTime.getTime())) return "Invalid Date/Time";
     
     const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-    return \`\${dateTime.toLocaleDateString(undefined, dateOptions)}, \${dateTime.toLocaleTimeString(undefined, timeOptions)}\`;
+    return `${dateTime.toLocaleDateString(undefined, dateOptions)}, ${dateTime.toLocaleTimeString(undefined, timeOptions)}`;
   } catch (e) {
     return "Error formatting date/time";
   }
@@ -189,7 +189,7 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
     p1Y = drawWrappedText(page1, nameText, p1Margin, p1Y, p1ContentWidth, nameLineHeight, helveticaBoldFont, nameSize, blackColor, {textAlign: 'center'});
     p1Y -= mmToPoints(3);
     
-    const ticketIdText = \`Ticket ID: \${input.registrationId}\`;
+    const ticketIdText = `Ticket ID: ${input.registrationId}`;
     const ticketIdSize = 9;
     const ticketIdLineHeight = ticketIdSize + 2;
     p1Y = drawWrappedText(page1, ticketIdText, p1Margin, p1Y, p1ContentWidth, ticketIdLineHeight, helveticaFont, ticketIdSize, grayColor, {textAlign: 'center'});
@@ -302,25 +302,28 @@ const sendTicketEmailFlow = ai.defineFlow(
 
     try {
       const pdfBytes = await generatePdfTicket(input);
-      const pdfBuffer = Buffer.from(pdfBytes);
+      const pdfBuffer = Buffer.from(pdfBytes); // pdf-lib's save() returns Uint8Array, convert to Buffer
 
       const safeEventName = input.eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
-      const filename = \`\${safeEventName}-Ticket-\${safeGuestName}.pdf\`;
+      const filename = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
+
+      // IMPORTANT: Replace 'noreply@yourdomain.com' with your actual verified Resend domain/email
+      const fromEmail = 'Evntos Tickets <noreply@yourdomain.com>'; 
 
       const { data, error } = await resend.emails.send({
-        from: 'Evntos Tickets <onboarding@resend.dev>', // Replace with your verified Resend domain/email
+        from: fromEmail,
         to: [input.userEmail],
-        subject: \`Your Ticket for \${input.eventDetails.title}\`,
-        html: \`
-          <h1>Hello \${input.userName},</h1>
-          <p>Thank you for registering for <strong>\${input.eventDetails.title}</strong>!</p>
+        subject: `Your Ticket for ${input.eventDetails.title}`,
+        html: `
+          <h1>Hello ${input.userName},</h1>
+          <p>Thank you for registering for <strong>${input.eventDetails.title}</strong>!</p>
           <p>Your PDF ticket is attached to this email. Please bring it with you (either printed or on your device) for entry to the event.</p>
           <p>We look forward to seeing you there!</p>
           <br/>
           <p>Best regards,</p>
           <p>The Evntos Team</p>
-        \`,
+        `,
         attachments: [
           {
             filename: filename,
@@ -331,14 +334,15 @@ const sendTicketEmailFlow = ai.defineFlow(
 
       if (error) {
         console.error("Resend API Error:", error);
-        return { success: false, message: \`Failed to send email: \${error.message}\` };
+        return { success: false, message: `Failed to send email: ${error.message}` };
       }
 
       return { success: true, message: "Ticket email sent successfully.", emailId: data?.id };
 
     } catch (e: any) {
       console.error("Error in sendTicketEmailFlow:", e);
-      return { success: false, message: \`An unexpected error occurred: \${e.message || 'Unknown error'}\` };
+      return { success: false, message: `An unexpected error occurred: ${e.message || 'Unknown error'}` };
     }
   }
 );
+
