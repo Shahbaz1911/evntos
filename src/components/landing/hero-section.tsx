@@ -15,16 +15,16 @@ const DELAY_BETWEEN_WORDS = 1500;
 
 const heroImages = [
   {
-    src: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwYXJ0eXxlbnwwfHx8fDE3NTAyNjM5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    hint: "party celebration",
+    src: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb25jZXJ0JTIwcGFydHl8ZW58MHx8fHwxNzUyMjYyMzUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    hint: "concert party",
   },
   {
-    src: "https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXN0aXZhbHxlbnwwfHx8fDE3NTE2NjAwMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZXN0aXZhbCUyMGNyb3dkfGVufDB8fHx8MTc1MjI2MjM4OXww&ixlib=rb-4.1.0&q=80&w=1080",
     hint: "festival crowd",
   },
   {
-    src: "https://images.unsplash.com/photo-1505236873119-cde6b67f1cf4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb25mZXJlbmNlfGVufDB8fHx8MTc1MTY2MDA1MHww&ixlib=rb-4.1.0&q=80&w=1080",
-    hint: "conference stage",
+    src: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkbSUyMHBhcnR5fGVufDB8fHx8MTc1MjI2MjQxNnww&ixlib=rb-4.1.0&q=80&w=1080",
+    hint: "dj party",
   },
 ];
 
