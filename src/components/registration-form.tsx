@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration, Event as EventType } from '@/types';
-import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide, CalendarDays, Clock, MapPin, Building } from 'lucide-react'; 
+import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react'; 
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -174,92 +174,85 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       return;
     }
 
-    const pdfTicketWidthMm = 70;
-    const pdfTicketHeightMm = 120;
+    const pdfTicketWidthMm = 80; // Increased width
+    const pdfTicketHeightMm = 150; // Increased height
     const dpi = 300; 
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
 
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
-    const primaryHex = '#F97316';
-    const primaryFgHex = '#FFFFFF';
-    const cardHex = '#FFFFFF';
-    const textHex = '#1A1A1A';
-    const mutedTextHex = '#785A48';
-    const borderHex = '#FFDEC2';
+    // Black and White Theme Colors
+    const primaryColor = '#000000'; // Black for headers, logo, important text
+    const primaryFgColor = '#FFFFFF'; // White for text on black background
+    const cardColor = '#FFFFFF'; // White for ticket background
+    const textColor = '#000000'; // Black for general text
+    const mutedTextColor = '#000000'; // Black for muted text (labels, etc.)
+    const borderColor = '#000000'; // Black for border
 
-    ctx.fillStyle = cardHex;
+    ctx.fillStyle = cardColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = borderHex;
+    ctx.strokeStyle = borderColor;
     ctx.lineWidth = mmToPx(0.3);
     ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
 
-    const contentPadding = mmToPx(5);
+    const contentPadding = mmToPx(6); // Increased padding
     const contentWidth = canvas.width - 2 * contentPadding;
     let currentY = contentPadding;
 
     // Evntos Logo (Text based)
-    ctx.fillStyle = primaryHex;
-    ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
+    ctx.fillStyle = primaryColor;
+    ctx.font = `bold ${mmToPx(7)}px Inter, sans-serif`; // Slightly larger logo
     ctx.textAlign = 'center';
-    currentY = drawTextWithWrapping(ctx, "evntos", canvas.width / 2, currentY + mmToPx(2), contentWidth, mmToPx(7), 1) + mmToPx(2);
+    currentY = drawTextWithWrapping(ctx, "evntos", canvas.width / 2, currentY + mmToPx(3), contentWidth, mmToPx(8), 1) + mmToPx(4);
 
     // Header Section (Event Title)
-    const headerHeight = mmToPx(16); // Reduced height for event title
-    ctx.fillStyle = primaryHex;
+    const headerHeight = mmToPx(18); 
+    ctx.fillStyle = primaryColor; // Black background
     ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
 
-    ctx.fillStyle = primaryFgHex;
-    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`; // Slightly smaller for event title
+    ctx.fillStyle = primaryFgColor; // White text
+    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`; 
     ctx.textAlign = 'center';
-    const eventTitleLineHeight = mmToPx(5);
-    const eventTitleTextY = currentY + (headerHeight / 2) - eventTitleLineHeight + (eventTitleLineHeight * 0.9);
-    currentY = drawTextWithWrapping(ctx, eventDetails.title, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(6), eventTitleLineHeight, 2, true);
-    currentY += headerHeight + mmToPx(5);
+    const eventTitleLineHeight = mmToPx(5.5);
+    // Calculate Y to center text vertically within the black header bar
+    const eventTitleTextY = currentY + (headerHeight / 2) - (eventTitleLineHeight / (eventDetails.title.length > 30 ? 1 : 2)) + (eventTitleLineHeight * 0.8);
+    drawTextWithWrapping(ctx, eventDetails.title, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(6), eventTitleLineHeight, 2, true);
+    currentY += headerHeight + mmToPx(6);
 
 
     // "GUEST TICKET" Sub-header
-    ctx.fillStyle = textHex;
-    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
+    ctx.fillStyle = textColor;
+    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(4.5), 1);
-    currentY += mmToPx(5); 
+    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(5), 1);
+    currentY += mmToPx(6); 
 
     const detailIndent = contentPadding + mmToPx(2);
-    const detailValueIndent = detailIndent + mmToPx(20); // Indent for values
-    const valueMaxWidth = contentWidth - mmToPx(22);
+    const valueMaxWidth = contentWidth - mmToPx(2); // For full width text in details
 
-
-    const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2, icon?: (ctx: CanvasRenderingContext2D, x:number, y:number, size:number) => void) => {
-        const textStartX = detailIndent;
-        const iconSize = mmToPx(3.2);
+    const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2) => {
         let yPos = currentY;
 
-        if (icon) {
-            icon(ctx, textStartX, yPos - iconSize*0.1, iconSize); // Draw icon
-        }
-        
         // Label
-        ctx.font = `bold ${mmToPx(3)}px Inter, sans-serif`;
-        ctx.fillStyle = mutedTextHex;
+        ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`; // Labels slightly bolder/larger
+        ctx.fillStyle = mutedTextColor; // Black for B&W
         ctx.textAlign = 'left';
-        const labelYOffset = icon ? mmToPx(0.5) : 0; // Adjust label Y if icon is present
-        yPos = drawTextWithWrapping(ctx, labelText, textStartX + (icon ? iconSize + mmToPx(1.5) : 0), yPos + labelYOffset, contentWidth - (icon ? iconSize + mmToPx(1.5) : 0), mmToPx(3.8), 1);
+        yPos = drawTextWithWrapping(ctx, labelText, detailIndent, yPos, valueMaxWidth, mmToPx(4), 1);
 
         // Value
-        ctx.font = `normal ${mmToPx(3.2)}px Inter, sans-serif`;
-        ctx.fillStyle = textHex;
+        ctx.font = `normal ${mmToPx(3.5)}px Inter, sans-serif`; // Values slightly larger
+        ctx.fillStyle = textColor; // Black for B&W
         ctx.textAlign = 'left';
-        currentY = drawTextWithWrapping(ctx, valueText, textStartX + (icon ? iconSize + mmToPx(1.5) : 0), yPos, valueMaxWidth - (icon ? iconSize + mmToPx(1.5) : 0), mmToPx(4), valueMaxLines, false);
-        currentY += mmToPx(3);
+        currentY = drawTextWithWrapping(ctx, valueText, detailIndent, yPos, valueMaxWidth, mmToPx(4.5), valueMaxLines, false);
+        currentY += mmToPx(4); // Increased spacing between detail items
     };
     
     // --- Guest Details ---
-    ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
-    ctx.fillStyle = primaryHex;
-    currentY = drawTextWithWrapping(ctx, "Guest Information", detailIndent, currentY, contentWidth, mmToPx(4)) + mmToPx(1);
+    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`; // Section title
+    ctx.fillStyle = primaryColor; // Black
+    currentY = drawTextWithWrapping(ctx, "Guest Information", detailIndent, currentY, contentWidth, mmToPx(4.5)) + mmToPx(2);
 
     drawDetailItem("Name:", submittedRegistration.name, 2);
     drawDetailItem("Email:", submittedRegistration.email, 2);
@@ -267,45 +260,51 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       drawDetailItem("Contact:", submittedRegistration.contactNumber, 1);
     }
     drawDetailItem("Registered:", new Date(submittedRegistration.registeredAt).toLocaleString(), 2);
-    drawDetailItem("Ticket ID:", submittedRegistration.id, 1);
-    currentY += mmToPx(2);
+    drawDetailItem("Ticket ID:", submittedRegistration.id, 1); // Display full ID
+    currentY += mmToPx(3);
 
     // --- Event Details ---
-    ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
-    ctx.fillStyle = primaryHex;
-    currentY = drawTextWithWrapping(ctx, "Event Details", detailIndent, currentY, contentWidth, mmToPx(4)) + mmToPx(1);
+    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`; // Section title
+    ctx.fillStyle = primaryColor; // Black
+    currentY = drawTextWithWrapping(ctx, "Event Details", detailIndent, currentY, contentWidth, mmToPx(4.5)) + mmToPx(2);
     
     drawDetailItem("Event:", eventDetails.title, 2);
     drawDetailItem("Date & Time:", formatEventDateTimeForPdf(eventDetails.eventDate, eventDetails.eventTime), 2);
     
-    const venueText = eventDetails.mapLink ? "Details on event page" : "Not specified";
+    const venueText = eventDetails.mapLink ? "Details available on the event page" : "Not specified";
     drawDetailItem("Venue:", venueText, 2);
-    currentY += mmToPx(4);
+    currentY += mmToPx(5); // More space before QR code
 
 
     // QR Code
-    const qrSizePx = mmToPx(30); // Slightly smaller QR
+    const qrSizePx = mmToPx(35); // Slightly larger QR code
     const qrX = (canvas.width - qrSizePx) / 2;
-    const qrY = currentY;
+    let qrY = currentY;
+    
+    // Ensure QR code doesn't overflow
+    if (qrY + qrSizePx + mmToPx(10) > canvas.height - contentPadding) { // mmToPx(10) for text below QR
+        qrY = canvas.height - contentPadding - qrSizePx - mmToPx(10);
+    }
+    if (qrY < currentY) qrY = currentY; // Should not happen if calculated correctly
 
     const qrImage = new Image();
     qrImage.onload = () => {
       ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
-      let postQrY = qrY + qrSizePx + mmToPx(4);
+      let postQrY = qrY + qrSizePx + mmToPx(5);
 
       // Instructions
-      ctx.fillStyle = mutedTextHex;
-      ctx.font = `italic ${mmToPx(2.8)}px Inter, sans-serif`;
+      ctx.fillStyle = mutedTextColor; // Black for B&W
+      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`; // Slightly larger instructions
       ctx.textAlign = 'center';
-      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(3.5), 2);
+      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(4), 2);
       
-      const footerTextY = canvas.height - contentPadding + mmToPx(1); 
-      ctx.font = `normal ${mmToPx(2.5)}px Inter, sans-serif`;
-      ctx.fillStyle = mutedTextHex;
+      const footerTextY = canvas.height - contentPadding + mmToPx(2); 
+      ctx.font = `normal ${mmToPx(2.8)}px Inter, sans-serif`;
+      ctx.fillStyle = mutedTextColor; // Black for B&W
       ctx.textAlign = 'center';
       
-      const finalContentBottom = Math.max(postQrY, currentY); //Furthest point reached by content
-      const poweredByY = Math.max(finalContentBottom + mmToPx(3), footerTextY - mmToPx(2)); // Ensure it's below content and near bottom
+      const finalContentBottom = Math.max(postQrY, currentY); 
+      const poweredByY = Math.max(finalContentBottom + mmToPx(3), footerTextY - mmToPx(3)); 
       ctx.fillText("Powered by evntos", canvas.width / 2, poweredByY);
 
 
@@ -331,12 +330,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     try {
         const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
           errorCorrectionLevel: 'H', 
-          width: 300, 
+          width: 350, // Increased QR code resolution for better scanability
           margin: 1, 
           type: 'image/png',
           color: {
-            dark: textHex, 
-            light: '#00000000' 
+            dark: '#000000',  // Black modules
+            light: '#FFFFFF' // White background for the QR code image itself
           }
         });
         qrImage.src = qrCodePngDataUrl;
