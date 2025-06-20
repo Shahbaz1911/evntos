@@ -14,7 +14,7 @@ import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration, Event as EventType } from '@/types';
 import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
 
@@ -95,66 +95,39 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     }
   };
 
-  const drawTextWithWrapping = (
-    ctx: CanvasRenderingContext2D,
+  const drawWrappedText = (
+    page: any, // PDFPage
     text: string,
     x: number,
     y: number,
     maxWidth: number,
     lineHeight: number,
-    maxLines: number = 99,
-    addEllipsis: boolean = false
+    font: any, // PDFFont
+    size: number,
+    color: any // RGBColor
   ): number => {
     const words = text.split(' ');
-    let line = '';
+    let currentLine = '';
     let currentY = y;
-    let linesDrawn = 0;
-
-    for (let i = 0; i < words.length; i++) {
-      if (linesDrawn >= maxLines) break;
-
-      const testLineAttempt = line + words[i] + ' ';
-      const testWidth = ctx.measureText(testLineAttempt).width;
-
-      if (testWidth > maxWidth && line !== '') {
-        let lineToPrint = line.trim();
-        if (addEllipsis && linesDrawn === maxLines - 1 && i < words.length) {
-          while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
-            lineToPrint = lineToPrint.slice(0, -1);
-          }
-          lineToPrint += '...';
-        }
-        ctx.fillText(lineToPrint, x, currentY);
-        currentY += lineHeight;
-        linesDrawn++;
-        if (linesDrawn >= maxLines) {
-          line = '';
-          break;
-        }
-        line = words[i] + ' ';
+  
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      const testWidth = font.widthOfTextAtSize(testLine, size);
+  
+      if (testWidth > maxWidth && currentLine !== '') {
+        page.drawText(currentLine, { x, y: currentY, font, size, color });
+        currentY -= lineHeight;
+        currentLine = word;
       } else {
-        line = testLineAttempt;
+        currentLine = testLine;
       }
     }
-
-    if (line.trim() !== '' && linesDrawn < maxLines) {
-      let lineToPrint = line.trim();
-      if (ctx.measureText(lineToPrint).width > maxWidth) {
-        if (addEllipsis) {
-            while (ctx.measureText(lineToPrint + '...').width > maxWidth && lineToPrint.length > 0) {
-                lineToPrint = lineToPrint.slice(0, -1);
-            }
-            lineToPrint += '...';
-        } else {
-            while (ctx.measureText(lineToPrint).width > maxWidth && lineToPrint.length > 0) {
-                lineToPrint = lineToPrint.slice(0, -1);
-            }
-        }
-      }
-      ctx.fillText(lineToPrint, x, currentY);
-      currentY += lineHeight;
+  
+    if (currentLine !== '') {
+      page.drawText(currentLine, { x, y: currentY, font, size, color });
+      currentY -= lineHeight;
     }
-    return currentY;
+    return currentY; // Return the Y position after the last line drawn
   };
 
 
@@ -167,176 +140,189 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         return;
     }
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      toast({ title: "Download Error", description: "Could not initialize graphics for ticket.", variant: "destructive" });
-      return;
-    }
-
-    const pdfTicketWidthMm = 80;
-    const pdfTicketHeightMm = 150;
-    const dpi = 300;
-    const mmToPx = (mm: number) => Math.round((mm / 25.4) * dpi);
-
-    canvas.width = mmToPx(pdfTicketWidthMm);
-    canvas.height = mmToPx(pdfTicketHeightMm);
-
-    const logoColor = '#F97316'; // Orange for "evntos" logo
-    const headerBgColor = '#000000';
-    const headerFgColor = '#FFFFFF';
-    const cardColor = '#FFFFFF';
-    const textColor = '#000000';
-    const mutedTextColor = '#000000'; // Using black for muted as well for B&W theme
-    const borderColor = '#000000';
-    const qrDarkColor = '#000000';
-    const qrLightColor = '#FFFFFF';
-
-    ctx.fillStyle = cardColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = mmToPx(0.3);
-    ctx.strokeRect(mmToPx(2), mmToPx(2), canvas.width - mmToPx(4), canvas.height - mmToPx(4));
-
-    const contentPadding = mmToPx(6);
-    const contentWidth = canvas.width - 2 * contentPadding;
-    let currentY = contentPadding;
-
-    // 1. Evntos Logo (Orange)
-    ctx.fillStyle = logoColor;
-    ctx.font = `bold ${mmToPx(7)}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    currentY = drawTextWithWrapping(ctx, "evntos", canvas.width / 2, currentY + mmToPx(3), contentWidth, mmToPx(8), 1) + mmToPx(4);
-
-    // 2. Header Section (Event Title - Black BG, White Text)
-    const headerHeight = mmToPx(18);
-    ctx.fillStyle = headerBgColor;
-    ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
-
-    ctx.fillStyle = headerFgColor;
-    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    const eventTitleLineHeight = mmToPx(5.5);
-    const eventTitleTextY = currentY + (headerHeight / 2) - (eventTitleLineHeight / (eventDetails.title.length > 30 ? 1 : 2)) + (eventTitleLineHeight * 0.8);
-    drawTextWithWrapping(ctx, eventDetails.title, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(6), eventTitleLineHeight, 2, true);
-    currentY += headerHeight + mmToPx(6);
-
-    // 3. "GUEST TICKET" Sub-header
-    ctx.fillStyle = textColor;
-    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(5), 1);
-    currentY += mmToPx(6); // Space before QR code
-
-    // 4. QR Code
-    const qrSizePx = mmToPx(40);
-    const qrX = (canvas.width - qrSizePx) / 2;
-    const qrYPosition = currentY; // Save Y before drawing QR for details below
-
-    const qrImage = new Image();
-
-    const drawRemainingDetails = () => {
-      ctx.drawImage(qrImage, qrX, qrYPosition, qrSizePx, qrSizePx);
-      currentY = qrYPosition + qrSizePx + mmToPx(4); // Update currentY to be after the QR code
-
-      // 5. Instructions below QR
-      ctx.fillStyle = mutedTextColor;
-      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      currentY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, currentY, contentWidth - mmToPx(6), mmToPx(4), 2);
-      currentY += mmToPx(6);
-
-      const detailIndent = contentPadding + mmToPx(2);
-      const valueMaxWidth = contentWidth - mmToPx(2);
-
-      const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2) => {
-          let yPos = currentY;
-          ctx.font = `bold ${mmToPx(3.2)}px Inter, sans-serif`; // Slightly smaller for more details
-          ctx.fillStyle = mutedTextColor;
-          ctx.textAlign = 'left';
-          yPos = drawTextWithWrapping(ctx, labelText, detailIndent, yPos, valueMaxWidth, mmToPx(3.8), 1);
-
-          ctx.font = `normal ${mmToPx(3.2)}px Inter, sans-serif`;
-          ctx.fillStyle = textColor;
-          ctx.textAlign = 'left';
-          currentY = drawTextWithWrapping(ctx, valueText, detailIndent, yPos, valueMaxWidth, mmToPx(4.2), valueMaxLines, false);
-          currentY += mmToPx(3.5); // Slightly tighter spacing
-      };
-
-      // 6. Guest Information
-      ctx.font = `bold ${mmToPx(3.8)}px Inter, sans-serif`; // Section title
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'left';
-      currentY = drawTextWithWrapping(ctx, "Guest Information", detailIndent, currentY, contentWidth, mmToPx(4.2)) + mmToPx(1.5);
-
-      drawDetailItem("Name:", submittedRegistration.name, 2);
-      drawDetailItem("Email:", submittedRegistration.email, 2);
-      if (submittedRegistration.contactNumber) {
-        drawDetailItem("Contact:", submittedRegistration.contactNumber, 1);
-      }
-      drawDetailItem("Registered:", new Date(submittedRegistration.registeredAt).toLocaleString(), 2);
-      drawDetailItem("Ticket ID:", submittedRegistration.id, 1);
-      currentY += mmToPx(2.5);
-
-      // 7. Event Details
-      ctx.font = `bold ${mmToPx(3.8)}px Inter, sans-serif`; // Section title
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'left';
-      currentY = drawTextWithWrapping(ctx, "Event Details", detailIndent, currentY, contentWidth, mmToPx(4.2)) + mmToPx(1.5);
-
-      drawDetailItem("Event:", eventDetails.title, 2);
-      drawDetailItem("Date & Time:", formatEventDateTimeForPdf(eventDetails.eventDate, eventDetails.eventTime), 2);
-      const venueText = eventDetails.mapLink ? "Details on event page" : "Not specified";
-      drawDetailItem("Venue:", venueText, 2);
-      currentY += mmToPx(3);
-
-      // 8. "Powered by evntos" footer
-      const footerTextY = canvas.height - contentPadding + mmToPx(0);
-      ctx.font = `normal ${mmToPx(2.8)}px Inter, sans-serif`;
-      ctx.fillStyle = mutedTextColor;
-      ctx.textAlign = 'center';
-      const poweredByY = Math.max(currentY + mmToPx(3), footerTextY - mmToPx(3)); // Ensure it's at bottom
-      if (poweredByY < canvas.height - mmToPx(2)) { // Only draw if it fits
-        ctx.fillText("Powered by evntos", canvas.width / 2, poweredByY);
-      }
-
-      const dataUrl = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [pdfTicketWidthMm, pdfTicketHeightMm]
-      });
-      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfTicketWidthMm, pdfTicketHeightMm);
-
-      const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-      const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-      const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
-      pdf.save(fileName);
-      reset();
-      setSubmittedRegistration(null);
-    };
-
-    qrImage.onload = drawRemainingDetails;
-    qrImage.onerror = (err) => {
-        console.error("Error loading QR code for canvas drawing:", err);
-        toast({ title: "Download Error", description: "Could not generate QR code image for PDF.", variant: "destructive" });
-    }
     try {
-        const qrCodePngDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
-          errorCorrectionLevel: 'H',
-          width: 350,
-          margin: 1,
-          type: 'image/png',
-          color: {
-            dark: qrDarkColor,
-            light: qrLightColor
-          }
+        const pdfDoc = await PDFDocument.create();
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+        const primaryOrange = rgb(249 / 255, 115 / 255, 22 / 255); // #F97316
+        const blackColor = rgb(0, 0, 0);
+        const whiteColor = rgb(1, 1, 1);
+        const grayColor = rgb(0.3, 0.3, 0.3);
+        const lightGrayColor = rgb(0.5, 0.5, 0.5);
+
+        // Page 1: Main Ticket
+        const page1TicketWidth = 226.77; // ~80mm
+        const page1TicketHeight = 425.19; // ~150mm
+        const page1 = pdfDoc.addPage([page1TicketWidth, page1TicketHeight]);
+        const { width: p1W, height: p1H } = page1.getSize();
+        const p1Margin = 18; // points
+        let p1Y = p1H - p1Margin - 15;
+
+        // Evntos Logo (Orange)
+        const logoText = "evntos";
+        const logoSize = 22;
+        page1.drawText(logoText, {
+            x: p1W / 2 - helveticaBoldFont.widthOfTextAtSize(logoText, logoSize) / 2,
+            y: p1Y,
+            font: helveticaBoldFont,
+            size: logoSize,
+            color: primaryOrange,
         });
-        qrImage.src = qrCodePngDataUrl;
-    } catch (e) {
-        console.error("Error generating QR code data URL:", e);
-        toast({ title: "Download Error", description: "Could not generate QR code data for PDF.", variant: "destructive" });
+        p1Y -= (logoSize + 10);
+
+        // Event Title Banner
+        const eventTitleBannerHeight = 28;
+        p1Y -= 10; // Space before banner
+        page1.drawRectangle({
+            x: p1Margin,
+            y: p1Y - eventTitleBannerHeight,
+            width: p1W - 2 * p1Margin,
+            height: eventTitleBannerHeight,
+            color: blackColor,
+        });
+        
+        const eventTitleText = eventDetails.title;
+        const eventTitleFontSize = 11;
+        // Simple truncation for event title in banner
+        const maxEventTitleCharsInBanner = 38;
+        const displayEventTitle = eventTitleText.length > maxEventTitleCharsInBanner 
+            ? eventTitleText.substring(0, maxEventTitleCharsInBanner - 3) + "..."
+            : eventTitleText;
+        const eventTitleTextWidth = helveticaBoldFont.widthOfTextAtSize(displayEventTitle, eventTitleFontSize);
+        
+        page1.drawText(displayEventTitle, {
+            x: p1Margin + (p1W - 2 * p1Margin - eventTitleTextWidth) / 2, // Centered in banner
+            y: p1Y - eventTitleBannerHeight / 2 - eventTitleFontSize / 2 + 3.5, // Vertically center
+            font: helveticaBoldFont,
+            size: eventTitleFontSize,
+            color: whiteColor,
+        });
+        p1Y -= (eventTitleBannerHeight + 15);
+
+        // "GUEST TICKET"
+        const guestTicketText = "GUEST TICKET";
+        const guestTicketSize = 13;
+        page1.drawText(guestTicketText, {
+            x: p1W / 2 - helveticaBoldFont.widthOfTextAtSize(guestTicketText, guestTicketSize) / 2,
+            y: p1Y,
+            font: helveticaBoldFont,
+            size: guestTicketSize,
+            color: blackColor,
+        });
+        p1Y -= (guestTicketSize + 15);
+
+        // QR Code
+        const qrCodeDataUrl = await QRCodeToDataURL(submittedRegistration.id, {
+            errorCorrectionLevel: 'H', width: 250, margin: 1, type: 'image/png',
+            color: { dark: '#000000', light: '#FFFFFF' }
+        });
+        const qrImageBytes = Uint8Array.from(atob(qrCodeDataUrl.split(',')[1]), c => c.charCodeAt(0));
+        const qrImage = await pdfDoc.embedPng(qrImageBytes);
+        const qrSize = 75; // points
+        page1.drawImage(qrImage, {
+            x: p1W / 2 - qrSize / 2,
+            y: p1Y - qrSize,
+            width: qrSize,
+            height: qrSize,
+        });
+        p1Y -= (qrSize + 8);
+
+        // Guest Name
+        const nameText = `Name: ${submittedRegistration.name}`;
+        const nameSize = 10;
+        p1Y = drawWrappedText(page1, nameText, p1Margin, p1Y, p1W - 2 * p1Margin, nameSize + 2, helveticaFont, nameSize, blackColor);
+        p1Y -= 5;
+
+
+        // Ticket ID
+        const ticketIdText = `Ticket ID: ${submittedRegistration.id}`;
+        const ticketIdSize = 8;
+        p1Y = drawWrappedText(page1, ticketIdText, p1Margin, p1Y, p1W - 2 * p1Margin, ticketIdSize + 2, helveticaFont, ticketIdSize, grayColor);
+        p1Y -= 10;
+        
+        // Brief instruction
+        const instructionText = "Present this page for entry.";
+        const instructionSize = 8;
+        page1.drawText(instructionText, {
+            x: p1W / 2 - helveticaFont.widthOfTextAtSize(instructionText, instructionSize) / 2,
+            y: p1Y,
+            font: helveticaFont,
+            size: instructionSize,
+            color: lightGrayColor,
+        });
+
+
+        // Page 2: Additional Details
+        const page2 = pdfDoc.addPage([page1TicketWidth, page1TicketHeight]);
+        const { width: p2W, height: p2H } = page2.getSize();
+        const p2Margin = 20;
+        let p2Y = p2H - p2Margin - 15;
+
+        const additionalInfoText = "Additional Information";
+        const additionalInfoSize = 12;
+        page2.drawText(additionalInfoText, {
+            x: p2Margin,
+            y: p2Y,
+            font: helveticaBoldFont,
+            size: additionalInfoSize,
+            color: blackColor,
+        });
+        p2Y -= (additionalInfoSize + 12);
+
+        const detailFontSize = 9;
+        const detailLineHeight = detailFontSize + 3;
+
+        const drawDetailItem = (label: string, value: string) => {
+            page2.drawText(label, { x: p2Margin, y: p2Y, font: helveticaBoldFont, size: detailFontSize, color: blackColor });
+            p2Y -= detailLineHeight;
+            p2Y = drawWrappedText(page2, value, p2Margin, p2Y, p2W - 2*p2Margin, detailLineHeight, helveticaFont, detailFontSize, blackColor );
+            p2Y -= (detailLineHeight / 2); // Small gap after value
+        };
+
+        drawDetailItem("Full Name:", submittedRegistration.name);
+        drawDetailItem("Email:", submittedRegistration.email);
+        if (submittedRegistration.contactNumber) {
+            drawDetailItem("Contact:", submittedRegistration.contactNumber);
+        }
+        drawDetailItem("Registered At:", new Date(submittedRegistration.registeredAt).toLocaleString());
+        
+        p2Y -= (detailLineHeight); // Extra space before event details
+
+        drawDetailItem("Event Name:", eventDetails.title);
+        drawDetailItem("Event Date & Time:", formatEventDateTimeForPdf(eventDetails.eventDate, eventDetails.eventTime));
+        const venueText = eventDetails.mapLink ? "Details on event page / map link" : "Not specified";
+        drawDetailItem("Venue:", venueText);
+
+        // Powered by evntos - Footer on last page
+        const footerText = "Powered by evntos";
+        const footerSize = 8;
+        page2.drawText(footerText, {
+            x: p2W / 2 - helveticaFont.widthOfTextAtSize(footerText, footerSize) / 2,
+            y: p2Margin, // At the bottom
+            font: helveticaFont,
+            size: footerSize,
+            color: lightGrayColor,
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+        const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+        link.download = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        reset();
+        setSubmittedRegistration(null);
+
+    } catch (error) {
+        console.error("Error generating PDF ticket with pdf-lib:", error);
+        toast({ title: "Ticket Download Error", description: "Could not generate PDF ticket. Please try again.", variant: "destructive" });
     }
   };
 
