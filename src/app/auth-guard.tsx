@@ -5,31 +5,53 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import LoadingSpinner from '@/components/loading-spinner';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthGuardProps {
   children: ReactNode;
 }
 
-// Routes that do NOT require authentication
 const PUBLIC_ROUTES = ['/login', '/signup', '/']; 
-const PUBLIC_PREFIXES = ['/e/', '/landing']; // Public event pages and explicit landing content
+const PUBLIC_PREFIXES = ['/e/', '/landing']; 
+// Checkout page is public in the sense that you don't need a subscription yet,
+// but you DO need to be logged in to access it.
+const LOGIN_REQUIRED_BUT_NO_SUBSCRIPTION_PREFIXES = ['/checkout/'];
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, userSubscriptionStatus } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
 
   const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  const isCheckoutPage = LOGIN_REQUIRED_BUT_NO_SUBSCRIPTION_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
   useEffect(() => {
-    if (!loading && !user && !isPublicPage) {
-      // If auth is resolved, user is not logged in, and it's not a public page, redirect to login
-      router.push('/login');
+    if (!loading) { // Only run checks after initial auth state load
+      if (!user && !isPublicPage) {
+        // If auth is resolved, user is not logged in, and it's not a public page, redirect to login
+        router.push('/login');
+      } else if (user && !isPublicPage && !isCheckoutPage) {
+        // User is logged in, on a protected page (not public, not checkout)
+        if (!isAdmin && userSubscriptionStatus !== 'active') {
+          // Regular user without active subscription, redirect to pricing
+          toast({
+            title: "Subscription Required",
+            description: "Please choose a plan to access this page.",
+            variant: "default", 
+          });
+          router.push('/pricing');
+        }
+      } else if (user && isCheckoutPage && userSubscriptionStatus === 'active' && !isAdmin){
+        // If user is already subscribed and tries to go to checkout, send to dashboard
+        router.push('/dashboard');
+      }
     }
-  }, [user, loading, router, pathname, isPublicPage]);
+  }, [user, loading, router, pathname, isPublicPage, isCheckoutPage, isAdmin, userSubscriptionStatus, toast]);
 
+  // Initial loading state for the entire app, handled by AuthProvider.
+  // This guard handles loading for route transitions after initial auth.
   if (loading && !isPublicPage) {
-    // Show loading spinner only for protected routes while auth state is resolving
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
         <LoadingSpinner size={48} />
@@ -37,10 +59,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
+  // If not a public page and no user (should be caught by useEffect, but as a fallback)
   if (!isPublicPage && !user) {
-    // This state might be brief as the useEffect above should trigger redirection,
-    // but it handles cases where redirection hasn't happened yet.
-    // It's important to not render children of protected routes if no user.
     return (
         <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
           <p className="text-muted-foreground mb-2">Redirecting to login...</p>
@@ -49,30 +69,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
   
-  // For protected routes, after initial auth loading, if there's a user:
-  if (!isPublicPage && user) {
-    // If user is admin, allow access.
-    if (isAdmin) {
-      return <>{children}</>;
-    }
-    // If user is not admin:
-    // **Conceptual Subscription Check Point for Future Implementation**
-    // For now, allow logged-in non-admin users to access protected routes (e.g., dashboard).
-    // In a real app with subscriptions, you would check user.subscriptionStatus here.
-    // if (!user.subscriptionActive && pathname.startsWith('/dashboard')) { // or other protected paths
-    //   router.push('/pricing'); // or a "please subscribe" page
-    //   return (
-    //     <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
-    //       <p className="text-muted-foreground">Redirecting to pricing...</p>
-    //       <LoadingSpinner size={32} className="ml-2" />
-    //     </div>
-    //   );
-    // }
-    // If subscription is active (or, for now, if it's a non-admin regular user), allow access.
-    return <>{children}</>;
+  // If it's a protected route, user is logged in, but not admin and no active subscription (and not checkout page)
+  if (!isPublicPage && !isCheckoutPage && user && !isAdmin && userSubscriptionStatus !== 'active') {
+     return (
+        <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
+          <p className="text-muted-foreground mb-2">Redirecting to pricing...</p>
+          <LoadingSpinner size={32} />
+        </div>
+    );
   }
 
-  // If it's a public page, render children regardless of auth state (after initial auth loading if any)
-  // Or if it's a protected page and the user is authenticated and meets criteria.
+  // If all checks pass, render children
   return <>{children}</>;
 }

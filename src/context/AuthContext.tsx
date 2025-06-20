@@ -1,58 +1,102 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { User, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
+import { useToast } from '@/hooks/use-toast';
 
-// Define the Admin Email - In a real app, manage this via environment variables or a secure backend config
 const ADMIN_EMAIL = "admin@evntos.com";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  userSubscriptionStatus: 'none' | 'active' | 'loading';
   signUp: (email: string, pass: string) => Promise<User | null>;
   logIn: (email: string, pass: string) => Promise<User | null>;
   logOut: () => Promise<void>;
   signInWithGoogle: () => Promise<User | null>;
+  activateUserSubscription: (planName: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/']; 
-const PUBLIC_PREFIXES = ['/e/', '/landing']; 
+const PUBLIC_ROUTES = ['/login', '/signup', '/', '/checkout']; 
+const PUBLIC_PREFIXES = ['/e/', '/landing', '/checkout/']; 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userSubscriptionStatus, setUserSubscriptionStatus] = useState<'none' | 'active' | 'loading'>('loading');
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+
+  const checkAndSetSubscriptionStatus = useCallback((currentUser: User | null) => {
+    if (currentUser) {
+      if (currentUser.email === ADMIN_EMAIL) {
+        setIsAdmin(true);
+        setUserSubscriptionStatus('active'); // Admins always have active status
+      } else {
+        setIsAdmin(false);
+        const storedStatus = localStorage.getItem(`evntos_subscription_${currentUser.uid}`);
+        setUserSubscriptionStatus(storedStatus === 'active' ? 'active' : 'none');
+      }
+    } else {
+      setIsAdmin(false);
+      setUserSubscriptionStatus('none');
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser && currentUser.email === ADMIN_EMAIL) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
+      checkAndSetSubscriptionStatus(currentUser);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [checkAndSetSubscriptionStatus]);
+  
+  const activateUserSubscription = useCallback((planName: string) => {
+    if (user && !isAdmin) {
+      localStorage.setItem(`evntos_subscription_${user.uid}`, 'active');
+      setUserSubscriptionStatus('active');
+      toast({
+        title: "Payment Successful!",
+        description: `Your ${planName} plan is now active.`,
+      });
+      router.push('/dashboard');
+    } else if (isAdmin && user) {
+        // Admin already has access, just confirm and redirect
+        toast({
+            title: "Admin Access Confirmed",
+            description: "Redirecting to dashboard.",
+        });
+        router.push('/dashboard');
+    }
+  }, [user, isAdmin, router, toast]);
 
+  const handleAuthSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    checkAndSetSubscriptionStatus(loggedInUser);
+    // Determine redirect based on subscription status after it's set
+    if (loggedInUser.email === ADMIN_EMAIL || localStorage.getItem(`evntos_subscription_${loggedInUser.uid}`) === 'active') {
+      router.push('/dashboard');
+    } else {
+      router.push('/pricing');
+    }
+  };
+  
   const signUp = async (email: string, pass: string): Promise<User | null> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      setUser(userCredential.user);
-      if (userCredential.user.email === ADMIN_EMAIL) setIsAdmin(true);
-      router.push('/dashboard'); 
+      handleAuthSuccess(userCredential.user);
       return userCredential.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -67,9 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      setUser(userCredential.user);
-      if (userCredential.user.email === ADMIN_EMAIL) setIsAdmin(true);
-      router.push('/dashboard'); 
+      handleAuthSuccess(userCredential.user);
       return userCredential.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -85,9 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      setUser(result.user);
-      if (result.user.email === ADMIN_EMAIL) setIsAdmin(true);
-      router.push('/dashboard');
+      handleAuthSuccess(result.user);
       return result.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -104,6 +144,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signOut(auth);
       setUser(null);
       setIsAdmin(false);
+      setUserSubscriptionStatus('none'); // Reset subscription status on logout
+      // No need to clear individual user's localStorage here as it's keyed by UID
       router.push('/'); 
     } catch (error) {
       console.error("Logout error:", error);
@@ -114,11 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
   
-  // This initial loading screen is shown when the AuthProvider itself is determining the auth state.
-  // The AuthGuard component will handle loading states for route transitions.
-  if (loading && !user && !isPublicPage) {
-     // If still loading and not on a public page, show a loader.
-     // This helps prevent flashes of content if auth state resolves slowly.
+  if (loading || userSubscriptionStatus === 'loading') {
     return (
       <div className="flex justify-center items-center min-h-screen bg-background">
         <LoadingSpinner size={48} />
@@ -126,9 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
   }
 
-
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, logIn, logOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, userSubscriptionStatus, signUp, logIn, logOut, signInWithGoogle, activateUserSubscription }}>
       {children}
     </AuthContext.Provider>
   );

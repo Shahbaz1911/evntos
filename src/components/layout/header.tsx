@@ -2,9 +2,11 @@
 "use client";
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign } from 'lucide-react';
+import { 
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart 
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
@@ -19,9 +21,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from 'react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { Separator } from '@/components/ui/separator';
-import { useSidebar } from '@/components/ui/sidebar'; // For mobile sidebar control
+import { useSidebar } from '@/components/ui/sidebar'; 
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils'; // Import cn utility
+import { cn } from '@/lib/utils';
 
 
 interface NavLinkProps {
@@ -38,7 +40,7 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
   const activeClasses = `text-primary bg-primary/10`;
   const inactiveClasses = `text-foreground/70 hover:text-primary hover:bg-primary/5`;
   
-  const mobileSpecificInactiveClasses = `hover:text-primary hover:bg-primary/10`; // More prominent hover for mobile
+  const mobileSpecificInactiveClasses = `hover:text-primary hover:bg-primary/10`;
 
   return (
     <Button
@@ -60,8 +62,9 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
 
 
 const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection: string; commonNavLinks: Array<{ href: string; label: string; id: string; icon: React.ElementType }> }) => {
-  const { user, logOut, loading } = useAuth();
+  const { user, logOut, loading, isAdmin, userSubscriptionStatus } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { setOpenMobile } = useSidebar(); 
   const { toast } = useToast();
 
@@ -97,6 +100,10 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
     return email.substring(0, 2).toUpperCase();
   };
 
+  const subscriptionText = isAdmin ? "Admin Access" : 
+                           userSubscriptionStatus === 'active' ? "Subscription: Active" : "Subscription: None";
+  const SubscriptionIcon = isAdmin ? ShieldCheck : ShoppingCart;
+
 
   return (
     <>
@@ -130,6 +137,10 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
               <p className="text-xs leading-none text-muted-foreground">
                 {user.email}
               </p>
+              <div className={cn("text-xs leading-none mt-1 flex items-center", isAdmin || userSubscriptionStatus === 'active' ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+                <SubscriptionIcon className="mr-1 h-3 w-3" /> 
+                {subscriptionText}
+              </div>
             </div>
           </div>
           <Separator className="my-2" />
@@ -154,6 +165,11 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
             <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
               <QrCode className="mr-2 h-5 w-5"/>Scan Dashboard
             </NavLink>
+            {!isAdmin && userSubscriptionStatus !== 'active' && (
+                <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
+                    <CreditCard className="mr-2 h-5 w-5"/> View Plans
+                </NavLink>
+            )}
           </>
         ) : (
             commonNavLinks.map(link => {
@@ -202,8 +218,9 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 
 
 export default function Header() {
-  const { user, logOut, loading } = useAuth();
+  const { user, logOut, loading, isAdmin, userSubscriptionStatus } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
   const { toast } = useToast();
@@ -271,7 +288,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname, commonNavLinks]); 
+  }, [pathname]); // Removed commonNavLinks from dependency array as it's stable
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -284,6 +301,10 @@ export default function Header() {
     }
     return email.substring(0, 2).toUpperCase();
   };
+
+  const subscriptionText = isAdmin ? "Admin Access" : 
+                           userSubscriptionStatus === 'active' ? "Subscription: Active" : "Subscription: None";
+  const SubscriptionIcon = isAdmin ? ShieldCheck : ShoppingCart;
 
 
   return (
@@ -359,15 +380,19 @@ export default function Header() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-64" align="end" forceMount> {/* Increased width */}
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                      <p className="text-sm font-medium leading-none truncate">
                         {user.displayName || user.email?.split('@')[0]}
                       </p>
-                      <p className="text-xs leading-none text-muted-foreground">
+                      <p className="text-xs leading-none text-muted-foreground truncate">
                         {user.email}
                       </p>
+                       <div className={cn("text-xs leading-none mt-1.5 pt-1 border-t border-border/50 flex items-center", isAdmin || userSubscriptionStatus === 'active' ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+                         <SubscriptionIcon className="mr-1.5 h-3.5 w-3.5" /> 
+                         {subscriptionText}
+                       </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -383,6 +408,14 @@ export default function Header() {
                         Scan Dashboard
                       </Link>
                   </DropdownMenuItem>
+                  {!isAdmin && userSubscriptionStatus !== 'active' && (
+                    <DropdownMenuItem asChild className="cursor-pointer text-primary focus:text-primary focus:bg-primary/10">
+                        <Link href="/pricing" className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            View Plans
+                        </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={async () => {
@@ -423,7 +456,6 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button & Sheet */}
           <div className="md:hidden flex items-center gap-2">
              <ThemeToggleButton />
             <Sheet open={openMobile} onOpenChange={setOpenMobile}>
@@ -443,4 +475,3 @@ export default function Header() {
     </header>
   );
 }
-

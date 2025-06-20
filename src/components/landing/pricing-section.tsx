@@ -2,18 +2,22 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, DollarSign, Star, Zap } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const pricingTiers = [
   {
     name: "Free",
+    id: "free",
     price: "$0",
     frequency: "/month",
     description: "Perfect for getting started and exploring core features.",
     features: [
-      "Create up to 3 events",
+      "Create up to 1 event",
       "Basic guest list management",
       "Standard event page customization",
       "Community support",
@@ -23,9 +27,11 @@ const pricingTiers = [
     icon: DollarSign,
     mostPopular: false,
     highlightClass: "border-border",
+    actionType: "link" as const,
   },
   {
     name: "Pro",
+    id: "pro",
     price: "$29",
     frequency: "/month",
     description: "For growing events and professional organizers.",
@@ -37,13 +43,15 @@ const pricingTiers = [
       "Email support",
     ],
     buttonText: "Choose Pro",
-    buttonLink: "/signup?plan=pro",
+    buttonLink: "/checkout/Pro", 
     icon: Zap,
     mostPopular: true,
     highlightClass: "border-primary shadow-lg ring-2 ring-primary",
+    actionType: "checkout" as const,
   },
   {
     name: "Business",
+    id: "business",
     price: "$79",
     frequency: "/month",
     description: "Comprehensive solutions for large scale events.",
@@ -54,15 +62,58 @@ const pricingTiers = [
       "Custom branding options",
       "Priority support",
     ],
-    buttonText: "Contact Sales",
-    buttonLink: "/contact",
+    buttonText: "Choose Business",
+    buttonLink: "/checkout/Business", 
     icon: Star,
     mostPopular: false,
     highlightClass: "border-border",
+    actionType: "checkout" as const,
   },
 ];
 
 export default function PricingSection() {
+  const { user, loading, userSubscriptionStatus, activateUserSubscription } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handlePlanSelection = (tier: typeof pricingTiers[number]) => {
+    if (loading) return; // Wait for auth state to resolve
+
+    if (tier.actionType === "link") {
+      router.push(tier.buttonLink);
+      return;
+    }
+
+    // For checkout actions
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in or sign up to choose a plan.",
+      });
+      router.push('/login'); // Or signup, or store intended plan and redirect after auth
+      return;
+    }
+
+    if (userSubscriptionStatus === 'active') {
+         if (user.email?.endsWith('@evntos.com')) { // or a better check for admin
+            toast({
+                title: "Admin Access",
+                description: "Admins have full access. No plan selection needed.",
+            });
+         } else {
+            toast({
+                title: "Already Subscribed",
+                description: "You already have an active plan.",
+            });
+         }
+        router.push('/dashboard');
+        return;
+    }
+    
+    // If user is logged in and no active subscription, redirect to checkout
+    router.push(tier.buttonLink);
+  };
+
   return (
     <section id="pricing" className="bg-background text-foreground">
       <div className="container mx-auto px-4">
@@ -104,11 +155,12 @@ export default function PricingSection() {
               </CardContent>
               <CardFooter className="p-6 mt-auto">
                 <Button 
-                  asChild 
+                  onClick={() => handlePlanSelection(tier)}
                   size="lg" 
                   className={`w-full ${tier.mostPopular ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
+                  disabled={loading}
                 >
-                  <Link href={tier.buttonLink}>{tier.buttonText}</Link>
+                  {tier.buttonText}
                 </Button>
               </CardFooter>
             </Card>
