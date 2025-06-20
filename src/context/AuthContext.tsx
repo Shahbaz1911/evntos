@@ -3,11 +3,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { User, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
+import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email-flow'; // Import the new flow
 
 const ADMIN_EMAIL = "sk@gmail.com";
 
@@ -97,6 +98,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       handleAuthSuccess(userCredential.user);
+
+      // Send welcome email (fire and forget, don't let it block signup)
+      sendWelcomeEmail({ userEmail: userCredential.user.email!, userName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] })
+        .then(emailResult => {
+          if (emailResult.success) {
+            console.log(`Welcome email sent to ${userCredential.user.email}`);
+          } else {
+            console.warn(`Failed to send welcome email to ${userCredential.user.email}: ${emailResult.message}`);
+          }
+        })
+        .catch(emailError => {
+          console.error(`Error dispatching welcome email to ${userCredential.user.email}:`, emailError);
+        });
+        
       return userCredential.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -127,7 +142,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      const additionalUserInfo = getAdditionalUserInfo(result);
+      const isNewUser = additionalUserInfo?.isNewUser;
+      
       handleAuthSuccess(result.user);
+
+      if (isNewUser && result.user.email) {
+        sendWelcomeEmail({ userEmail: result.user.email, userName: result.user.displayName || result.user.email?.split('@')[0] })
+          .then(emailResult => {
+            if (emailResult.success) {
+              console.log(`Welcome email sent to new Google user ${result.user.email}`);
+            } else {
+              console.warn(`Failed to send welcome email to new Google user ${result.user.email}: ${emailResult.message}`);
+            }
+          })
+          .catch(emailError => {
+            console.error(`Error dispatching welcome email to new Google user ${result.user.email}:`, emailError);
+          });
+      }
       return result.user;
     } catch (error) {
       const firebaseError = error as FirebaseError;
@@ -145,7 +177,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setIsAdmin(false);
       setUserSubscriptionStatus('none'); // Reset subscription status on logout
-      // No need to clear individual user's localStorage here as it's keyed by UID
       router.push('/'); 
     } catch (error) {
       console.error("Logout error:", error);
