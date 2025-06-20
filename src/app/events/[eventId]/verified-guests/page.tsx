@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, UserCheck, FileText, Users } from 'lucide-react';
 import type { Event, Registration } from '@/types';
-import AuthGuard from '@/components/auth-guard'; 
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -93,7 +93,7 @@ export default function VerifiedGuestListPage() {
 
   if (isLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))]">
         <LoadingSpinner size={48} />
       </div>
     );
@@ -101,7 +101,7 @@ export default function VerifiedGuestListPage() {
   
   if (!event) {
     return (
-      <AuthGuard>
+      // <AuthGuard> // Removed page-level AuthGuard
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access its verified guest list.</p>
            <Button variant="outline" size="sm" asChild className="mt-4">
@@ -111,12 +111,12 @@ export default function VerifiedGuestListPage() {
               </Link>
             </Button>
         </div>
-      </AuthGuard>
+      // </AuthGuard> // Removed page-level AuthGuard
     );
   }
 
   return (
-    <AuthGuard> 
+    // <AuthGuard> // Removed page-level AuthGuard
       <div className="max-w-3xl mx-auto">
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <Button variant="outline" size="sm" asChild>
@@ -161,7 +161,6 @@ export default function VerifiedGuestListPage() {
           </CardContent>
         </Card>
       </div>
-    </AuthGuard>
+    // </AuthGuard> // Removed page-level AuthGuard
   );
 }
-

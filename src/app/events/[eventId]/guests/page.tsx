@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, Users, FileText } from 'lucide-react';
 import type { Event, Registration } from '@/types';
-import AuthGuard from '@/components/auth-guard'; 
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,7 +48,7 @@ export default function GuestListPage() {
         setEvent(foundEvent);
         setRegistrations(getRegistrationsByEventId(eventId));
       } else {
-         if (!eventContextLoading) { // Only show not found if context is actually loaded
+         if (!eventContextLoading) { 
             toast({
               title: "Event Not Found",
               description: "The event for which you are trying to view guests does not exist.",
@@ -91,15 +91,15 @@ export default function GuestListPage() {
 
   if (isLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))]">
         <LoadingSpinner size={48} />
       </div>
     );
   }
   
-  if (!event) { // Implies event not found or no permission after loading and checks
+  if (!event) { 
     return (
-      <AuthGuard>
+      // <AuthGuard> // Removed page-level AuthGuard
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access its guest list.</p>
            <Button variant="outline" size="sm" asChild className="mt-4">
@@ -109,12 +109,12 @@ export default function GuestListPage() {
               </Link>
             </Button>
         </div>
-      </AuthGuard>
+      // </AuthGuard> // Removed page-level AuthGuard
     );
   }
 
   return (
-    <AuthGuard> 
+    // <AuthGuard> // Removed page-level AuthGuard
       <div className="max-w-3xl mx-auto">
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <Button variant="outline" size="sm" asChild>
@@ -154,6 +154,6 @@ export default function GuestListPage() {
           </CardContent>
         </Card>
       </div>
-    </AuthGuard>
+    // </AuthGuard> // Removed page-level AuthGuard
   );
 }

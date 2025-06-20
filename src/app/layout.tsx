@@ -8,6 +8,7 @@ import { EventProvider } from '@/context/EventContext';
 import { AuthProvider } from '@/context/AuthContext'; 
 import { ThemeProvider } from 'next-themes';
 import { SidebarProvider } from '@/components/ui/sidebar'; 
+import AuthGuard from '@/app/auth-guard'; // Import the new global AuthGuard
 
 export const metadata: Metadata = {
   title: 'evntos',
@@ -36,14 +37,15 @@ export default function RootLayout({
           <AuthProvider> 
             <EventProvider>
               <SidebarProvider>
-                {/* This new div ensures Header, main, and Footer stack vertically */}
-                <div className="flex flex-col flex-1 min-w-0">
-                  <Header />
-                  <main className="flex-grow">
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
+                <AuthGuard> {/* Wrap content with AuthGuard */}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <Header />
+                    <main className="flex-grow">
+                      {children}
+                    </main>
+                    <Footer />
+                  </div>
+                </AuthGuard>
               </SidebarProvider>
               <Toaster />
             </EventProvider>

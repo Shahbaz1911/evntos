@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft, Eye, Trash2, Share2 } from 'lucide-react';
 import type { Event } from '@/types';
-import AuthGuard from '@/components/auth-guard';
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
 import {
   AlertDialog,
@@ -54,22 +54,23 @@ export default function EditEventPage() {
             description: "You are not authorized to edit this event.",
             variant: "destructive",
           });
-          router.push('/');
+          router.push('/'); // Redirect to dashboard or home
           return;
         }
         setEvent(foundEvent);
       } else {
-         if (events.length > 0 || !eventContextLoading) {
+         if (events.length > 0 || !eventContextLoading) { // Avoid false "not found" during initial load
             toast({
               title: "Event Not Found",
               description: "The event you are trying to edit does not exist.",
               variant: "destructive",
             });
-            router.push('/');
+            router.push('/'); // Redirect to dashboard or home
             return;
          }
       }
     } else if (!authUser && !authLoading) {
+      // This case should be handled by global AuthGuard, but as a fallback:
       router.push('/login');
       return;
     }
@@ -84,6 +85,8 @@ export default function EditEventPage() {
       const updatedEventData: Event = {
         ...event,
         ...data,
+        venueName: data.venueName || '',
+        venueAddress: data.venueAddress || '',
       };
       await updateEvent(updatedEventData);
       toast({
@@ -135,7 +138,7 @@ export default function EditEventPage() {
 
   if (isLoading || authLoading || eventContextLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))]">
         <LoadingSpinner size={48} />
       </div>
     );
@@ -143,19 +146,19 @@ export default function EditEventPage() {
 
   if (!event) { 
      return (
-      <AuthGuard> 
+      // <AuthGuard> // Removed page-level AuthGuard
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event not found or you do not have permission to access it.</p>
           <Button asChild className="mt-4">
             <Link href="/">Go to Dashboard</Link>
           </Button>
         </div>
-      </AuthGuard>
+      // </AuthGuard> // Removed page-level AuthGuard
     );
   }
   
   return (
-    <AuthGuard>
+    // <AuthGuard> // Removed page-level AuthGuard
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" size="sm" asChild className="mb-4">
           <Link href="/">
@@ -217,6 +220,6 @@ export default function EditEventPage() {
           
         </Card>
       </div>
-    </AuthGuard>
+    // </AuthGuard> // Removed page-level AuthGuard
   );
 }

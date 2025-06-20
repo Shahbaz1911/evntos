@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import EventCard from '@/components/event-card';
 import { useEvents } from '@/context/EventContext';
 import { PlusCircle, CalendarX2 } from 'lucide-react';
-import AuthGuard from '@/components/auth-guard'; 
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import LoadingSpinner from '@/components/loading-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
@@ -25,12 +25,12 @@ export default function DashboardPage() {
   const isLoading = contextLoading || authLoading;
 
   return (
-    <AuthGuard> 
+    // <AuthGuard>  Removed page-level AuthGuard
       <div className="space-y-8 container mx-auto px-4 py-8">
         <Card className="shadow-md border border-border">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
-              <CardTitle className="text-3xl font-bold font-headline text-primary">Eventos Dashboard</CardTitle>
+              <CardTitle className="text-3xl font-bold font-headline text-primary">Evntos Dashboard</CardTitle>
               <CardDescription>Manage your events or create a new one.</CardDescription>
             </div>
             <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -65,6 +65,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-    </AuthGuard>
+    // </AuthGuard> Removed page-level AuthGuard
   );
 }

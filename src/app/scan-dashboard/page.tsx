@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
-import AuthGuard from '@/components/auth-guard';
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import LoadingSpinner from '@/components/loading-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { QrCode, CalendarX2, ArrowRight } from 'lucide-react';
@@ -25,8 +25,8 @@ export default function ScanDashboardPage() {
   const isLoading = contextLoading || authLoading;
 
   return (
-    <AuthGuard>
-      <div className="space-y-8">
+    // <AuthGuard> // Removed page-level AuthGuard
+      <div className="space-y-8 container mx-auto px-4 py-8">
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-3xl font-bold font-headline text-primary">Scan Tickets Dashboard</CardTitle>
@@ -83,6 +83,6 @@ export default function ScanDashboardPage() {
           </div>
         )}
       </div>
-    </AuthGuard>
+    // </AuthGuard> // Removed page-level AuthGuard
   );
 }

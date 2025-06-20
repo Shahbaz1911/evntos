@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import AuthGuard from '@/components/auth-guard'; 
+// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 
 const createEventSchema = z.object({
   title: z.string().min(3, { message: "Title must be at least 3 characters long." }).max(100, { message: "Title cannot exceed 100 characters." }),
@@ -58,7 +58,7 @@ export default function CreateEventPage() {
   };
 
   return (
-    <AuthGuard> 
+    // <AuthGuard> Removed page-level AuthGuard
       <div className="max-w-2xl mx-auto">
         <Button variant="outline" size="sm" asChild className="mb-4">
           <Link href="/">
@@ -95,6 +95,6 @@ export default function CreateEventPage() {
           </form>
         </Card>
       </div>
-    </AuthGuard>
+    // </AuthGuard> Removed page-level AuthGuard
   );
 }

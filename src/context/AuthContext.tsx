@@ -8,9 +8,13 @@ import { auth } from '@/lib/firebase';
 import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
 
+// Define the Admin Email - In a real app, manage this via environment variables or a secure backend config
+const ADMIN_EMAIL = "admin@evntos.com";
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
   signUp: (email: string, pass: string) => Promise<User | null>;
   logIn: (email: string, pass: string) => Promise<User | null>;
   logOut: () => Promise<void>;
@@ -19,18 +23,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/']; // Root path is now public landing
-const PUBLIC_PREFIXES = ['/e/', '/landing']; // Public event pages and explicit landing
+const PUBLIC_ROUTES = ['/login', '/signup', '/']; 
+const PUBLIC_PREFIXES = ['/e/', '/landing']; 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser && currentUser.email === ADMIN_EMAIL) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -41,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       setUser(userCredential.user);
+      if (userCredential.user.email === ADMIN_EMAIL) setIsAdmin(true);
       router.push('/dashboard'); 
       return userCredential.user;
     } catch (error) {
@@ -57,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       setUser(userCredential.user);
+      if (userCredential.user.email === ADMIN_EMAIL) setIsAdmin(true);
       router.push('/dashboard'); 
       return userCredential.user;
     } catch (error) {
@@ -74,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const result = await signInWithPopup(auth, provider);
       setUser(result.user);
+      if (result.user.email === ADMIN_EMAIL) setIsAdmin(true);
       router.push('/dashboard');
       return result.user;
     } catch (error) {
@@ -90,7 +103,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       setUser(null);
-      router.push('/'); // Redirect to public landing page on logout
+      setIsAdmin(false);
+      router.push('/'); 
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -98,10 +112,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  
-  // Adjusted loading screen logic
   const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
-  if (loading && !isPublicPage) {
+  
+  // This initial loading screen is shown when the AuthProvider itself is determining the auth state.
+  // The AuthGuard component will handle loading states for route transitions.
+  if (loading && !user && !isPublicPage) {
+     // If still loading and not on a public page, show a loader.
+     // This helps prevent flashes of content if auth state resolves slowly.
     return (
       <div className="flex justify-center items-center min-h-screen bg-background">
         <LoadingSpinner size={48} />
@@ -111,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, logIn, logOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, logIn, logOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );
