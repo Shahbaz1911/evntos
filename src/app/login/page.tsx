@@ -101,7 +101,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl border border-border">
         <CardHeader className="text-center">
            <Link href="/" className="mx-auto mb-4">
-             <span className="text-4xl font-bold text-primary font-headline">eventos</span>
+             <span className="text-4xl font-bold text-primary font-headline">evntos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Welcome Back!</CardTitle>
           <CardDescription>Log in to manage your events.</CardDescription>

@@ -10,7 +10,7 @@ import { ThemeProvider } from 'next-themes';
 import { SidebarProvider } from '@/components/ui/sidebar'; 
 
 export const metadata: Metadata = {
-  title: 'eventos',
+  title: 'evntos',
   description: 'Create, promote, and manage your events effortlessly.',
 };
 

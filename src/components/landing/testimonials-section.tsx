@@ -19,7 +19,7 @@ const testimonials = [
     role: "Conference Organizer",
     avatar: "https://placehold.co/100x100.png",
     rating: 5,
-    quote: "Eventos transformed how we manage our annual tech conference. The QR code check-in was a lifesaver, and the platform is incredibly intuitive!",
+    quote: "Evntos transformed how we manage our annual tech conference. The QR code check-in was a lifesaver, and the platform is incredibly intuitive!",
     companyLogo: "https://placehold.co/120x40.png?text=TechConf&bg=cccccc&fc=333333",
     aiHint: "professional woman",
   },
@@ -28,7 +28,7 @@ const testimonials = [
     role: "Meetup Host",
     avatar: "https://placehold.co/100x100.png",
     rating: 5,
-    quote: "As a host for local developer meetups, Eventos made it super easy to create event pages and track RSVPs. Highly recommend for community builders!",
+    quote: "As a host for local developer meetups, Evntos made it super easy to create event pages and track RSVPs. Highly recommend for community builders!",
     companyLogo: "https://placehold.co/120x40.png?text=DevMeet&bg=cccccc&fc=333333",
     aiHint: "friendly man",
   },
@@ -46,7 +46,7 @@ const testimonials = [
     role: "Non-profit Fundraiser",
     avatar: "https://placehold.co/100x100.png",
     rating: 5,
-    quote: "Managing registrations and communicating with attendees for our fundraising gala was seamless with Eventos. The analytics helped us understand our reach better.",
+    quote: "Managing registrations and communicating with attendees for our fundraising gala was seamless with Evntos. The analytics helped us understand our reach better.",
     companyLogo: "https://placehold.co/120x40.png?text=HopeOrg&bg=cccccc&fc=333333",
     aiHint: "charitable man",
   },
@@ -55,7 +55,7 @@ const testimonials = [
     role: "Community Manager",
     avatar: "https://placehold.co/100x100.png",
     rating: 4,
-    quote: "Eventos has a clean interface and all the essential features for our online webinars and local chapter meetups. The AI slug generator is a nice touch!",
+    quote: "Evntos has a clean interface and all the essential features for our online webinars and local chapter meetups. The AI slug generator is a nice touch!",
     companyLogo: "https://placehold.co/120x40.png?text=ConnectHub&bg=cccccc&fc=333333",
     aiHint: "professional woman tech"
   },
@@ -73,7 +73,7 @@ export default function TestimonialsSection() {
             Loved by Organizers Worldwide
           </p>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Hear what our users have to say about their experience with Eventos.
+            Hear what our users have to say about their experience with Evntos.
           </p>
         </div>
 

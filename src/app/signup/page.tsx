@@ -105,10 +105,10 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl border border-border">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto mb-4">
-             <span className="text-4xl font-bold text-orange-500 font-headline">eventos</span>
+             <span className="text-4xl font-bold text-orange-500 font-headline">evntos</span>
           </Link>
           <CardTitle className="font-headline text-3xl">Create an Account</CardTitle>
-          <CardDescription>Join eventos to start creating and managing events.</CardDescription>
+          <CardDescription>Join evntos to start creating and managing events.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">

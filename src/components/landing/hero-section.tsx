@@ -68,7 +68,7 @@ export default function HeroSection() {
             Host <span className="inline-block min-h-[1.2em] min-w-[200px] sm:min-w-[300px] md:min-w-[350px] lg:min-w-[400px]">{text}</span> Events, <span className="block">Effortlessly.</span>
           </h1>
           <p className="text-lg md:text-xl text-foreground/80 max-w-xl mx-auto md:mx-0">
-            Eventos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
+            Evntos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">

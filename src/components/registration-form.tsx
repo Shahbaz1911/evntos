@@ -289,9 +289,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       ctx.textAlign = 'center';
       // Ensure footer doesn't overlap if content above is tall
       if (postQrY < footerTextY - mmToPx(5)) { 
-         ctx.fillText("Powered by Eventos", canvas.width / 2, footerTextY);
+         ctx.fillText("Powered by Evntos", canvas.width / 2, footerTextY);
       } else {
-         ctx.fillText("Powered by Eventos", canvas.width / 2, postQrY + mmToPx(4)); // Fallback if too close
+         ctx.fillText("Powered by Evntos", canvas.width / 2, postQrY + mmToPx(4)); // Fallback if too close
       }
 
       // --- Drawing End ---
@@ -431,4 +431,3 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     </Card>
   );
 }
-

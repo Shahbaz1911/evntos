@@ -102,7 +102,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
     <>
       <div className="flex justify-between items-center p-4 border-b">
         <Link href={user ? "/dashboard" : "/"} className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
-          eventos
+          evntos
         </Link>
         <SheetClose asChild>
           <Button variant="ghost" size="icon">
@@ -220,7 +220,7 @@ export default function Header() {
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
     { href: "/#about", label: "About", id: "about", icon: Info },
     { href: "/#services", label: "Services", id: "services", icon: Handshake },
-    { href: "/#testimonials", label: "Reviews", id: "reviews", icon: Star }, // Changed id from 'reviews' to 'testimonials'
+    { href: "/#testimonials", label: "Reviews", id: "testimonials", icon: Star }, // Changed id from 'reviews' to 'testimonials'
   ];
 
   useEffect(() => {
@@ -269,7 +269,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname]); 
+  }, [pathname, commonNavLinks]); 
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -289,7 +289,7 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link href={user ? "/dashboard" : "/"} className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity text-primary">
-            eventos
+            evntos
           </Link>
           
           <nav className="hidden md:flex flex-1 items-center justify-center">
@@ -441,4 +441,3 @@ export default function Header() {
     </header>
   );
 }
-

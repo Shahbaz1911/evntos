@@ -61,7 +61,7 @@ export default function Footer() {
           {/* Brand and Social */}
           <div className="space-y-6">
             <Link href="/" className="text-3xl font-bold font-headline text-primary">
-              eventos
+              evntos
             </Link>
             <p className="text-muted-foreground text-sm max-w-sm">
               Create, promote, and manage your events effortlessly. Join our community and make your next event a success.
@@ -96,7 +96,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border/60 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Eventos Inc. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Evntos Inc. All rights reserved.</p>
           <p className="mt-1">
             Built with <span role="img" aria-label="love">❤️</span> by talented developers.
           </p>

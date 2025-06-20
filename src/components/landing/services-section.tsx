@@ -61,7 +61,7 @@ export default function ServicesSection() {
             Everything You Need for Event Success
           </p>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Eventos offers a comprehensive suite of features designed to simplify event management and amplify your impact.
+            Evntos offers a comprehensive suite of features designed to simplify event management and amplify your impact.
           </p>
         </div>
 

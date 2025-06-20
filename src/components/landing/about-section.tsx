@@ -38,7 +38,7 @@ export default function AboutSection() {
             Powering Connections, One Event at a Time
           </p>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Eventos was born from a passion for bringing people together. We believe that well-organized events can create lasting memories, foster communities, and drive innovation. Our mission is to provide an intuitive, powerful, and affordable platform for anyone looking to host successful events.
+            Evntos was born from a passion for bringing people together. We believe that well-organized events can create lasting memories, foster communities, and drive innovation. Our mission is to provide an intuitive, powerful, and affordable platform for anyone looking to host successful events.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export default function AboutSection() {
             <Card className="overflow-hidden shadow-xl rounded-lg border-border">
               <Image
                 src="https://images.unsplash.com/photo-1503428593586-e225b39bddfe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNXx8ZXZlbnR8ZW58MHx8fHwxNzUwMzYxMzU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Team working on Eventos platform"
+                alt="Team working on Evntos platform"
                 width={700}
                 height={500}
                 className="object-cover w-full h-full"
