@@ -29,8 +29,8 @@ export default function Footer() {
     {
       label: "Product",
       items: [
-        { href: '/#services', name: 'Services' }, // Changed from #features
-        { href: '/#pricing', name: 'Pricing' }, // Assuming pricing section
+        { href: '/#services', name: 'Services' },
+        { href: '/#pricing', name: 'Pricing' },
         { href: '/#faq', name: 'FAQ' },
         { href: '/#testimonials', name: 'Testimonials' },
       ],
