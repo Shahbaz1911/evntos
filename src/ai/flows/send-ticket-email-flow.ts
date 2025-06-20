@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 import { Resend } from 'resend';
 // import { streamToBuffer } from '@jorgeferrero/stream-to-buffer'; // Not strictly needed as pdfDoc.save() returns Uint8Array
@@ -302,12 +302,13 @@ const sendTicketEmailFlow = ai.defineFlow(
 
     try {
       const pdfBytes = await generatePdfTicket(input);
-      const pdfBuffer = Buffer.from(pdfBytes); // pdf-lib's save() returns Uint8Array, convert to Buffer
+      const pdfBuffer = Buffer.from(pdfBytes); 
 
       const safeEventName = input.eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const filename = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
 
+      // IMPORTANT: For production, replace 'onboarding@resend.dev' with an email from your verified Resend domain.
       const fromEmail = 'Evntos Tickets <onboarding@resend.dev>'; 
 
       const { data, error } = await resend.emails.send({
@@ -332,17 +333,39 @@ const sendTicketEmailFlow = ai.defineFlow(
       });
 
       if (error) {
-        console.error("Resend API Error:", error); // This logs the full error object
-        return { success: false, message: `Failed to send email: ${error.message || 'An unknown Resend API error occurred. Please check server logs.'}` };
+        console.error("Resend API Error (full object):", error); 
+        let displayMessage = "An unknown Resend API error occurred."; 
+        if (typeof error === 'string' && error.trim() !== "") {
+          displayMessage = error;
+        } else if (error && typeof error === 'object') {
+          // Check for common error properties from Resend or general errors
+          // Resend errors often have `name` and `message`
+          if (typeof (error as any).message === 'string' && (error as any).message.trim() !== "") {
+            displayMessage = (error as any).message;
+          } else if (typeof (error as any).name === 'string' && (error as any).name.trim() !== "") {
+            // Prepend "Error: " only if it's not already indicated
+            displayMessage = (error as any).name.toLowerCase().includes("error") ? (error as any).name : `Error: ${(error as any).name}`;
+          }
+        }
+        // The most important step for the user is to check their server logs for the full error object details.
+        return { success: false, message: `Failed to send email. Reason: ${displayMessage} Please check server logs for complete details.` };
       }
 
       return { success: true, message: "Ticket email sent successfully.", emailId: data?.id };
 
     } catch (e: any) {
-      console.error("Error in sendTicketEmailFlow:", e);
-      return { success: false, message: `An unexpected error occurred: ${e.message || 'Unknown error'}` };
+      console.error("Error in sendTicketEmailFlow (outer catch):", e);
+      let displayMessage = "An unexpected error occurred processing your request.";
+      if (typeof e === 'string' && e.trim() !== "") {
+        displayMessage = e;
+      } else if (e && typeof e === 'object') {
+        if (typeof e.message === 'string' && e.message.trim() !== "") {
+            displayMessage = e.message;
+          } else if (typeof e.name === 'string' && e.name.trim() !== "") {
+            displayMessage = e.name.toLowerCase().includes("error") ? e.name : `Error: ${e.name}`;
+          }
+      }
+      return { success: false, message: `${displayMessage} Please check server logs.` };
     }
   }
 );
-
-    
