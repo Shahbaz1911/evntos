@@ -21,6 +21,7 @@ import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar'; // For mobile sidebar control
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils'; // Import cn utility
 
 
 interface NavLinkProps {
@@ -61,14 +62,14 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
 const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection: string; commonNavLinks: Array<{ href: string; label: string; id: string; icon: React.ElementType }> }) => {
   const { user, logOut, loading } = useAuth();
   const pathname = usePathname();
-  const { setOpenMobile } = useSidebar(); // Get setOpenMobile from the global SidebarProvider
+  const { setOpenMobile } = useSidebar(); 
   const { toast } = useToast();
 
   const closeMobileMenu = () => setOpenMobile(false);
 
   const handleLogout = async () => {
     try {
-      await logOut(); // from AuthContext
+      await logOut(); 
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
@@ -176,9 +177,13 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
       </nav>
       <div className="p-4 border-t mt-auto">
         {user ? (
-            <Button onClick={handleLogout} variant="outline" className="w-full text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive focus-visible:ring-destructive">
-            <LogOut className="mr-2 h-4 w-4" />
-            Log out
+            <Button 
+              onClick={handleLogout} 
+              variant="outline" 
+              className="w-full text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive focus-visible:ring-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
             </Button>
         ) : (
           <div className="flex flex-col gap-2">
@@ -199,8 +204,9 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 export default function Header() {
   const { user, logOut, loading } = useAuth();
   const pathname = usePathname();
-  const { openMobile, setOpenMobile } = useSidebar(); // Use from global SidebarProvider
+  const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     const headerElement = document.querySelector('header');
@@ -214,7 +220,7 @@ export default function Header() {
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
     { href: "/#about", label: "About", id: "about", icon: Info },
     { href: "/#services", label: "Services", id: "services", icon: Handshake },
-    { href: "/#reviews", label: "Reviews", id: "reviews", icon: Star },
+    { href: "/#testimonials", label: "Reviews", id: "reviews", icon: Star }, // Changed id from 'reviews' to 'testimonials'
   ];
 
   useEffect(() => {
@@ -263,7 +269,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname]); // Removed commonNavLinks from dependencies as it's stable
+  }, [pathname]); 
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -435,3 +441,4 @@ export default function Header() {
     </header>
   );
 }
+
