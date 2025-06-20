@@ -333,8 +333,8 @@ const sendTicketEmailFlow = ai.defineFlow(
       });
 
       if (error) {
-        console.error("Resend API Error:", error);
-        return { success: false, message: `Failed to send email: ${error.message}` };
+        console.error("Resend API Error:", error); // This logs the full error object
+        return { success: false, message: `Failed to send email: ${error.message || 'An unknown Resend API error occurred. Please check server logs.'}` };
       }
 
       return { success: true, message: "Ticket email sent successfully.", emailId: data?.id };
