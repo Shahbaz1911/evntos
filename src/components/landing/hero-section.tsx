@@ -6,15 +6,47 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, CalendarPlus, Users } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+const wordsToAnimate = ["Unforgettable", "Amazing", "Successful"];
+const TYPING_SPEED = 120;
+const DELETING_SPEED = 70;
+const DELAY_BETWEEN_WORDS = 1500;
 
 export default function HeroSection() {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [text, setText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleTyping = useCallback(() => {
+    const currentWord = wordsToAnimate[wordIndex];
+    if (isDeleting) {
+      setText((prev) => prev.substring(0, prev.length - 1));
+    } else {
+      setText((prev) => currentWord.substring(0, prev.length + 1));
+    }
+
+    if (!isDeleting && text === currentWord) {
+      setTimeout(() => setIsDeleting(true), DELAY_BETWEEN_WORDS);
+    } else if (isDeleting && text === '') {
+      setIsDeleting(false);
+      setWordIndex((prev) => (prev + 1) % wordsToAnimate.length);
+    }
+  }, [isDeleting, text, wordIndex]);
+
+  useEffect(() => {
+    const timer = setTimeout(handleTyping, isDeleting ? DELETING_SPEED : TYPING_SPEED);
+    return () => clearTimeout(timer);
+  }, [handleTyping, isDeleting, text]);
+
+
   return (
     <section id="hero" className="bg-secondary text-secondary-foreground py-20 md:py-32">
       <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Column: Text Content */}
         <div className="space-y-6 md:space-y-8 text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-primary">
-            Host Unforgettable Events, <span className="block">Effortlessly.</span>
+            Host <span className="inline-block min-h-[1.2em] min-w-[200px] sm:min-w-[300px] md:min-w-[350px] lg:min-w-[400px]">{text}</span> Events, <span className="block">Effortlessly.</span>
           </h1>
           <p className="text-lg md:text-xl text-foreground/80 max-w-xl mx-auto md:mx-0">
             Eventos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
