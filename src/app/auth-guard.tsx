@@ -57,7 +57,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // and it's not a public page, show the main app spinner.
   if ((authContextLoading || userSubscriptionStatus === 'loading') && !isPublicPage) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
+      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
         <LoadingSpinner size={48} />
       </div>
     );
@@ -67,8 +67,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // If not a public page and no user (and auth/sub status is resolved)
   if (!isPublicPage && !user && !authContextLoading && userSubscriptionStatus !== 'loading') {
     return (
-        <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
-          <p className="text-muted-foreground mb-2">Redirecting to login...</p>
+        <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
+          <p className="text-muted-foreground mb-2 text-center">Redirecting to login...</p>
           <LoadingSpinner size={32} />
         </div>
     );
@@ -80,8 +80,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
      // Check if we are already on the pricing page to avoid loop, though useEffect should also prevent this.
      if (pathname !== '/pricing') {
         return (
-            <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background">
-            <p className="text-muted-foreground mb-2">Redirecting to pricing...</p>
+            <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
+            <p className="text-muted-foreground mb-2 text-center">Redirecting to pricing...</p>
             <LoadingSpinner size={32} />
             </div>
         );
