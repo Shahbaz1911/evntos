@@ -33,7 +33,7 @@ export default function DashboardPage() {
               <CardTitle className="text-3xl font-bold font-headline text-primary">Eventos Dashboard</CardTitle>
               <CardDescription>Manage your events or create a new one.</CardDescription>
             </div>
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
               <Link href="/events/create">
                 <PlusCircle className="mr-2 h-5 w-5" />
                 Create New Event

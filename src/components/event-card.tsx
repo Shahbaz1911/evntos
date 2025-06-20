@@ -71,8 +71,8 @@ export default function EventCard({ event }: EventCardProps) {
           </CardDescription>
         </div>
       </CardHeader>
-      <CardFooter className="flex-wrap justify-between items-center bg-muted/50 p-4 mt-auto">
-        <div className="flex gap-2 mb-2 sm:mb-0 flex-wrap">
+      <CardFooter className="flex flex-col sm:flex-row sm:justify-between items-stretch sm:items-center gap-3 bg-muted/50 p-4 mt-auto">
+        <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/events/${event.id}/edit`}>
               <Edit3 className="mr-2 h-4 w-4" /> Edit
@@ -84,7 +84,7 @@ export default function EventCard({ event }: EventCardProps) {
             </Link>
           </Button>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share2 className="mr-2 h-4 w-4" /> Share
           </Button>
