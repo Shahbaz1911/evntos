@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Facebook, Twitter, Instagram, Linkedin, Rss } from 'lucide-react'; // Using Rss for blog as placeholder
+import { useEffect } from 'react';
 
 export default function Footer() {
 
@@ -62,7 +63,7 @@ export default function Footer() {
             <Link href="/" className="text-3xl font-bold font-headline text-primary">
               eventos
             </Link>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm max-w-sm">
               Create, promote, and manage your events effortlessly. Join our community and make your next event a success.
             </p>
             <div className="flex space-x-4">
@@ -104,7 +105,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-// Need to add useEffect to calculate footer height for min-h-screen calc in login/signup pages
-import { useEffect } from 'react';
-

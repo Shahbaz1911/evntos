@@ -116,7 +116,7 @@ export default function PublicEventPage() {
 
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 container px-4 py-8">
       <Card className="overflow-hidden shadow-xl rounded-lg">
         <div className="relative w-full h-72 md:h-96">
           <Image 
@@ -139,7 +139,7 @@ export default function PublicEventPage() {
         </div>
         
         <CardContent className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
+          <div className="md:col-span-2 space-y-6 md:space-y-8">
             <div>
               <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
                 <Calendar className="mr-3 h-6 w-6" /> Date & Time
