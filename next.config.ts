@@ -19,13 +19,19 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'placehold.c', // Added to handle potential typos
+        hostname: 'placehold.c',
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media-alpha-green.vercel.app',
         port: '',
         pathname: '/**',
       }
