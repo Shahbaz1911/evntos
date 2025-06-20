@@ -42,12 +42,14 @@ const formatEventDateTimeForPdf = (dateStr?: string, timeStr?: string) => {
     return "N/A";
   }
   try {
-    const dateTime = new Date(\`\${dateStr.trim()}T\${timeStr.trim()}:00\`);
+    // Changed to string concatenation to avoid template literal parsing issue
+    const dateTimeString = dateStr.trim() + 'T' + timeStr.trim() + ':00';
+    const dateTime = new Date(dateTimeString);
     if (isNaN(dateTime.getTime())) return "Invalid Date/Time";
     
     const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-    return \`\${dateTime.toLocaleDateString(undefined, dateOptions)}, \${dateTime.toLocaleTimeString(undefined, timeOptions)}\`;
+    return `${dateTime.toLocaleDateString(undefined, dateOptions)}, ${dateTime.toLocaleTimeString(undefined, timeOptions)}`;
   } catch (e) {
     return "Error formatting date/time";
   }
@@ -144,12 +146,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
                 if (emailResult.success) {
                     toast({
                         title: "Registration Successful!",
-                        description: \`You're registered for "\${eventName}". Your PDF ticket has been emailed to \${newRegistration.email}.\`,
+                        description: `You're registered for "${eventName}". Your PDF ticket has been emailed to ${newRegistration.email}.`,
                     });
                 } else {
                      toast({
                         title: "Registration Successful (Email Failed)",
-                        description: \`You're registered, but we couldn't email your ticket: \${emailResult.message}. You can download it below.\`,
+                        description: `You're registered, but we couldn't email your ticket: ${emailResult.message}. You can download it below.`,
                         variant: "default", // or "warning" if you have one
                     });
                 }
@@ -157,7 +159,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
                 console.error("Error calling sendTicketEmail flow:", flowError);
                 toast({
                     title: "Registration Successful (Email Error)",
-                    description: \`You're registered, but there was an error sending your ticket email: \${flowError.message || 'Unknown flow error'}. You can download it below.\`,
+                    description: `You're registered, but there was an error sending your ticket email: ${flowError.message || 'Unknown flow error'}. You can download it below.`,
                     variant: "default",
                 });
             }
@@ -277,7 +279,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         p1Y = drawWrappedText(page1, nameText, p1Margin, p1Y, p1ContentWidth, nameLineHeight, helveticaBoldFont, nameSize, blackColor, {textAlign: 'center'});
         p1Y -= mmToPoints(3);
         
-        const ticketIdText = \`Ticket ID: \${submittedRegistration.id}\`;
+        const ticketIdText = `Ticket ID: ${submittedRegistration.id}`;
         const ticketIdSize = 9;
         const ticketIdLineHeight = ticketIdSize + 2;
         p1Y = drawWrappedText(page1, ticketIdText, p1Margin, p1Y, p1ContentWidth, ticketIdLineHeight, helveticaFont, ticketIdSize, grayColor, {textAlign: 'center'});
@@ -375,7 +377,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         link.href = URL.createObjectURL(blob);
         const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
         const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
-        link.download = \`\${safeEventName}-Ticket-\${safeGuestName}.pdf\`;
+        link.download = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -398,15 +400,15 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           <CheckCircle className="mx-auto h-20 w-20 text-accent mb-4" />
           <CardTitle className="text-foreground font-headline text-3xl">Registration Confirmed!</CardTitle>
           <CardDescription className="text-muted-foreground text-base pt-2">
-            Thank you for registering for <span className="font-semibold text-primary">"\${eventName}"</span>.<br/> 
+            Thank you for registering for <span className="font-semibold text-primary">"${eventName}"</span>.<br/> 
             Your ticket has been emailed to you. You can also download it directly below.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6 text-center">
-          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> \${submittedRegistration.name}</p>
-          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> \${submittedRegistration.email}</p>
+          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> ${submittedRegistration.name}</p>
+          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> ${submittedRegistration.email}</p>
           {submittedRegistration.contactNumber && (
-            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> \${submittedRegistration.contactNumber}</p>
+            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> ${submittedRegistration.contactNumber}</p>
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 p-6 pt-2 w-full max-w-sm">
@@ -429,7 +431,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
       <CardHeader className="pb-4 text-center">
          <TicketIconLucide className="mx-auto h-12 w-12 text-primary mb-3" />
-        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for \${eventName}</CardTitle>
+        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for ${eventName}</CardTitle>
         <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow h-full">
@@ -446,7 +448,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.name ? "true" : "false"}
             />
-            {\`\${errors.name ? <p className="text-sm text-destructive pt-1">\${errors.name.message}</p> : ''}\`}
+            {`${errors.name ? `<p className="text-sm text-destructive pt-1">${errors.name.message}</p>` : ''}`}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base flex items-center">
@@ -461,7 +463,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.email ? "true" : "false"}
             />
-            {\`\${errors.email ? <p className="text-sm text-destructive pt-1">\${errors.email.message}</p> : ''}\`}
+            {`${errors.email ? `<p className="text-sm text-destructive pt-1">${errors.email.message}</p>` : ''}`}
           </div>
           <div className="space-y-2">
             <Label htmlFor="contactNumber" className="text-base flex items-center">
@@ -476,7 +478,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.contactNumber ? "true" : "false"}
             />
-            {\`\${errors.contactNumber ? <p className="text-sm text-destructive pt-1">\${errors.contactNumber.message}</p> : ''}\`}
+            {`${errors.contactNumber ? `<p className="text-sm text-destructive pt-1">${errors.contactNumber.message}</p>` : ''}`}
           </div>
         </CardContent>
         <CardFooter className="p-6 md:p-8 mt-auto">
