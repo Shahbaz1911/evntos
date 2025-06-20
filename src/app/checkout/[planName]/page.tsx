@@ -175,14 +175,6 @@ export default function CheckoutPage() {
                 {errors.cvc && <p className="text-sm text-destructive">{errors.cvc.message}</p>}
               </div>
             </div>
-             <div className="mt-4 p-3 bg-secondary/70 border border-border rounded-md text-sm text-muted-foreground">
-                <p className="font-semibold">Use Dummy Payment Details:</p>
-                <ul className="list-disc list-inside ml-2 mt-1">
-                    <li>Card Number: <code className="font-mono bg-muted px-1 rounded">123456781234</code></li>
-                    <li>Expiry Date: <code className="font-mono bg-muted px-1 rounded">19/30</code></li>
-                    <li>CVC: <code className="font-mono bg-muted px-1 rounded">786</code></li>
-                </ul>
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-lg py-6" disabled={isSubmitting || authLoading}>
@@ -198,3 +190,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
