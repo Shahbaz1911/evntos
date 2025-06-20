@@ -72,7 +72,7 @@ export default function ServicesSection() {
                 <div className={`p-4 rounded-full ${service.bgColor} mb-4 inline-block`}>
                   <service.icon className={`w-10 h-10 ${service.iconColor}`} />
                 </div>
-                <CardTitle className="font-headline text-xl text-card-foreground">{service.title}</CardTitle>
+                <CardTitle className="font-headline text-lg text-card-foreground sm:text-xl">{service.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-card-foreground/80">{service.description}</CardDescription>

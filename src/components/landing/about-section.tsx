@@ -63,7 +63,7 @@ export default function AboutSection() {
                   <feature.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-foreground">{feature.title}</h4>
+                  <h4 className="text-base font-semibold text-foreground sm:text-lg">{feature.title}</h4>
                   <p className="text-muted-foreground text-sm">{feature.description}</p>
                 </div>
               </div>
@@ -77,4 +77,3 @@ export default function AboutSection() {
     </section>
   );
 }
-

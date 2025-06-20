@@ -12,7 +12,7 @@ export default function HeroSection() {
     <section id="hero" className="bg-secondary text-secondary-foreground py-20 md:py-32">
       <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Column: Text Content */}
-        <div className="space-y-8 text-center md:text-left">
+        <div className="space-y-6 md:space-y-8 text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-primary">
             Host Unforgettable Events, <span className="block">Effortlessly.</span>
           </h1>
@@ -26,12 +26,12 @@ export default function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 shadow-md">
-              <Link href="#features">
+              <Link href="#services"> {/* Changed from #features to #services to match existing link */}
                 Learn More
               </Link>
             </Button>
           </div>
-          <div className="flex items-center justify-center md:justify-start space-x-4 text-sm text-muted-foreground pt-4">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-muted-foreground pt-4">
             <div className="flex items-center">
               <CalendarPlus className="h-5 w-5 mr-2 text-primary/70" />
               <span>Easy Event Creation</span>
@@ -45,7 +45,7 @@ export default function HeroSection() {
 
         {/* Right Column: Image/Visual */}
         <div className="relative group">
-           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
           <Card className="relative overflow-hidden shadow-2xl rounded-xl border-2 border-transparent hover:border-primary/30 transition-all duration-300">
             <CardContent className="p-0">
               <Image
@@ -61,17 +61,6 @@ export default function HeroSection() {
           </Card>
         </div>
       </div>
-       <style jsx global>{`
-        .animate-tilt {
-          animation: tilt 10s infinite linear;
-        }
-        @keyframes tilt {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(0.5deg); }
-          75% { transform: rotate(-0.5deg); }
-        }
-      `}</style>
     </section>
   );
 }
-
