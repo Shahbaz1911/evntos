@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 
-const ADMIN_EMAIL = "admin@evntos.com";
+const ADMIN_EMAIL = "sk@gmail.com";
 
 interface AuthContextType {
   user: User | null;
