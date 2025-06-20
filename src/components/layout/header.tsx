@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star } from 'lucide-react';
+import { CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
@@ -220,7 +220,8 @@ export default function Header() {
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
     { href: "/#about", label: "About", id: "about", icon: Info },
     { href: "/#services", label: "Services", id: "services", icon: Handshake },
-    { href: "/#testimonials", label: "Reviews", id: "testimonials", icon: Star }, // Changed id from 'reviews' to 'testimonials'
+    { href: "/#testimonials", label: "Testimonials", id: "testimonials", icon: Star },
+    { href: "/#faq", label: "FAQ", id: "faq", icon: HelpCircle },
   ];
 
   useEffect(() => {
@@ -441,3 +442,4 @@ export default function Header() {
     </header>
   );
 }
+

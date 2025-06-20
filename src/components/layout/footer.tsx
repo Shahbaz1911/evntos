@@ -29,9 +29,9 @@ export default function Footer() {
     {
       label: "Product",
       items: [
-        { href: '/#features', name: 'Features' }, // Assuming you might add a features section
+        { href: '/#services', name: 'Services' }, // Changed from #features
         { href: '/#pricing', name: 'Pricing' }, // Assuming pricing section
-        { href: '/faq', name: 'FAQ' },
+        { href: '/#faq', name: 'FAQ' },
         { href: '/#testimonials', name: 'Testimonials' },
       ],
     },
@@ -105,3 +105,4 @@ export default function Footer() {
     </footer>
   );
 }
+
