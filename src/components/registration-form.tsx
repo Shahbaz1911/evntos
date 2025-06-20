@@ -14,8 +14,9 @@ import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
 import type { Registration, Event as EventType } from '@/types';
 import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react';
-import { PDFDocument, rgb, StandardFonts, PageSizes, PDFFont, PDFPage, RGB } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
+import { sendTicketEmail } from '@/ai/flows/send-ticket-email-flow';
 
 
 const registrationSchema = z.object({
@@ -41,12 +42,12 @@ const formatEventDateTimeForPdf = (dateStr?: string, timeStr?: string) => {
     return "N/A";
   }
   try {
-    const dateTime = new Date(`${dateStr.trim()}T${timeStr.trim()}:00`);
+    const dateTime = new Date(\`\${dateStr.trim()}T\${timeStr.trim()}:00\`);
     if (isNaN(dateTime.getTime())) return "Invalid Date/Time";
     
     const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-    return `${dateTime.toLocaleDateString(undefined, dateOptions)}, ${dateTime.toLocaleTimeString(undefined, timeOptions)}`;
+    return \`\${dateTime.toLocaleDateString(undefined, dateOptions)}, \${dateTime.toLocaleTimeString(undefined, timeOptions)}\`;
   } catch (e) {
     return "Error formatting date/time";
   }
@@ -122,11 +123,51 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         contactNumber: data.contactNumber || undefined,
       });
       if (newRegistration) {
-        toast({
-          title: "Registration Successful!",
-          description: `You're registered for "${eventName}". Download your PDF ticket below.`,
-        });
         setSubmittedRegistration(newRegistration);
+        // Now call the Genkit flow to send the email
+        const eventDetails = getEventById(eventId);
+        if (eventDetails) {
+            try {
+                const emailResult = await sendTicketEmail({
+                    registrationId: newRegistration.id,
+                    userName: newRegistration.name,
+                    userEmail: newRegistration.email,
+                    eventDetails: {
+                        title: eventDetails.title,
+                        eventDate: eventDetails.eventDate,
+                        eventTime: eventDetails.eventTime,
+                        venueName: eventDetails.venueName,
+                        venueAddress: eventDetails.venueAddress,
+                        mapLink: eventDetails.mapLink,
+                    }
+                });
+                if (emailResult.success) {
+                    toast({
+                        title: "Registration Successful!",
+                        description: \`You're registered for "\${eventName}". Your PDF ticket has been emailed to \${newRegistration.email}.\`,
+                    });
+                } else {
+                     toast({
+                        title: "Registration Successful (Email Failed)",
+                        description: \`You're registered, but we couldn't email your ticket: \${emailResult.message}. You can download it below.\`,
+                        variant: "default", // or "warning" if you have one
+                    });
+                }
+            } catch (flowError: any) {
+                console.error("Error calling sendTicketEmail flow:", flowError);
+                toast({
+                    title: "Registration Successful (Email Error)",
+                    description: \`You're registered, but there was an error sending your ticket email: \${flowError.message || 'Unknown flow error'}. You can download it below.\`,
+                    variant: "default",
+                });
+            }
+        } else {
+            toast({
+                title: "Registration Successful (Event Details Missing)",
+                description: "You're registered, but we couldn't find event details to email your ticket. You can download it below.",
+                variant: "default",
+            });
+        }
       } else {
         throw new Error("Failed to get registration details after creation.");
       }
@@ -236,7 +277,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         p1Y = drawWrappedText(page1, nameText, p1Margin, p1Y, p1ContentWidth, nameLineHeight, helveticaBoldFont, nameSize, blackColor, {textAlign: 'center'});
         p1Y -= mmToPoints(3);
         
-        const ticketIdText = `Ticket ID: ${submittedRegistration.id}`;
+        const ticketIdText = \`Ticket ID: \${submittedRegistration.id}\`;
         const ticketIdSize = 9;
         const ticketIdLineHeight = ticketIdSize + 2;
         p1Y = drawWrappedText(page1, ticketIdText, p1Margin, p1Y, p1ContentWidth, ticketIdLineHeight, helveticaFont, ticketIdSize, grayColor, {textAlign: 'center'});
@@ -268,9 +309,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
 
         const drawDetailItemPage2 = (label: string, value: string) => {
-            if (p2Y < p2Margin + sectionHeaderFontSize + detailLineHeight * 2) { // check if enough space for label + value + some buffer
-                 // This is a basic check; real multi-page content flow is complex.
-                 // For now, we'll just stop if out of space on page 2.
+            if (p2Y < p2Margin + sectionHeaderFontSize + detailLineHeight * 2) { 
                 console.warn("Not enough space on page 2 for detail:", label);
                 return;
             }
@@ -310,8 +349,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             drawDetailItemPage2("Venue Name:", eventDetails.venueName);
         }
         if (eventDetails.venueAddress) {
-            // Replace newlines with spaces for better PDF display of address
-            drawDetailItemPage2("Venue Address:", eventDetails.venueAddress.replace(/\n/g, ', '));
+            drawDetailItemPage2("Venue Address:", eventDetails.venueAddress.replace(/\\n/g, ', '));
         }
         if (eventDetails.mapLink) {
             drawDetailItemPage2("Directions:", "Use map link on event page");
@@ -335,16 +373,16 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-        const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-        link.download = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
+        const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
+        const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
+        link.download = \`\${safeEventName}-Ticket-\${safeGuestName}.pdf\`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
 
-        reset();
-        setSubmittedRegistration(null);
+        reset(); // Reset form fields
+        setSubmittedRegistration(null); // Clear submitted state to show form again or a generic thank you
 
     } catch (error) {
         console.error("Error generating PDF ticket with pdf-lib:", error);
@@ -360,14 +398,15 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           <CheckCircle className="mx-auto h-20 w-20 text-accent mb-4" />
           <CardTitle className="text-foreground font-headline text-3xl">Registration Confirmed!</CardTitle>
           <CardDescription className="text-muted-foreground text-base pt-2">
-            Thank you for registering for <span className="font-semibold text-primary">"{eventName}"</span>.<br/> Your ticket with a unique QR code can be downloaded below.
+            Thank you for registering for <span className="font-semibold text-primary">"\${eventName}"</span>.<br/> 
+            Your ticket has been emailed to you. You can also download it directly below.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6 text-center">
-          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> {submittedRegistration.name}</p>
-          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> {submittedRegistration.email}</p>
+          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> \${submittedRegistration.name}</p>
+          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> \${submittedRegistration.email}</p>
           {submittedRegistration.contactNumber && (
-            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> {submittedRegistration.contactNumber}</p>
+            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> \${submittedRegistration.contactNumber}</p>
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-3 p-6 pt-2 w-full max-w-sm">
@@ -378,6 +417,9 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             >
               <Download className="mr-2 h-5 w-5" /> Download Your Ticket (PDF)
             </Button>
+            <Button variant="outline" onClick={() => { reset(); setSubmittedRegistration(null); }} className="w-full">
+                Register Another Guest
+            </Button>
           </CardFooter>
       </Card>
     );
@@ -387,7 +429,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
       <CardHeader className="pb-4 text-center">
          <TicketIconLucide className="mx-auto h-12 w-12 text-primary mb-3" />
-        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for {eventName}</CardTitle>
+        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for \${eventName}</CardTitle>
         <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow h-full">
@@ -404,7 +446,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.name ? "true" : "false"}
             />
-            {errors.name && <p className="text-sm text-destructive pt-1">{errors.name.message}</p>}
+            {\`\${errors.name ? <p className="text-sm text-destructive pt-1">\${errors.name.message}</p> : ''}\`}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base flex items-center">
@@ -419,7 +461,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.email ? "true" : "false"}
             />
-            {errors.email && <p className="text-sm text-destructive pt-1">{errors.email.message}</p>}
+            {\`\${errors.email ? <p className="text-sm text-destructive pt-1">\${errors.email.message}</p> : ''}\`}
           </div>
           <div className="space-y-2">
             <Label htmlFor="contactNumber" className="text-base flex items-center">
@@ -434,7 +476,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.contactNumber ? "true" : "false"}
             />
-            {errors.contactNumber && <p className="text-sm text-destructive pt-1">{errors.contactNumber.message}</p>}
+            {\`\${errors.contactNumber ? <p className="text-sm text-destructive pt-1">\${errors.contactNumber.message}</p> : ''}\`}
           </div>
         </CardContent>
         <CardFooter className="p-6 md:p-8 mt-auto">
@@ -444,7 +486,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             disabled={isSubmitting}
           >
             {isSubmitting && <LoadingSpinner size={20} className="mr-2" />}
-            {isSubmitting ? "Registering..." : "Register Now & Get PDF Ticket"}
+            {isSubmitting ? "Registering..." : "Register & Get Ticket"}
           </Button>
         </CardFooter>
       </form>
