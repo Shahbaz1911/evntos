@@ -13,10 +13,26 @@ const TYPING_SPEED = 120;
 const DELETING_SPEED = 70;
 const DELAY_BETWEEN_WORDS = 1500;
 
+const heroImages = [
+  {
+    src: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwYXJ0eXxlbnwwfHx8fDE3NTAyNjM5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    hint: "party celebration",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1519751138087-5bf79df62d5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXN0aXZhbHxlbnwwfHx8fDE3NTE2NjAwMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    hint: "festival crowd",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1505236873119-cde6b67f1cf4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb25mZXJlbmNlfGVufDB8fHx8MTc1MTY2MDA1MHww&ixlib=rb-4.1.0&q=80&w=1080",
+    hint: "conference stage",
+  },
+];
+
 export default function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [text, setText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const handleTyping = useCallback(() => {
     const currentWord = wordsToAnimate[wordIndex];
@@ -39,6 +55,9 @@ export default function HeroSection() {
     return () => clearTimeout(timer);
   }, [handleTyping, isDeleting, text]);
 
+  const handleImageHover = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+  };
 
   return (
     <section id="hero" className="bg-secondary text-secondary-foreground py-20 md:py-32">
@@ -58,7 +77,7 @@ export default function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 shadow-md">
-              <Link href="#services"> {/* Changed from #features to #services to match existing link */}
+              <Link href="#services">
                 Learn More
               </Link>
             </Button>
@@ -76,18 +95,21 @@ export default function HeroSection() {
         </div>
 
         {/* Right Column: Image/Visual */}
-        <div className="relative group">
+        <div 
+          className="relative group"
+          onMouseEnter={handleImageHover}
+        >
            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
           <Card className="relative overflow-hidden shadow-2xl rounded-xl border-2 border-transparent hover:border-primary/30 transition-all duration-300">
             <CardContent className="p-0">
               <Image
-                src="https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwYXJ0eXxlbnwwfHx8fDE3NTAyNjM5NTl8MA&ixlib=rb-4.1.0&q=80&w=1080"
+                src={heroImages[currentImageIndex].src}
                 alt="Dynamic Event Showcase"
                 width={800}
                 height={600}
                 className="rounded-xl object-cover aspect-[4/3]"
                 priority
-                data-ai-hint="party celebration"
+                data-ai-hint={heroImages[currentImageIndex].hint}
               />
             </CardContent>
           </Card>
