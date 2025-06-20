@@ -22,7 +22,6 @@ export default function ScanTicketPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  // checkInGuest removed from useEvents destructuring
   const { getEventById, getRegistrationByIdFromFirestore, contextLoading: eventContextLoading } = useEvents();
   const { user: authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -66,13 +65,14 @@ export default function ScanTicketPage() {
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage("Verifying ticket...");
+    setShowScannerUI(false); // Hide scanner immediately after scan
 
     try {
         const registration = await getRegistrationByIdFromFirestore(decodedText);
         if (registration) {
             if (registration.eventId === eventId) {
                 setScannedData(registration);
-                if (registration.checkedIn) { // Check if already marked as checkedIn
+                if (registration.checkedIn) {
                     setScanStatus("already_verified");
                     setScanMessage(`Guest ${registration.name} was already verified/checked in at ${new Date(registration.checkedInAt!).toLocaleString()}.`);
                     toast({ title: "Already Verified", description: `${registration.name} was previously verified.`});
@@ -101,57 +101,59 @@ export default function ScanTicketPage() {
 
 
   useEffect(() => {
+    let scanner: Html5QrcodeScanner | null = null;
     if (showScannerUI && hasCameraPermission) {
       const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
       const scannerConfig = {
         fps: 10,
         qrbox: { width: 250, height: 250 },
         rememberLastUsedCamera: false, 
-        facingMode: "environment", // Prefer back camera
+        facingMode: "environment",
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       };
       const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
-        setShowScannerUI(false); 
+        if (html5QrCodeScannerRef.current) {
+             html5QrCodeScannerRef.current.clear().catch(err => console.warn("Error clearing scanner on success:", err));
+             html5QrCodeScannerRef.current = null;
+        }
         processScanResult(decodedText);
       };
       const onScanFailure = (errorMessage: string, error: Html5QrcodeError) => { /* console.warn(`QR error = ${errorMessage}`); */ };
 
-
       if (!scannerRegionElement) {
           console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
-          setTimeout(() => { // Retry finding element after a short delay
+          setTimeout(() => {
             const delayedScannerRegionElement = document.getElementById(SCANNER_REGION_ID);
             if (!delayedScannerRegionElement) {
                 toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh.", variant: "destructive" });
                 setShowScannerUI(false); 
             } else {
-                const scanner = new Html5QrcodeScanner(
-                    SCANNER_REGION_ID,
-                    scannerConfig,
-                    false 
-                );
-                html5QrCodeScannerRef.current = scanner;
-                scanner.render(onScanSuccess, onScanFailure);
+                html5QrCodeScannerRef.current = new Html5QrcodeScanner(SCANNER_REGION_ID, scannerConfig, false);
+                html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
             }
           }, 100); 
           return; 
       }
 
-      const scanner = new Html5QrcodeScanner(
-        SCANNER_REGION_ID,
-        scannerConfig,
-        false 
-      );
-      html5QrCodeScannerRef.current = scanner;
-
-      scanner.render(onScanSuccess, onScanFailure);
+      html5QrCodeScannerRef.current = new Html5QrcodeScanner(SCANNER_REGION_ID, scannerConfig, false);
+      html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
+      scanner = html5QrCodeScannerRef.current; // To use in cleanup
     }
 
     return () => {
-      if (html5QrCodeScannerRef.current) {
-        html5QrCodeScannerRef.current.clear()
+      if (scanner) { // Use the locally scoped scanner instance for cleanup
+        scanner.clear()
           .catch(err => { console.warn("Error clearing scanner during cleanup:", err); })
-          .finally(() => { html5QrCodeScannerRef.current = null; });
+          .finally(() => { 
+            if (html5QrCodeScannerRef.current === scanner) { // Ensure it's the same instance
+                 html5QrCodeScannerRef.current = null;
+            }
+          });
+      } else if (html5QrCodeScannerRef.current && !showScannerUI) { 
+          // If scanner was stopped manually (showScannerUI became false)
+          html5QrCodeScannerRef.current.clear()
+            .catch(err => { console.warn("Error clearing scanner during manual stop:", err); })
+            .finally(() => { html5QrCodeScannerRef.current = null; });
       }
     };
   }, [showScannerUI, hasCameraPermission, processScanResult, toast]);
@@ -162,24 +164,38 @@ export default function ScanTicketPage() {
     setScannedData(null);
     setScanMessage(null);
 
-    try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCameraPermission(true);
-      setShowScannerUI(true); 
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      setHasCameraPermission(false);
-      setShowScannerUI(false);
-      toast({
+    if (hasCameraPermission === false) { // Explicitly denied
+       toast({
         variant: 'destructive',
         title: 'Camera Access Denied',
         description: 'Please enable camera permissions in your browser settings to use the scanner.',
       });
+      return;
+    }
+
+    if (hasCameraPermission === null) { // Permission not yet requested or determined
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        setShowScannerUI(true); 
+      } catch (err) {
+        console.error('Error accessing camera:', err);
+        setHasCameraPermission(false);
+        setShowScannerUI(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use the scanner.',
+        });
+      }
+    } else { // Permission already granted
+        setShowScannerUI(true);
     }
   };
 
   const handleStopScanning = () => {
     setShowScannerUI(false); 
+    // The useEffect cleanup will handle clearing the scanner instance
   };
 
 
@@ -226,7 +242,17 @@ export default function ScanTicketPage() {
               ) : hasCameraPermission === false ? (
                  <div className="text-center p-4 text-destructive">
                     <CameraOff size={48} className="mx-auto mb-2"/>
-                    <p>Camera access denied. Please enable camera permissions in your browser settings to use the scanner.</p>
+                    <p>Camera access denied. Enable permissions and click "Start Scanning".</p>
+                </div>
+              ) : !showScannerUI && (scanStatus === "success" || scanStatus === "already_verified") ? (
+                <div className="text-center p-4 text-green-600">
+                  <UserCheck size={64} className="mx-auto mb-4"/>
+                  <p className="text-lg font-semibold">{scanStatus === "success" ? "Ticket Verified!" : "Already Verified!"}</p>
+                </div>
+              ) : !showScannerUI && (scanStatus === "error" || scanStatus === "not_found") ? (
+                <div className="text-center p-4 text-destructive">
+                  <UserX size={64} className="mx-auto mb-4"/>
+                  <p className="text-lg font-semibold">{scanStatus === "error" ? "Scan Error" : "Ticket Not Found"}</p>
                 </div>
               ) : (
                 <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
@@ -238,37 +264,39 @@ export default function ScanTicketPage() {
                 Stop Scanning
               </Button>
             ) : (
-              <Button onClick={handleStartScanning} className="w-full bg-primary hover:bg-primary/90" disabled={hasCameraPermission === false}>
-                <ScanLine className="mr-2 h-5 w-5" /> Start Scanning
+              <Button onClick={handleStartScanning} className="w-full bg-primary hover:bg-primary/90">
+                <ScanLine className="mr-2 h-5 w-5" /> 
+                {scanStatus === "idle" && hasCameraPermission !== false ? "Start Scanning" : "Scan Another Ticket"}
               </Button>
             )}
-
-            {scanMessage && (
+            
+            {/* Display detailed messages and data only when scanner is not active */}
+            {!showScannerUI && scanMessage && (
                 <Alert 
                     variant={scanStatus === "success" || scanStatus === "already_verified" ? "default" : (scanStatus === "idle" ? "default" : "destructive")} 
-                    className={`mt-4 ${scanStatus === "success" || scanStatus === "already_verified" ? "border-green-500 bg-green-50" : ""}`}
+                    className={`mt-4 ${scanStatus === "success" || scanStatus === "already_verified" ? "border-green-500 bg-green-50 text-green-700" : (scanStatus === "error" || scanStatus === "not_found" ? "border-destructive bg-red-50 text-destructive" : "")}`}
                 >
-                     {(scanStatus === "success" || scanStatus === "already_verified") && <UserCheck className="h-4 w-4 text-green-600" />}
-                     {(scanStatus === "error" || scanStatus === "not_found") && <UserX className="h-4 w-4" />}
-                    <AlertTitle className={scanStatus === "success" || scanStatus === "already_verified" ? "text-green-700" : ""}>
+                     {(scanStatus === "success" || scanStatus === "already_verified") && <UserCheck className="h-5 w-5 text-current" />}
+                     {(scanStatus === "error" || scanStatus === "not_found") && <UserX className="h-5 w-5 text-current" />}
+                    <AlertTitle className="font-semibold text-lg">
                         {scanStatus === "success" ? "Ticket Verified" : 
                          scanStatus === "already_verified" ? "Already Verified" :
                          scanStatus === "error" ? "Scan Error" : 
                          scanStatus === "not_found" ? "Ticket Not Found" : "Scan Status"}
                     </AlertTitle>
-                    <AlertDescription>{scanMessage}</AlertDescription>
+                    <AlertDescription className="text-base">{scanMessage}</AlertDescription>
                 </Alert>
             )}
 
-            {(scanStatus === "success" || scanStatus === "already_verified") && scannedData && (
-              <Card className={`mt-4 ${scanStatus === "already_verified" ? "bg-blue-50 border-blue-200" : "bg-green-50 border-green-200"}`}>
+            {!showScannerUI && (scanStatus === "success" || scanStatus === "already_verified") && scannedData && (
+              <Card className={`mt-4 ${scanStatus === "already_verified" ? "bg-blue-50 border-blue-300" : "bg-green-50 border-green-300"}`}>
                 <CardHeader>
-                  <CardTitle className={scanStatus === "already_verified" ? "text-blue-700 font-headline" : "text-green-700 font-headline"}>
-                    {scanStatus === "already_verified" ? "Guest Previously Verified" : "Guest Details Verified"}
+                  <CardTitle className={`font-headline text-xl ${scanStatus === "already_verified" ? "text-blue-700" : "text-green-700"}`}>
+                    Guest Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="flex items-center"><UserCheck className="mr-2 h-4 w-4 text-green-600" /><strong>Name:</strong> {scannedData.name}</p>
+                  <p className="flex items-center"><UserCheck className="mr-2 h-4 w-4 text-current" /><strong>Name:</strong> {scannedData.name}</p>
                   <p className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" /><strong>Email:</strong> {scannedData.email}</p>
                   {scannedData.contactNumber && (
                      <p className="flex items-center"><Phone className="mr-2 h-4 w-4 text-muted-foreground" /><strong>Contact:</strong> {scannedData.contactNumber}</p>
@@ -286,3 +314,4 @@ export default function ScanTicketPage() {
     </AuthGuard>
   );
 }
+

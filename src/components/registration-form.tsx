@@ -12,8 +12,8 @@ import { useEvents } from '@/context/EventContext';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import LoadingSpinner from './loading-spinner';
-import type { Registration } from '@/types';
-import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide } from 'lucide-react'; 
+import type { Registration, Event as EventType } from '@/types';
+import { Download, Phone, CheckCircle, User, Mail, Ticket as TicketIconLucide, CalendarDays, Clock, MapPin, Building } from 'lucide-react'; 
 import jsPDF from 'jspdf';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 
@@ -36,9 +36,25 @@ interface RegistrationFormProps {
   eventName: string;
 }
 
+const formatEventDateTimeForPdf = (dateStr?: string, timeStr?: string) => {
+  if (!dateStr || dateStr.trim() === "" || !timeStr || timeStr.trim() === "") {
+    return "N/A";
+  }
+  try {
+    const dateTime = new Date(`${dateStr.trim()}T${timeStr.trim()}:00`);
+    if (isNaN(dateTime.getTime())) return "Invalid Date/Time";
+    
+    const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+    const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+    return `${dateTime.toLocaleDateString(undefined, dateOptions)}, ${dateTime.toLocaleTimeString(undefined, timeOptions)}`;
+  } catch (e) {
+    return "Error formatting date/time";
+  }
+};
+
 
 export default function RegistrationForm({ eventId, eventName }: RegistrationFormProps) {
-  const { addRegistration } = useEvents();
+  const { addRegistration, getEventById } = useEvents();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRegistration, setSubmittedRegistration] = useState<Registration | null>(null);
@@ -145,6 +161,12 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
   const handleDownloadTicket = async () => {
     if (!submittedRegistration) return;
 
+    const eventDetails = getEventById(submittedRegistration.eventId);
+    if (!eventDetails) {
+        toast({ title: "Ticket Download Error", description: "Could not fetch event details for the ticket.", variant: "destructive" });
+        return;
+    }
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -160,15 +182,13 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     canvas.width = mmToPx(pdfTicketWidthMm);
     canvas.height = mmToPx(pdfTicketHeightMm);
 
-    // Fixed Light Theme Colors for PDF
-    const primaryHex = '#F97316';       // Vibrant Orange (from light theme --primary)
-    const primaryFgHex = '#FFFFFF';     // White (from light theme --primary-foreground)
-    const cardHex = '#FFFFFF';          // White (from light theme --card)
-    const textHex = '#1A1A1A';          // Very Dark Brown/Almost Black (approximated from --foreground 24 10% 10%)
-    const mutedTextHex = '#785A48';     // Muted Brownish Orange (approximated from --muted-foreground 25 30% 45%)
-    const borderHex = '#FFDEC2';        // Light Peach Border (from light theme --border)
+    const primaryHex = '#F97316';
+    const primaryFgHex = '#FFFFFF';
+    const cardHex = '#FFFFFF';
+    const textHex = '#1A1A1A';
+    const mutedTextHex = '#785A48';
+    const borderHex = '#FFDEC2';
 
-    // --- Drawing Start ---
     ctx.fillStyle = cardHex;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -180,83 +200,115 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     const contentWidth = canvas.width - 2 * contentPadding;
     let currentY = contentPadding;
 
-    // 1. Header Section (Event Title)
-    const headerHeight = mmToPx(20);
+    // Evntos Logo (Text based)
+    ctx.fillStyle = primaryHex;
+    ctx.font = `bold ${mmToPx(6)}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    currentY = drawTextWithWrapping(ctx, "evntos", canvas.width / 2, currentY + mmToPx(2), contentWidth, mmToPx(7), 1) + mmToPx(2);
+
+    // Header Section (Event Title)
+    const headerHeight = mmToPx(16); // Reduced height for event title
     ctx.fillStyle = primaryHex;
     ctx.fillRect(contentPadding, currentY, contentWidth, headerHeight);
 
     ctx.fillStyle = primaryFgHex;
-    ctx.font = `bold ${mmToPx(5)}px Inter, sans-serif`;
+    ctx.font = `bold ${mmToPx(4.5)}px Inter, sans-serif`; // Slightly smaller for event title
     ctx.textAlign = 'center';
-    const eventTitleLineHeight = mmToPx(6);
+    const eventTitleLineHeight = mmToPx(5);
     const eventTitleTextY = currentY + (headerHeight / 2) - eventTitleLineHeight + (eventTitleLineHeight * 0.9);
-    drawTextWithWrapping(ctx, `Event: ${eventName}`, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(8), eventTitleLineHeight, 2, true);
-    currentY += headerHeight + mmToPx(6); 
+    currentY = drawTextWithWrapping(ctx, eventDetails.title, canvas.width / 2, eventTitleTextY, contentWidth - mmToPx(6), eventTitleLineHeight, 2, true);
+    currentY += headerHeight + mmToPx(5);
 
-    // 2. "GUEST TICKET" Sub-header
+
+    // "GUEST TICKET" Sub-header
     ctx.fillStyle = textHex;
-    ctx.font = `bold ${mmToPx(4.2)}px Inter, sans-serif`;
+    ctx.font = `bold ${mmToPx(4)}px Inter, sans-serif`;
     ctx.textAlign = 'center';
-    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(5), 1);
-    currentY += mmToPx(7); 
+    currentY = drawTextWithWrapping(ctx, "GUEST TICKET", canvas.width / 2, currentY, contentWidth, mmToPx(4.5), 1);
+    currentY += mmToPx(5); 
 
-    // 3. Guest Details Section
     const detailIndent = contentPadding + mmToPx(2);
+    const detailValueIndent = detailIndent + mmToPx(20); // Indent for values
+    const valueMaxWidth = contentWidth - mmToPx(22);
 
-    const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2) => {
+
+    const drawDetailItem = (labelText: string, valueText: string, valueMaxLines: number = 2, icon?: (ctx: CanvasRenderingContext2D, x:number, y:number, size:number) => void) => {
         const textStartX = detailIndent;
-        const availableTextWidth = contentWidth - mmToPx(4); 
+        const iconSize = mmToPx(3.2);
+        let yPos = currentY;
 
+        if (icon) {
+            icon(ctx, textStartX, yPos - iconSize*0.1, iconSize); // Draw icon
+        }
+        
         // Label
-        ctx.font = `bold ${mmToPx(3.2)}px Inter, sans-serif`;
+        ctx.font = `bold ${mmToPx(3)}px Inter, sans-serif`;
         ctx.fillStyle = mutedTextHex;
         ctx.textAlign = 'left';
-        currentY = drawTextWithWrapping(ctx, labelText, textStartX, currentY, availableTextWidth, mmToPx(4), 1);
+        const labelYOffset = icon ? mmToPx(0.5) : 0; // Adjust label Y if icon is present
+        yPos = drawTextWithWrapping(ctx, labelText, textStartX + (icon ? iconSize + mmToPx(1.5) : 0), yPos + labelYOffset, contentWidth - (icon ? iconSize + mmToPx(1.5) : 0), mmToPx(3.8), 1);
 
         // Value
-        ctx.font = `normal ${mmToPx(3.5)}px Inter, sans-serif`;
+        ctx.font = `normal ${mmToPx(3.2)}px Inter, sans-serif`;
         ctx.fillStyle = textHex;
         ctx.textAlign = 'left';
-        currentY = drawTextWithWrapping(ctx, valueText, textStartX, currentY, availableTextWidth, mmToPx(4.5), valueMaxLines, false);
-        currentY += mmToPx(3.5); 
+        currentY = drawTextWithWrapping(ctx, valueText, textStartX + (icon ? iconSize + mmToPx(1.5) : 0), yPos, valueMaxWidth - (icon ? iconSize + mmToPx(1.5) : 0), mmToPx(4), valueMaxLines, false);
+        currentY += mmToPx(3);
     };
+    
+    // --- Guest Details ---
+    ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
+    ctx.fillStyle = primaryHex;
+    currentY = drawTextWithWrapping(ctx, "Guest Information", detailIndent, currentY, contentWidth, mmToPx(4)) + mmToPx(1);
 
-    drawDetailItem("Guest Name:", submittedRegistration.name, 2);
-    drawDetailItem("Email Address:", submittedRegistration.email, 2);
+    drawDetailItem("Name:", submittedRegistration.name, 2);
+    drawDetailItem("Email:", submittedRegistration.email, 2);
     if (submittedRegistration.contactNumber) {
       drawDetailItem("Contact:", submittedRegistration.contactNumber, 1);
     }
-    currentY += mmToPx(3); 
+    drawDetailItem("Registered:", new Date(submittedRegistration.registeredAt).toLocaleString(), 2);
+    drawDetailItem("Ticket ID:", submittedRegistration.id, 1);
+    currentY += mmToPx(2);
 
-    // 4. QR Code
-    const qrSizePx = mmToPx(35);
+    // --- Event Details ---
+    ctx.font = `bold ${mmToPx(3.5)}px Inter, sans-serif`;
+    ctx.fillStyle = primaryHex;
+    currentY = drawTextWithWrapping(ctx, "Event Details", detailIndent, currentY, contentWidth, mmToPx(4)) + mmToPx(1);
+    
+    drawDetailItem("Event:", eventDetails.title, 2);
+    drawDetailItem("Date & Time:", formatEventDateTimeForPdf(eventDetails.eventDate, eventDetails.eventTime), 2);
+    
+    const venueText = eventDetails.mapLink ? "Details on event page" : "Not specified";
+    drawDetailItem("Venue:", venueText, 2);
+    currentY += mmToPx(4);
+
+
+    // QR Code
+    const qrSizePx = mmToPx(30); // Slightly smaller QR
     const qrX = (canvas.width - qrSizePx) / 2;
     const qrY = currentY;
 
     const qrImage = new Image();
     qrImage.onload = () => {
       ctx.drawImage(qrImage, qrX, qrY, qrSizePx, qrSizePx);
-      let postQrY = qrY + qrSizePx + mmToPx(5);
+      let postQrY = qrY + qrSizePx + mmToPx(4);
 
-      // 5. Instructions
+      // Instructions
       ctx.fillStyle = mutedTextHex;
-      ctx.font = `italic ${mmToPx(3)}px Inter, sans-serif`;
+      ctx.font = `italic ${mmToPx(2.8)}px Inter, sans-serif`;
       ctx.textAlign = 'center';
-      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(3.8), 2);
+      postQrY = drawTextWithWrapping(ctx, "Present this QR code at the event entrance for verification.", canvas.width / 2, postQrY, contentWidth - mmToPx(6), mmToPx(3.5), 2);
       
-      // 6. Footer Branding - Positioned at the very bottom
-      const footerTextY = canvas.height - contentPadding + mmToPx(0.5); 
+      const footerTextY = canvas.height - contentPadding + mmToPx(1); 
       ctx.font = `normal ${mmToPx(2.5)}px Inter, sans-serif`;
       ctx.fillStyle = mutedTextHex;
       ctx.textAlign = 'center';
       
-      if (postQrY < footerTextY - mmToPx(5)) { 
-         ctx.fillText("Powered by Evntos", canvas.width / 2, footerTextY);
-      } else {
-         ctx.fillText("Powered by Evntos", canvas.width / 2, postQrY + mmToPx(4)); 
-      }
+      const finalContentBottom = Math.max(postQrY, currentY); //Furthest point reached by content
+      const poweredByY = Math.max(finalContentBottom + mmToPx(3), footerTextY - mmToPx(2)); // Ensure it's below content and near bottom
+      ctx.fillText("Powered by evntos", canvas.width / 2, poweredByY);
 
-      // --- Drawing End ---
+
       const dataUrl = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -265,7 +317,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
       });
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfTicketWidthMm, pdfTicketHeightMm);
 
-      const safeEventName = eventName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const safeEventName = eventDetails.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const safeGuestName = submittedRegistration.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
       const fileName = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
       pdf.save(fileName);
@@ -283,8 +335,8 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
           margin: 1, 
           type: 'image/png',
           color: {
-            dark: primaryHex, // Use the fixed light theme primary color
-            light: '#00000000' // Transparent background for the light part
+            dark: textHex, 
+            light: '#00000000' 
           }
         });
         qrImage.src = qrCodePngDataUrl;
