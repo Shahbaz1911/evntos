@@ -301,14 +301,14 @@ const sendTicketEmailFlow = ai.defineFlow(
     const resend = new Resend(resendApiKey);
 
     try {
-      const pdfBytes = await generatePdfTicket(input);
-      const pdfBuffer = Buffer.from(pdfBytes); 
+      const pdfBytes = await generatePdfTicket(input); // Uint8Array
+      const pdfBase64 = Buffer.from(pdfBytes).toString('base64'); // Convert to Base64 string
 
       const safeEventName = input.eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const filename = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
 
-      // IMPORTANT: For production, replace 'onboarding@resend.dev' with an email from your verified Resend domain.
+      // IMPORTANT: Replace 'onboarding@resend.dev' with an email from YOUR VERIFIED Resend domain for production.
       const fromEmail = 'Evntos Tickets <onboarding@resend.dev>'; 
 
       const { data, error } = await resend.emails.send({
@@ -327,7 +327,7 @@ const sendTicketEmailFlow = ai.defineFlow(
         attachments: [
           {
             filename: filename,
-            content: pdfBuffer,
+            content: pdfBase64, // Use Base64 encoded string
           },
         ],
       });
@@ -338,16 +338,14 @@ const sendTicketEmailFlow = ai.defineFlow(
         if (typeof error === 'string' && error.trim() !== "") {
           displayMessage = error;
         } else if (error && typeof error === 'object') {
-          // Check for common error properties from Resend or general errors
-          // Resend errors often have `name` and `message`
           if (typeof (error as any).message === 'string' && (error as any).message.trim() !== "") {
             displayMessage = (error as any).message;
           } else if (typeof (error as any).name === 'string' && (error as any).name.trim() !== "") {
-            // Prepend "Error: " only if it's not already indicated
             displayMessage = (error as any).name.toLowerCase().includes("error") ? (error as any).name : `Error: ${(error as any).name}`;
+          } else if (Object.keys(error).length > 0) {
+            displayMessage = `Resend API Error: ${JSON.stringify(error)}. Check server logs.`;
           }
         }
-        // The most important step for the user is to check their server logs for the full error object details.
         return { success: false, message: `Failed to send email. Reason: ${displayMessage} Please check server logs for complete details.` };
       }
 
@@ -369,3 +367,5 @@ const sendTicketEmailFlow = ai.defineFlow(
     }
   }
 );
+
+    
