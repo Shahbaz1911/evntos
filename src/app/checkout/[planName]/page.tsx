@@ -16,7 +16,7 @@ import LoadingSpinner from '@/components/loading-spinner';
 import { CreditCard, CalendarDays, Lock } from 'lucide-react';
 
 // Define dummy card details for validation
-const DUMMY_CARD_NUMBER = "123456784567";
+const DUMMY_CARD_NUMBER = "123456781234"; // Updated card number
 const DUMMY_EXPIRY_DATE = "01/01";
 const DUMMY_CVC = "123";
 
@@ -136,7 +136,7 @@ export default function CheckoutPage() {
               <Input
                 id="cardNumber"
                 type="text"
-                placeholder="123456784567"
+                placeholder="123456781234"
                 {...register("cardNumber")}
                 className={errors.cardNumber ? "border-destructive" : ""}
                 aria-invalid={errors.cardNumber ? "true" : "false"}
