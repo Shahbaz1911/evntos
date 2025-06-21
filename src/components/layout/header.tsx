@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -23,7 +23,6 @@ import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { gsap } from 'gsap';
 
 
 interface NavLinkProps {
@@ -111,17 +110,10 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 
   return (
     <>
-      <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
-      <SheetDescription className="sr-only">A menu for navigating the application on mobile devices.</SheetDescription>
       <div className="flex justify-between items-center p-4 border-b">
         <Link href="/" className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
           evntos
         </Link>
-        <SheetClose asChild>
-          <Button variant="ghost" size="icon">
-            <span className="sr-only">Close menu</span>
-          </Button>
-        </SheetClose>
       </div>
 
       {user && (
@@ -230,11 +222,6 @@ export default function Header() {
   const [activeSection, setActiveSection] = useState('');
   const { toast } = useToast();
   
-  const lineOneRef = useRef(null);
-  const lineTwoRef = useRef(null);
-  const lineThreeRef = useRef(null);
-  const tl = useRef<gsap.core.Timeline | null>(null);
-
 
   useEffect(() => {
     const headerElement = document.querySelector('header');
@@ -244,21 +231,6 @@ export default function Header() {
     }
   }, []);
   
-  useEffect(() => {
-    gsap.set([lineOneRef.current, lineTwoRef.current, lineThreeRef.current], { transformOrigin: 'center' });
-    tl.current = gsap.timeline({ paused: true })
-      .to(lineOneRef.current, { y: 6, rotation: 45, duration: 0.3 }, 0)
-      .to(lineTwoRef.current, { opacity: 0, duration: 0.2 }, 0)
-      .to(lineThreeRef.current, { y: -6, rotation: -45, duration: 0.3 }, 0);
-  }, []);
-
-  useEffect(() => {
-    if (openMobile) {
-      tl.current?.play();
-    } else {
-      tl.current?.reverse();
-    }
-  }, [openMobile]);
 
   const commonNavLinks = [
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
@@ -492,37 +464,11 @@ export default function Header() {
             <Sheet open={openMobile} onOpenChange={setOpenMobile}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="stroke-current"
-                  >
-                    <path
-                      ref={lineOneRef}
-                      d="M4 6H20"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      ref={lineTwoRef}
-                      d="M4 12H20"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      ref={lineThreeRef}
-                      d="M4 18H20"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <MoreVertical />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
+              <SheetContent side="top" className="h-full p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
                 <MobileSidebarContent activeSection={activeSection} commonNavLinks={commonNavLinks} />
               </SheetContent>
             </Sheet>
