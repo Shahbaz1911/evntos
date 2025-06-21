@@ -12,6 +12,7 @@ const wordsToAnimate = ["Unforgettable", "Amazing", "Successful"];
 const TYPING_SPEED = 120;
 const DELETING_SPEED = 70;
 const DELAY_BETWEEN_WORDS = 1500;
+const IMAGE_CHANGE_INTERVAL = 4000; // 4 seconds
 
 const heroImages = [
   {
@@ -51,23 +52,40 @@ export default function HeroSection() {
   }, [isDeleting, text, wordIndex]);
 
   useEffect(() => {
-    const timer = setTimeout(handleTyping, isDeleting ? DELETING_SPEED : TYPING_SPEED);
-    return () => clearTimeout(timer);
+    const typingTimer = setTimeout(handleTyping, isDeleting ? DELETING_SPEED : TYPING_SPEED);
+    return () => clearTimeout(typingTimer);
   }, [handleTyping, isDeleting, text]);
 
-  const handleImageHover = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
-  };
+  useEffect(() => {
+    const imageTimer = setInterval(() => {
+      setCurrentImageIndex(prev => (prev + 1) % heroImages.length);
+    }, IMAGE_CHANGE_INTERVAL);
+    return () => clearInterval(imageTimer);
+  }, []);
 
   return (
-    <section id="hero" className="bg-secondary text-secondary-foreground py-20 md:py-32">
-      <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+    <section id="hero" className="relative md:bg-secondary text-secondary-foreground py-20 md:py-32 overflow-hidden">
+        {/* Mobile background image and overlay */}
+        <div className="md:hidden absolute inset-0 z-0">
+            <Image
+                src={heroImages[currentImageIndex].src}
+                alt="Event background"
+                fill
+                className="object-cover"
+                priority
+                key={currentImageIndex} // Add key to make image transition
+                data-ai-hint={heroImages[currentImageIndex].hint}
+            />
+            <div className="absolute inset-0 bg-black/50" />
+        </div>
+
+      <div className="relative z-10 container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Column: Text Content */}
         <div className="space-y-6 md:space-y-8 text-center md:text-left">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-primary">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-white md:text-primary">
             Host <span className="inline-block min-h-[1.2em] min-w-[200px] sm:min-w-[300px] md:min-w-[350px] lg:min-w-[400px]">{text}</span> Events, <span className="block">Effortlessly.</span>
           </h1>
-          <p className="text-lg md:text-xl text-foreground/80 max-w-xl mx-auto md:mx-0">
+          <p className="text-lg md:text-xl text-white/90 md:text-foreground/80 max-w-xl mx-auto md:mx-0">
             Evntos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
@@ -76,29 +94,26 @@ export default function HeroSection() {
                 Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 shadow-md">
+            <Button size="lg" variant="outline" asChild className="border-white/80 text-white hover:bg-white/10 md:border-primary md:text-primary md:hover:bg-primary/10 shadow-md">
               <Link href="#features">
                 Learn More
               </Link>
             </Button>
           </div>
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-muted-foreground pt-4">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-white/80 md:text-muted-foreground pt-4">
             <div className="flex items-center">
-              <CalendarPlus className="h-5 w-5 mr-2 text-primary/70" />
+              <CalendarPlus className="h-5 w-5 mr-2 text-white/70 md:text-primary/70" />
               <span>Easy Event Creation</span>
             </div>
             <div className="flex items-center">
-              <Users className="h-5 w-5 mr-2 text-primary/70" />
+              <Users className="h-5 w-5 mr-2 text-white/70 md:text-primary/70" />
               <span>Seamless Management</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Image/Visual */}
-        <div 
-          className="relative group"
-          onMouseEnter={handleImageHover}
-        >
+        {/* Right Column: Image/Visual for Desktop */}
+        <div className="hidden md:block relative group">
            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
           <Card className="relative overflow-hidden shadow-2xl rounded-xl border-2 border-transparent hover:border-primary/30 transition-all duration-300">
             <CardContent className="p-0">
@@ -109,6 +124,7 @@ export default function HeroSection() {
                 height={600}
                 className="rounded-xl object-cover aspect-[4/3]"
                 priority
+                key={currentImageIndex} // Add key to make image transition
                 data-ai-hint={heroImages[currentImageIndex].hint}
               />
             </CardContent>
