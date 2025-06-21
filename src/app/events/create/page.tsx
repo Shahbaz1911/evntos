@@ -41,6 +41,7 @@ export default function CreateEventPage() {
         toast({
           title: "Event Created!",
           description: `"${newEvent.title}" has been successfully created.`,
+          variant: "success",
         });
         router.push(`/events/${newEvent.id}/edit`);
       } else {

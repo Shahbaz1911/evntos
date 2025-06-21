@@ -55,6 +55,7 @@ export default function LoginPage() {
       toast({
         title: "Login Successful",
         description: "Welcome back! Redirecting to dashboard...",
+        variant: "success",
       });
       // AuthContext will handle redirect
     } catch (error: any) {
@@ -75,6 +76,7 @@ export default function LoginPage() {
       toast({
         title: "Signed in with Google",
         description: "Welcome! Redirecting to dashboard...",
+        variant: "success",
       });
       // AuthContext will handle redirect
     } catch (error: any) {

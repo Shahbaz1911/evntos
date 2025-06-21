@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Payment Successful!",
         description: `Your ${planName} plan is now active.`,
+        variant: "success",
       });
       router.push('/dashboard');
     } else if (isAdmin && user) {

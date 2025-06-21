@@ -59,6 +59,7 @@ export default function SignupPage() {
       toast({
         title: "Signup Successful",
         description: "Your account has been created. Redirecting to dashboard...",
+        variant: "success",
       });
       // AuthContext will handle redirect
     } catch (error: any) {
@@ -79,6 +80,7 @@ export default function SignupPage() {
       toast({
         title: "Signed up with Google",
         description: "Welcome! Redirecting to dashboard...",
+        variant: "success",
       });
       // AuthContext will handle redirect
     } catch (error: any) {

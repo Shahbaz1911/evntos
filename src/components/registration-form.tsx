@@ -146,6 +146,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
                     toast({
                         title: "Registration Successful!",
                         description: `You're registered for "${eventName}". Your PDF ticket has been emailed to ${newRegistration.email}.`,
+                        variant: "success",
                     });
                 } else {
                      toast({

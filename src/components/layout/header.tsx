@@ -76,6 +76,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
+        variant: "destructive",
       });
       closeMobileMenu();
     } catch (error) {
@@ -424,6 +425,7 @@ export default function Header() {
                         toast({
                           title: "Logged Out",
                           description: "You have been successfully logged out.",
+                          variant: "destructive",
                         });
                       } catch (error) {
                          console.error("Logout error:", error);

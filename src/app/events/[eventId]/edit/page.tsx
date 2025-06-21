@@ -92,6 +92,7 @@ export default function EditEventPage() {
       toast({
         title: "Event Updated",
         description: `"${data.title}" has been successfully updated.`,
+        variant: "success",
       });
     } catch (error) {
       console.error("Failed to update event:", error);
@@ -124,6 +125,7 @@ export default function EditEventPage() {
       toast({
         title: "Link Copied!",
         description: "Public event link copied to clipboard.",
+        variant: "success",
       });
     } catch (err) {
       console.error('Failed to copy: ', err);

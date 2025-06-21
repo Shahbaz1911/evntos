@@ -88,7 +88,7 @@ export default function ScanTicketPage() {
                 } else {
                     setScanStatus("success");
                     setScanMessage(`Ticket Verified for ${registration.name}! This guest can proceed.`);
-                    toast({ title: "Ticket Verified", description: `${registration.name} (${registration.email}) is a valid guest.`});
+                    toast({ title: "Ticket Verified", description: `${registration.name} (${registration.email}) is a valid guest.`, variant: "success" });
                 }
             } else {
                 setScanStatus("error");

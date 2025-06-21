@@ -41,6 +41,7 @@ export default function EventCard({ event }: EventCardProps) {
       toast({
         title: "Link Copied!",
         description: "Event share link copied to clipboard.",
+        variant: "success",
       });
     } catch (err) {
       console.error('Failed to copy: ', err);
