@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -11,7 +10,9 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel"; // Import Carousel components
+} from "@/components/ui/carousel";
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
 
 const testimonials = [
   {
@@ -62,8 +63,15 @@ const testimonials = [
 ];
 
 export default function TestimonialsSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "-20%"]);
+
   return (
-    <section id="testimonials" className="bg-background text-foreground">
+    <section id="testimonials" ref={ref} className="bg-background text-foreground overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
@@ -77,54 +85,56 @@ export default function TestimonialsSection() {
           </p>
         </div>
 
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto"
-        >
-          <CarouselContent>
-            {testimonials.map((testimonial, index) => (
-              <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                <div className="p-1 h-full">
-                  <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col border-border bg-card h-full">
-                    <CardContent className="p-6 flex-grow flex flex-col">
-                      <div className="flex items-center mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50'}`}
-                          />
-                        ))}
-                      </div>
-                      <blockquote className="text-card-foreground/90 italic mb-6 flex-grow">
-                        "{testimonial.quote}"
-                      </blockquote>
-                      <div className="flex items-center mt-auto">
-                        <Avatar className="h-12 w-12 mr-4 border-2 border-primary/50">
-                          <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint={testimonial.aiHint} />
-                          <AvatarFallback className="bg-secondary text-secondary-foreground">{testimonial.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-card-foreground">{testimonial.name}</p>
-                          <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+        <motion.div style={{ y }}>
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto"
+          >
+            <CarouselContent>
+              {testimonials.map((testimonial, index) => (
+                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1 h-full">
+                    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col border-border bg-card h-full">
+                      <CardContent className="p-6 flex-grow flex flex-col">
+                        <div className="flex items-center mb-2">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50'}`}
+                            />
+                          ))}
                         </div>
-                         {testimonial.companyLogo && (
-                           <div className="ml-auto pl-2">
-                             <Image src={testimonial.companyLogo} alt={`${testimonial.role} Company Logo`} width={80} height={26} className="object-contain opacity-70" data-ai-hint="company logo" />
-                           </div>
-                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden sm:flex" />
-          <CarouselNext className="hidden sm:flex" />
-        </Carousel>
+                        <blockquote className="text-card-foreground/90 italic mb-6 flex-grow">
+                          "{testimonial.quote}"
+                        </blockquote>
+                        <div className="flex items-center mt-auto">
+                          <Avatar className="h-12 w-12 mr-4 border-2 border-primary/50">
+                            <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint={testimonial.aiHint} />
+                            <AvatarFallback className="bg-secondary text-secondary-foreground">{testimonial.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-card-foreground">{testimonial.name}</p>
+                            <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                          </div>
+                          {testimonial.companyLogo && (
+                            <div className="ml-auto pl-2">
+                              <Image src={testimonial.companyLogo} alt={`${testimonial.role} Company Logo`} width={80} height={26} className="object-contain opacity-70" data-ai-hint="company logo" />
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
+          </Carousel>
+        </motion.div>
       </div>
     </section>
   );

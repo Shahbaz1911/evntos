@@ -2,8 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarCog, Ticket, Users, Share2, BarChart3, QrCode } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { useState, useRef } from 'react';
 
 const features = [
   {
@@ -55,19 +55,19 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.1,
     },
   },
 };
 
 const cardVariants = {
-  hidden: { y: 50, opacity: 0 },
+  hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
     transition: {
-      type: 'spring',
-      stiffness: 100,
+      duration: 0.5,
+      ease: "easeOut",
     },
   },
 };
@@ -87,9 +87,15 @@ const textVariants = {
 
 export default function FeaturesSection() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "-25%"]);
 
   return (
-    <section id="features" className="bg-secondary text-secondary-foreground">
+    <section id="features" ref={ref} className="bg-secondary text-secondary-foreground overflow-hidden">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center mb-16"
@@ -109,59 +115,61 @@ export default function FeaturesSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          onMouseLeave={() => setHoveredId(null)}
-        >
-          {features.map((feature) => {
-            const isHovered = hoveredId === feature.title;
-            const isDimmed = hoveredId !== null && !isHovered;
+        <motion.div style={{ y }}>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            onMouseLeave={() => setHoveredId(null)}
+          >
+            {features.map((feature, index) => {
+              const isHovered = hoveredId === feature.title;
+              const isDimmed = hoveredId !== null && !isHovered;
 
-            return (
-              <motion.div
-                key={feature.title}
-                variants={cardVariants}
-                className="h-full flex"
-                onMouseEnter={() => setHoveredId(feature.title)}
-                animate={{ scale: isHovered ? 1.05 : 1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Card className={`flex flex-col w-full shadow-lg hover:shadow-xl transition-all duration-300 border-border bg-card`}>
-                  <CardHeader className="items-center text-center transition-all duration-300">
-                    <motion.div
-                      className="mb-4 inline-block"
-                      animate={{ y: isDimmed ? -10 : 0 }}
-                    >
-                      <div className={`p-4 rounded-full ${feature.bgColor} inline-block`}>
-                        <feature.icon className={`w-10 h-10 ${feature.iconColor}`} />
-                      </div>
-                    </motion.div>
-                    <CardTitle className="font-headline text-lg text-card-foreground sm:text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-
-                  <AnimatePresence>
-                    {!isDimmed && (
-                       <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto', flexGrow: 1 }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden flex flex-col"
-                        >
-                          <CardContent className="flex-grow">
-                            <CardDescription className="text-center text-card-foreground/80">{feature.description}</CardDescription>
-                          </CardContent>
+              return (
+                <motion.div
+                  key={feature.title}
+                  variants={cardVariants}
+                  className="h-full flex"
+                  onMouseEnter={() => setHoveredId(feature.title)}
+                  animate={{ scale: isHovered ? 1.05 : 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <Card className={`flex flex-col w-full shadow-lg hover:shadow-xl transition-all duration-300 border-border bg-card`}>
+                    <CardHeader className="items-center text-center transition-all duration-300">
+                      <motion.div
+                        className="mb-4 inline-block"
+                        animate={{ y: isDimmed ? -10 : 0 }}
+                      >
+                        <div className={`p-4 rounded-full ${feature.bgColor} inline-block`}>
+                          <feature.icon className={`w-10 h-10 ${feature.iconColor}`} />
+                        </div>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Card>
-              </motion.div>
-            )
-          })}
+                      <CardTitle className="font-headline text-lg text-card-foreground sm:text-xl">{feature.title}</CardTitle>
+                    </CardHeader>
+
+                    <AnimatePresence>
+                      {!isDimmed && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto', flexGrow: 1 }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden flex flex-col"
+                          >
+                            <CardContent className="flex-grow">
+                              <CardDescription className="text-center text-card-foreground/80">{feature.description}</CardDescription>
+                            </CardContent>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Card>
+                </motion.div>
+              )
+            })}
+          </motion.div>
         </motion.div>
       </div>
     </section>
