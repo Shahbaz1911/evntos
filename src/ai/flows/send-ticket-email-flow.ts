@@ -261,7 +261,7 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
         drawDetailItemPage2("Venue Address:", input.eventDetails.venueAddress.replace(/\\n/g, ', '));
     }
     if (input.eventDetails.mapLink) {
-        drawDetailItemPage2("Directions:", "Use map link on event page");
+        drawDetailItemPage2("Map Link:", input.eventDetails.mapLink);
     }
     if (!input.eventDetails.venueName && !input.eventDetails.venueAddress && !input.eventDetails.mapLink) {
          drawDetailItemPage2("Location:", "Not specified");
