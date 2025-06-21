@@ -17,12 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { gsap } from 'gsap';
 
 
 interface NavLinkProps {
@@ -118,7 +119,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
         </Link>
         <SheetClose asChild>
           <Button variant="ghost" size="icon">
-            <X className="h-5 w-5" />
+            {/* <X className="h-5 w-5" /> This was removed in a previous step */}
             <span className="sr-only">Close menu</span>
           </Button>
         </SheetClose>
@@ -229,6 +230,12 @@ export default function Header() {
   const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
   const { toast } = useToast();
+  
+  const lineOneRef = useRef(null);
+  const lineTwoRef = useRef(null);
+  const lineThreeRef = useRef(null);
+  const tl = useRef<gsap.core.Timeline | null>(null);
+
 
   useEffect(() => {
     const headerElement = document.querySelector('header');
@@ -237,6 +244,23 @@ export default function Header() {
       document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
     }
   }, []);
+  
+  useEffect(() => {
+    // GSAP timeline for hamburger animation
+    gsap.set([lineOneRef.current, lineTwoRef.current, lineThreeRef.current], { transformOrigin: 'center' });
+    tl.current = gsap.timeline({ paused: true })
+      .to(lineOneRef.current, { y: 6, rotation: 45, duration: 0.3 }, 0)
+      .to(lineTwoRef.current, { opacity: 0, duration: 0.2 }, 0)
+      .to(lineThreeRef.current, { y: -6, rotation: -45, duration: 0.3 }, 0);
+  }, []);
+
+  useEffect(() => {
+    if (openMobile) {
+      tl.current?.play();
+    } else {
+      tl.current?.reverse();
+    }
+  }, [openMobile]);
 
   const commonNavLinks = [
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
@@ -470,7 +494,33 @@ export default function Header() {
             <Sheet open={openMobile} onOpenChange={setOpenMobile}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current"
+                  >
+                    <path
+                      ref={lineOneRef}
+                      d="M4 6H20"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      ref={lineTwoRef}
+                      d="M4 12H20"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      ref={lineThreeRef}
+                      d="M4 18H20"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
