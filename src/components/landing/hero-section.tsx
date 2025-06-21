@@ -62,6 +62,9 @@ export default function HeroSection() {
   const image2Opacity = useTransform(scrollYProgress, [0.4, 0.8], [0, 1]);
   const image2Scale = useTransform(scrollYProgress, [0.4, 0.8], [0.9, 1]);
 
+  const textOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const textY = useTransform(scrollYProgress, [0, 0.3], ["0%", "-50%"]);
+
   return (
     <section id="hero" ref={targetRef} className="relative h-[200vh] bg-black">
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
@@ -97,7 +100,10 @@ export default function HeroSection() {
         </div>
 
         {/* Foreground Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center">
+        <motion.div
+          style={{ opacity: textOpacity, y: textY }}
+          className="relative z-10 container mx-auto px-4 text-center"
+        >
           <div className="space-y-6 md:space-y-8">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-white">
               Host <span className="inline-block min-h-[1.2em] bg-gradient-to-r from-indigo-400 via-pink-500 to-orange-500 bg-clip-text text-transparent">{text}</span> Events, <span className="block">Effortlessly.</span>
@@ -128,7 +134,7 @@ export default function HeroSection() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
