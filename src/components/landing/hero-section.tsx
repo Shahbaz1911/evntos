@@ -8,11 +8,6 @@ import { ArrowRight, CalendarPlus, Users } from 'lucide-react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
-const wordsToAnimate = ["Unforgettable", "Amazing", "Successful"];
-const TYPING_SPEED = 120;
-const DELETING_SPEED = 70;
-const DELAY_BETWEEN_WORDS = 1500;
-
 const heroImages = [
   {
     src: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb25jZXJ0JTIwcGFydHl8ZW58MHx8fHwxNzUyMjYyMzUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -24,32 +19,63 @@ const heroImages = [
   },
 ];
 
-export default function HeroSection() {
-  const [wordIndex, setWordIndex] = useState(0);
-  const [text, setText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+const ScrambledText = ({ children, className, speed = 2 }: { children: string, className?: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState(children);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
-  const handleTyping = useCallback(() => {
-    const currentWord = wordsToAnimate[wordIndex];
-    if (isDeleting) {
-      setText((prev) => prev.substring(0, prev.length - 1));
-    } else {
-      setText((prev) => currentWord.substring(0, prev.length + 1));
+  const scramble = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
 
-    if (!isDeleting && text === currentWord) {
-      setTimeout(() => setIsDeleting(true), DELAY_BETWEEN_WORDS);
-    } else if (isDeleting && text === '') {
-      setIsDeleting(false);
-      setWordIndex((prev) => (prev + 1) % wordsToAnimate.length);
-    }
-  }, [isDeleting, text, wordIndex]);
+    let iteration = 0;
+    const originalText = children;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[]{};:,./<>?';
+
+    intervalRef.current = setInterval(() => {
+      if (!isMountedRef.current) {
+        if(intervalRef.current) clearInterval(intervalRef.current);
+        return;
+      }
+      
+      const newText = originalText
+        .split('')
+        .map((letter, index) => {
+          if (letter === ' ') return ' ';
+          if (index < iteration) {
+            return originalText[index];
+          }
+          return chars[Math.floor(Math.random() * chars.length)];
+        })
+        .join('');
+      
+      setDisplayedText(newText);
+
+      if (iteration >= originalText.length) {
+        if(intervalRef.current) clearInterval(intervalRef.current);
+      }
+      
+      iteration += 1 / speed;
+    }, 30);
+  }, [children, speed]);
 
   useEffect(() => {
-    const typingTimer = setTimeout(handleTyping, isDeleting ? DELETING_SPEED : TYPING_SPEED);
-    return () => clearTimeout(typingTimer);
-  }, [handleTyping, isDeleting, text]);
+    isMountedRef.current = true;
+    scramble();
+    
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [scramble]);
 
+  return <span onMouseEnter={scramble} className={className}>{displayedText}</span>;
+};
+
+export default function HeroSection() {
   const targetRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll({
     target: targetRef,
@@ -106,10 +132,14 @@ export default function HeroSection() {
         >
           <div className="space-y-6 md:space-y-8">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-white">
-              Host <span className="inline-block min-h-[1.2em] bg-gradient-to-r from-indigo-400 via-pink-500 to-orange-500 bg-clip-text text-transparent">{text}</span> Events, <span className="block">Effortlessly.</span>
+              Host <span className="inline-block min-h-[1.2em] bg-gradient-to-r from-indigo-400 via-pink-500 to-orange-500 bg-clip-text text-transparent">
+                <ScrambledText>Unforgettable</ScrambledText>
+              </span> Events, <span className="block">Effortlessly.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-xl mx-auto">
-              Evntos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
+              <ScrambledText speed={0.5}>
+                Evntos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
+              </ScrambledText>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">
