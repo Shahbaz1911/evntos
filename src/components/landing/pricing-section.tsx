@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Check, DollarSign, Star, Zap } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 const pricingTiers = [
   {
@@ -98,6 +99,7 @@ export default function PricingSection() {
   const { user, loading, userSubscriptionStatus, isAdmin } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const handlePlanSelection = (tier: typeof pricingTiers[number]) => {
     if (loading) return; 
@@ -156,48 +158,84 @@ export default function PricingSection() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
+          onMouseLeave={() => setHoveredId(null)}
         >
-          {pricingTiers.map((tier) => (
-            <motion.div key={tier.name} variants={cardVariants} className="h-full flex">
-              <Card className={`flex flex-col w-full ${tier.highlightClass} rounded-xl`}>
-                <CardHeader className="text-center p-6">
-                  <motion.div 
-                    className="mb-4 inline-block"
-                    whileHover={{ scale: 1.2, rotate: 10 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                  >
-                    <tier.icon className={`w-12 h-12 mx-auto ${tier.mostPopular ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </motion.div>
-                  <CardTitle className="font-headline text-2xl text-foreground">{tier.name}</CardTitle>
-                  <div className="mt-2">
-                    <span className="text-4xl font-bold text-primary">{tier.price}</span>
-                    <span className="text-sm text-muted-foreground">{tier.frequency}</span>
-                  </div>
-                  <CardDescription className="mt-3 text-muted-foreground text-sm min-h-[40px]">{tier.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow p-6 space-y-3">
-                  <ul className="space-y-3">
-                    {tier.features.map((feature, index) => (
-                      <li key={index} className="flex items-center text-foreground/90">
-                        <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter className="p-6 mt-auto">
-                  <Button 
-                    onClick={() => handlePlanSelection(tier)}
-                    size="lg" 
-                    className={`w-full ${tier.mostPopular ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
-                    disabled={loading}
-                  >
-                    {tier.buttonText}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
+          {pricingTiers.map((tier) => {
+            const isHovered = hoveredId === tier.id;
+            const isDimmed = hoveredId !== null && !isHovered;
+
+            return (
+              <motion.div
+                key={tier.name}
+                variants={cardVariants}
+                className="h-full flex"
+                onMouseEnter={() => setHoveredId(tier.id)}
+                animate={{ scale: isHovered ? 1.05 : 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
+                <Card className={`flex flex-col w-full ${tier.highlightClass} rounded-xl overflow-hidden transition-all duration-300 ${isDimmed ? 'lg:grayscale' : ''}`}>
+                  <CardHeader className="text-center p-6 transition-all duration-300">
+                    <motion.div
+                      className="mb-4 inline-block"
+                      animate={{ scale: isDimmed ? 1.2 : 1, y: isDimmed ? -10 : 0 }}
+                    >
+                      <tier.icon className={`w-12 h-12 mx-auto transition-colors duration-300 ${tier.mostPopular ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </motion.div>
+                    <CardTitle className="font-headline text-2xl text-foreground">{tier.name}</CardTitle>
+                    <AnimatePresence>
+                      {!isDimmed && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-2">
+                            <span className="text-4xl font-bold text-primary">{tier.price}</span>
+                            <span className="text-sm text-muted-foreground">{tier.frequency}</span>
+                          </div>
+                          <CardDescription className="mt-3 text-muted-foreground text-sm min-h-[40px]">{tier.description}</CardDescription>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </CardHeader>
+                  <AnimatePresence>
+                    {!isDimmed && (
+                       <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto', flexGrow: 1 }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden flex flex-col"
+                        >
+                          <CardContent className="flex-grow p-6 space-y-3">
+                            <ul className="space-y-3">
+                              {tier.features.map((feature, index) => (
+                                <li key={index} className="flex items-center text-foreground/90">
+                                  <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                          <CardFooter className="p-6 mt-auto">
+                            <Button 
+                              onClick={() => handlePlanSelection(tier)}
+                              size="lg" 
+                              className={`w-full ${tier.mostPopular ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
+                              disabled={loading}
+                            >
+                              {tier.buttonText}
+                            </Button>
+                          </CardFooter>
+                       </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
+            )
+          })}
         </motion.div>
       </div>
     </section>
