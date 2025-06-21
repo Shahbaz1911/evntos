@@ -119,7 +119,6 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
         </Link>
         <SheetClose asChild>
           <Button variant="ghost" size="icon">
-            {/* <X className="h-5 w-5" /> This was removed in a previous step */}
             <span className="sr-only">Close menu</span>
           </Button>
         </SheetClose>
@@ -246,7 +245,6 @@ export default function Header() {
   }, []);
   
   useEffect(() => {
-    // GSAP timeline for hamburger animation
     gsap.set([lineOneRef.current, lineTwoRef.current, lineThreeRef.current], { transformOrigin: 'center' });
     tl.current = gsap.timeline({ paused: true })
       .to(lineOneRef.current, { y: 6, rotation: 45, duration: 0.3 }, 0)
