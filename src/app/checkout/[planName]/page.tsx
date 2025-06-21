@@ -13,10 +13,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { CreditCard, CalendarDays, Lock } from 'lucide-react';
+import { CreditCard, CalendarDays, Lock, DollarSign, Star, Zap } from 'lucide-react';
 
-// Define dummy card details for validation
-const DUMMY_CARD_NUMBER = "123456784567"; // Validation card number
+// Pricing data, should be kept in sync with pricing-section.tsx
+const pricingTiers = [
+  { name: "Pro", id: "pro", price: "$29", frequency: "/month" },
+  { name: "Business", id: "business", price: "$79", frequency: "/month" },
+];
+
+const DUMMY_CARD_NUMBER = "123456784567";
 const DUMMY_EXPIRY_DATE = "01/01";
 const DUMMY_CVC = "123";
 
@@ -46,59 +51,40 @@ export default function CheckoutPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: {
-      cardNumber: '',
-      expiryDate: '',
-      cvc: '',
-    }
+    defaultValues: { cardNumber: '', expiryDate: '', cvc: '' }
   });
   
-  // Redirect if user is not logged in, or already subscribed (unless admin)
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
         toast({ title: "Login Required", description: "Please log in to proceed with checkout." });
         router.push('/login');
-      } else if (userSubscriptionStatus === 'active' && !isAdmin) {
+      } else if (userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading' && !isAdmin) {
         toast({ title: "Already Subscribed", description: "You already have an active plan." });
         router.push('/dashboard');
       } else if (isAdmin) {
-         // Admins shouldn't really be on this page, but if they land here, send to dashboard.
          router.push('/dashboard');
       }
     }
   }, [user, authLoading, userSubscriptionStatus, isAdmin, router, toast]);
 
-
   const onSubmit: SubmitHandler<CheckoutFormValues> = async (data) => {
     setIsSubmitting(true);
-    // Simulate payment processing delay
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (
-      data.cardNumber === DUMMY_CARD_NUMBER &&
-      data.expiryDate === DUMMY_EXPIRY_DATE &&
-      data.cvc === DUMMY_CVC
-    ) {
-      if (planName) {
-        activateUserSubscription(planName); // This will handle toast and redirect
-      } else {
-        toast({ title: "Error", description: "Plan details missing. Cannot activate.", variant: "destructive"});
-        router.push('/pricing');
-      }
+    if (planName) {
+      activateUserSubscription(planName);
     } else {
-      // This case should ideally be caught by Zod, but as a fallback
-      toast({
-        title: "Payment Failed",
-        description: "Invalid card details. Please use the dummy information provided.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Plan details missing. Cannot activate.", variant: "destructive"});
+      router.push('/pricing');
       setIsSubmitting(false);
     }
-    // No setIsSubmitting(false) here because activateUserSubscription will redirect
   };
 
-  if (authLoading || userSubscriptionStatus === 'loading' || (userSubscriptionStatus === 'active' && !isAdmin)) {
+  const displayPlanName = planName ? decodeURIComponent(planName) : "Selected";
+  const currentPlan = pricingTiers.find(p => p.name.toLowerCase() === displayPlanName.toLowerCase());
+
+  if (authLoading || userSubscriptionStatus === 'loading' || (userSubscriptionStatus !== 'none' && !isAdmin)) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))]">
         <LoadingSpinner size={48} />
@@ -106,7 +92,7 @@ export default function CheckoutPage() {
     );
   }
   
-  if (!user || isAdmin) { // If no user (after loading) or if admin, don't render form
+  if (!user || isAdmin) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))]">
         <p className="text-muted-foreground">Redirecting...</p>
@@ -115,16 +101,16 @@ export default function CheckoutPage() {
     );
   }
 
-  const displayPlanName = planName ? decodeURIComponent(planName) : "Selected";
-
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--header-height)-var(--footer-height))] py-12 container px-4">
       <Card className="w-full max-w-lg shadow-xl border border-border">
         <CardHeader className="text-center">
           <CreditCard className="mx-auto h-12 w-12 text-primary mb-4" />
           <CardTitle className="font-headline text-3xl">Secure Checkout</CardTitle>
-          <CardDescription>You are purchasing the <span className="font-semibold text-primary">{displayPlanName} Plan</span>. Please enter dummy payment details.</CardDescription>
+          <CardDescription>
+            You are purchasing the <span className="font-semibold text-primary">{displayPlanName} Plan</span> for <span className="font-semibold text-primary">{currentPlan?.price || '...'}</span> per month.
+            <br/> Please enter dummy payment details to proceed.
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
@@ -136,7 +122,7 @@ export default function CheckoutPage() {
               <Input
                 id="cardNumber"
                 type="text"
-                placeholder="123456781234" 
+                placeholder={DUMMY_CARD_NUMBER}
                 {...register("cardNumber")}
                 className={errors.cardNumber ? "border-destructive" : ""}
                 aria-invalid={errors.cardNumber ? "true" : "false"}
@@ -152,7 +138,7 @@ export default function CheckoutPage() {
                 <Input
                   id="expiryDate"
                   type="text"
-                  placeholder="01/01"
+                  placeholder={DUMMY_EXPIRY_DATE}
                   {...register("expiryDate")}
                   className={errors.expiryDate ? "border-destructive" : ""}
                   aria-invalid={errors.expiryDate ? "true" : "false"}
@@ -167,7 +153,7 @@ export default function CheckoutPage() {
                 <Input
                   id="cvc"
                   type="text"
-                  placeholder="123"
+                  placeholder={DUMMY_CVC}
                   {...register("cvc")}
                   className={errors.cvc ? "border-destructive" : ""}
                   aria-invalid={errors.cvc ? "true" : "false"}
@@ -179,7 +165,7 @@ export default function CheckoutPage() {
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-lg py-6" disabled={isSubmitting || authLoading}>
               {isSubmitting && <LoadingSpinner size={20} className="mr-2" />}
-              {isSubmitting ? "Processing Payment..." : `Pay for ${displayPlanName} Plan`}
+              {isSubmitting ? "Processing Payment..." : `Pay ${currentPlan?.price || ''} and Activate ${displayPlanName} Plan`}
             </Button>
             <Button variant="link" onClick={() => router.push('/pricing')} className="text-muted-foreground">
               Cancel and return to pricing
@@ -190,4 +176,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

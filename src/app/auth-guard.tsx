@@ -13,8 +13,6 @@ interface AuthGuardProps {
 
 const PUBLIC_ROUTES = ['/login', '/signup', '/', '/pricing'];
 const PUBLIC_PREFIXES = ['/e/', '/landing'];
-// Checkout page is public in the sense that you don't need a subscription yet,
-// but you DO need to be logged in to access it.
 const LOGIN_REQUIRED_BUT_NO_SUBSCRIPTION_PREFIXES = ['/checkout/'];
 
 export default function AuthGuard({ children }: AuthGuardProps) {
@@ -27,16 +25,12 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const isCheckoutPage = LOGIN_REQUIRED_BUT_NO_SUBSCRIPTION_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
   useEffect(() => {
-    // Only run redirection logic if auth is resolved AND subscription status is resolved.
     if (!authContextLoading && userSubscriptionStatus !== 'loading') {
       if (!user && !isPublicPage) {
-        // If auth is resolved, user is not logged in, and it's not a public page, redirect to login
         router.push('/login');
       } else if (user && !isPublicPage && !isCheckoutPage) {
-        // User is logged in, on a protected page (not public, not checkout)
-        if (!isAdmin && userSubscriptionStatus !== 'active') {
-          // Regular user without active subscription, redirect to pricing
-          if (pathname !== '/pricing') { // Avoid redirect loop if already on pricing
+        if (!isAdmin && userSubscriptionStatus === 'none') {
+          if (pathname !== '/pricing') { 
             toast({
               title: "Subscription Required",
               description: "Please choose a plan to access this page.",
@@ -45,16 +39,12 @@ export default function AuthGuard({ children }: AuthGuardProps) {
             router.push('/pricing');
           }
         }
-      } else if (user && isCheckoutPage && userSubscriptionStatus === 'active' && !isAdmin) {
-        // If user is already subscribed and tries to go to checkout, send to dashboard
+      } else if (user && isCheckoutPage && userSubscriptionStatus !== 'none' && !isAdmin) {
         router.push('/dashboard');
       }
     }
   }, [user, authContextLoading, userSubscriptionStatus, router, pathname, isPublicPage, isCheckoutPage, isAdmin, toast]);
 
-  // General loading state:
-  // If Firebase auth is loading OR subscription status is loading,
-  // and it's not a public page, show the main app spinner.
   if ((authContextLoading || userSubscriptionStatus === 'loading') && !isPublicPage) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
@@ -63,8 +53,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // Specific redirecting states (these are shown IF the conditions are met after the general loading above is passed):
-  // If not a public page and no user (and auth/sub status is resolved)
   if (!isPublicPage && !user && !authContextLoading && userSubscriptionStatus !== 'loading') {
     return (
         <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
@@ -74,10 +62,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If it's a protected route, user is logged in, but not admin and no active subscription (and not checkout page)
-  // (and auth/sub status is resolved)
-  if (!isPublicPage && !isCheckoutPage && user && !isAdmin && userSubscriptionStatus !== 'active' && !authContextLoading && userSubscriptionStatus !== 'loading') {
-     // Check if we are already on the pricing page to avoid loop, though useEffect should also prevent this.
+  if (!isPublicPage && !isCheckoutPage && user && !isAdmin && userSubscriptionStatus === 'none' && !authContextLoading && userSubscriptionStatus !== 'loading') {
      if (pathname !== '/pricing') {
         return (
             <div className="flex flex-col justify-center items-center min-h-[calc(100vh-var(--header-height,0px)-var(--footer-height,0px))] bg-background px-4">
@@ -88,6 +73,5 @@ export default function AuthGuard({ children }: AuthGuardProps) {
      }
   }
 
-  // If all checks pass, render children
   return <>{children}</>;
 }

@@ -101,8 +101,11 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
     return email.substring(0, 2).toUpperCase();
   };
 
-  const subscriptionText = isAdmin ? "Admin Access" : 
-                           userSubscriptionStatus === 'active' ? "Subscription: Active" : "Subscription: None";
+  const planName = userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading' 
+    ? userSubscriptionStatus.charAt(0).toUpperCase() + userSubscriptionStatus.slice(1) 
+    : "None";
+
+  const subscriptionText = isAdmin ? "Admin Access" : `Plan: ${planName}`;
   const SubscriptionIcon = isAdmin ? ShieldCheck : ShoppingCart;
 
 
@@ -138,7 +141,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
               <p className="text-xs leading-none text-muted-foreground">
                 {user.email}
               </p>
-              <div className={cn("text-xs leading-none mt-1 flex items-center", isAdmin || userSubscriptionStatus === 'active' ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+              <div className={cn("text-xs leading-none mt-1 flex items-center", isAdmin || (userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading') ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
                 <SubscriptionIcon className="mr-1 h-3 w-3" /> 
                 {subscriptionText}
               </div>
@@ -166,7 +169,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
             <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
               <QrCode className="mr-2 h-5 w-5"/>Scan Dashboard
             </NavLink>
-            {!isAdmin && userSubscriptionStatus !== 'active' && (
+            {!isAdmin && userSubscriptionStatus === 'none' && (
                 <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
                     <CreditCard className="mr-2 h-5 w-5"/> View Plans
                 </NavLink>
@@ -289,7 +292,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname]); // Removed commonNavLinks from dependency array as it's stable
+  }, [pathname]);
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -303,8 +306,11 @@ export default function Header() {
     return email.substring(0, 2).toUpperCase();
   };
 
-  const subscriptionText = isAdmin ? "Admin Access" : 
-                           userSubscriptionStatus === 'active' ? "Subscription: Active" : "Subscription: None";
+  const planName = userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading' 
+    ? userSubscriptionStatus.charAt(0).toUpperCase() + userSubscriptionStatus.slice(1) 
+    : "None";
+
+  const subscriptionText = isAdmin ? "Admin Access" : `Plan: ${planName}`;
   const SubscriptionIcon = isAdmin ? ShieldCheck : ShoppingCart;
 
 
@@ -381,7 +387,7 @@ export default function Header() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64" align="end" forceMount> {/* Increased width */}
+                <DropdownMenuContent className="w-64" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none truncate">
@@ -390,7 +396,7 @@ export default function Header() {
                       <p className="text-xs leading-none text-muted-foreground truncate">
                         {user.email}
                       </p>
-                       <div className={cn("text-xs leading-none mt-1.5 pt-1 border-t border-border/50 flex items-center", isAdmin || userSubscriptionStatus === 'active' ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+                       <div className={cn("text-xs leading-none mt-1.5 pt-1 border-t border-border/50 flex items-center", isAdmin || (userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading') ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
                          <SubscriptionIcon className="mr-1.5 h-3.5 w-3.5" /> 
                          {subscriptionText}
                        </div>
@@ -409,7 +415,7 @@ export default function Header() {
                         Scan Dashboard
                       </Link>
                   </DropdownMenuItem>
-                  {!isAdmin && userSubscriptionStatus !== 'active' && (
+                  {!isAdmin && userSubscriptionStatus === 'none' && (
                     <DropdownMenuItem asChild className="cursor-pointer text-primary focus:text-primary focus:bg-primary/10">
                         <Link href="/pricing" className="flex items-center">
                             <CreditCard className="mr-2 h-4 w-4" />

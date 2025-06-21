@@ -8,7 +8,7 @@ import { auth } from '@/lib/firebase';
 import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
-import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email-flow'; // Import the new flow
+import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email-flow';
 
 const ADMIN_EMAIL = "sk@gmail.com";
 
@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
-  userSubscriptionStatus: 'none' | 'active' | 'loading';
+  userSubscriptionStatus: string | 'none' | 'loading'; // Can be 'none', 'Pro', 'Business', etc.
   signUp: (email: string, pass: string) => Promise<User | null>;
   logIn: (email: string, pass: string) => Promise<User | null>;
   logOut: () => Promise<void>;
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userSubscriptionStatus, setUserSubscriptionStatus] = useState<'none' | 'active' | 'loading'>('loading');
+  const [userSubscriptionStatus, setUserSubscriptionStatus] = useState<string | 'none' | 'loading'>('loading');
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -45,8 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserSubscriptionStatus('active'); // Admins always have active status
       } else {
         setIsAdmin(false);
-        const storedStatus = localStorage.getItem(`evntos_subscription_${currentUser.uid}`);
-        setUserSubscriptionStatus(storedStatus === 'active' ? 'active' : 'none');
+        const storedPlan = localStorage.getItem(`evntos_plan_${currentUser.uid}`);
+        setUserSubscriptionStatus(storedPlan || 'none');
       }
     } else {
       setIsAdmin(false);
@@ -65,8 +65,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const activateUserSubscription = useCallback((planName: string) => {
     if (user && !isAdmin) {
-      localStorage.setItem(`evntos_subscription_${user.uid}`, 'active');
-      setUserSubscriptionStatus('active');
+      localStorage.setItem(`evntos_plan_${user.uid}`, planName);
+      setUserSubscriptionStatus(planName);
       toast({
         title: "Payment Successful!",
         description: `Your ${planName} plan is now active.`,
@@ -74,7 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       router.push('/dashboard');
     } else if (isAdmin && user) {
-        // Admin already has access, just confirm and redirect
         toast({
             title: "Admin Access Confirmed",
             description: "Redirecting to dashboard.",
@@ -86,8 +85,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleAuthSuccess = (loggedInUser: User) => {
     setUser(loggedInUser);
     checkAndSetSubscriptionStatus(loggedInUser);
-    // Determine redirect based on subscription status after it's set
-    if (loggedInUser.email === ADMIN_EMAIL || localStorage.getItem(`evntos_subscription_${loggedInUser.uid}`) === 'active') {
+    const userPlan = localStorage.getItem(`evntos_plan_${loggedInUser.uid}`);
+
+    if (loggedInUser.email === ADMIN_EMAIL || userPlan) {
       router.push('/dashboard');
     } else {
       router.push('/pricing');
@@ -100,7 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       handleAuthSuccess(userCredential.user);
 
-      // Send welcome email (fire and forget, don't let it block signup)
       sendWelcomeEmail({ userEmail: userCredential.user.email!, userName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] })
         .then(emailResult => {
           if (emailResult.success) {
@@ -177,7 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signOut(auth);
       setUser(null);
       setIsAdmin(false);
-      setUserSubscriptionStatus('none'); // Reset subscription status on logout
+      setUserSubscriptionStatus('none'); 
       router.push('/'); 
     } catch (error) {
       console.error("Logout error:", error);
@@ -188,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
   
-  if (loading || userSubscriptionStatus === 'loading') {
+  if (loading || userSubscriptionStatus === 'loading' && !isPublicPage) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-background">
         <LoadingSpinner size={48} />

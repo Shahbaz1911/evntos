@@ -72,30 +72,29 @@ const pricingTiers = [
 ];
 
 export default function PricingSection() {
-  const { user, loading, userSubscriptionStatus, activateUserSubscription } = useAuth();
+  const { user, loading, userSubscriptionStatus, isAdmin } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
   const handlePlanSelection = (tier: typeof pricingTiers[number]) => {
-    if (loading) return; // Wait for auth state to resolve
+    if (loading) return; 
 
     if (tier.actionType === "link") {
       router.push(tier.buttonLink);
       return;
     }
 
-    // For checkout actions
     if (!user) {
       toast({
         title: "Login Required",
         description: "Please log in or sign up to choose a plan.",
       });
-      router.push('/login'); // Or signup, or store intended plan and redirect after auth
+      router.push('/login');
       return;
     }
 
-    if (userSubscriptionStatus === 'active') {
-         if (user.email?.endsWith('@evntos.com')) { // or a better check for admin
+    if (userSubscriptionStatus !== 'none' && userSubscriptionStatus !== 'loading') {
+         if (isAdmin) { 
             toast({
                 title: "Admin Access",
                 description: "Admins have full access. No plan selection needed.",
@@ -103,14 +102,13 @@ export default function PricingSection() {
          } else {
             toast({
                 title: "Already Subscribed",
-                description: "You already have an active plan.",
+                description: `You already have an active plan: ${userSubscriptionStatus}.`,
             });
          }
         router.push('/dashboard');
         return;
     }
     
-    // If user is logged in and no active subscription, redirect to checkout
     router.push(tier.buttonLink);
   };
 
