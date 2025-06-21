@@ -267,27 +267,17 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    if (pathname !== '/') {
+    // This state controls the initial visibility of the header on the homepage.
+    // It is timed to match the splash screen animation in hero-section.tsx.
+    if (pathname === '/') {
+      setIsHeroAnimationActive(true);
+      const timer = setTimeout(() => {
         setIsHeroAnimationActive(false);
-        return;
+      }, 2500); // This duration should match the hero splash screen
+      return () => clearTimeout(timer);
+    } else {
+      setIsHeroAnimationActive(false);
     }
-
-    const handleScroll = () => {
-        // The hero animation scrolls over 200vh.
-        // Reveal the header when the animation is mostly complete.
-        const scrollThreshold = window.innerHeight * 1.8; 
-        if (window.scrollY > scrollThreshold) {
-            setIsHeroAnimationActive(false);
-        } else {
-            setIsHeroAnimationActive(true);
-        }
-    };
-    
-    // Run on mount to set initial state correctly
-    handleScroll(); 
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, [pathname]);
   
 
