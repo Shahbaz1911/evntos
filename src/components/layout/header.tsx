@@ -1,10 +1,11 @@
+
 "use client";
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -23,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { useSidebar } from '@/components/ui/sidebar'; 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 
 interface NavLinkProps {
@@ -35,29 +37,58 @@ interface NavLinkProps {
 }
 
 const NavLink = ({ href, children, onClick, isActive, className, isMobile = false }: NavLinkProps) => {
-  const baseClasses = `text-sm font-medium transition-colors rounded-full px-4 py-1.5 flex items-center gap-2`;
-  const activeClasses = `text-primary bg-primary/10`;
-  const inactiveClasses = `text-foreground/70 hover:text-primary hover:bg-primary/5`;
+    const baseClasses = `text-sm font-medium transition-colors rounded-full px-4 py-1.5 flex items-center`;
+    const activeClasses = `text-primary bg-primary/10`;
   
-  const mobileSpecificInactiveClasses = `hover:text-primary hover:bg-primary/10`;
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      asChild
-      className={cn(
-        baseClasses,
-        isActive ? activeClasses : (isMobile ? mobileSpecificInactiveClasses : inactiveClasses),
-        className
-      )}
-      data-active={isActive}
-      onClick={onClick}
-    >
-      <Link href={href}>{children}</Link>
-    </Button>
-  );
-};
+    if (isMobile) {
+      const mobileInactiveClasses = `text-foreground/70 hover:text-primary hover:bg-primary/10`;
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className={cn(
+            baseClasses,
+            'gap-2',
+            isActive ? activeClasses : mobileInactiveClasses,
+            className
+          )}
+          data-active={isActive}
+          onClick={onClick}
+        >
+          <Link href={href}>{children}</Link>
+        </Button>
+      );
+    }
+  
+    const inactiveClasses = `text-foreground/70 hover:text-primary hover:bg-primary/5`;
+  
+    return (
+      <motion.div
+        whileHover={{ y: -2 }}
+        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className={cn(
+            baseClasses,
+            isActive ? activeClasses : inactiveClasses,
+            'group',
+            className
+          )}
+          data-active={isActive}
+          onClick={onClick}
+        >
+          <Link href={href} className="flex items-center gap-1.5">
+            {children}
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0.5" />
+          </Link>
+        </Button>
+      </motion.div>
+    );
+  };
 
 
 const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection: string; commonNavLinks: Array<{ href: string; label: string; id: string; icon: React.ElementType }> }) => {
