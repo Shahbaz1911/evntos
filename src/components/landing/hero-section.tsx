@@ -1,12 +1,11 @@
-
 "use client";
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { useRef } from 'react';
 import Image from 'next/image';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 const heroImage = {
     src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZXN0aXZhbCUyMGNyb3dkfGVufDB8fHx8MTc1MjI2MjM4OXww&ixlib=rb-4.1.0&q=80&w=1080",
@@ -20,14 +19,18 @@ export default function HeroSection() {
         offset: ['start start', 'end start']
     });
 
-    const scale = useTransform(scrollYProgress, [0, 0.7], [1, 50]);
+    // The scale animation should happen over the first part of the scroll
+    const scale = useTransform(scrollYProgress, [0, 0.8], [1, 50]);
+    // The mask opacity should fade out towards the end of its animation
     const maskOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
+    // This will make the underlying hero content fade in as the mask scales up
+    const contentOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
     return (
-        <section id="hero" ref={targetRef} className="relative h-[300vh] bg-background">
+        <section id="hero" ref={targetRef} className="relative h-[300vh] bg-black -mt-16">
             <div className="sticky top-0 h-screen">
-                {/* 1. The underlying Hero Content */}
-                <div className="absolute inset-0 z-0">
+                {/* 1. The underlying Hero Content, revealed by the mask */}
+                <motion.div className="absolute inset-0 z-0" style={{ opacity: contentOpacity }}>
                      <Image
                       src={heroImage.src}
                       alt="A vibrant festival crowd"
@@ -61,7 +64,7 @@ export default function HeroSection() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* 2. The Masking Layer */}
                 <motion.div 
