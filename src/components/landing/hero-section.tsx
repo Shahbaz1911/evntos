@@ -21,9 +21,11 @@ export default function HeroSection() {
     });
 
     // Scale the text from its original size up to a very large size
-    const scale = useTransform(scrollYProgress, [0.1, 0.7], [1, 30]);
+    // Start scaling a bit after the scroll starts (at 10%) and finish scaling when the user is 70% through the section.
+    const scale = useTransform(scrollYProgress, [0.1, 0.7], [1, 50]);
     
     // Fade out the entire masking effect at the very end of the animation
+    // Start fading at 85% and be fully gone by 100%
     const maskOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
 
     return (
@@ -73,12 +75,13 @@ export default function HeroSection() {
                 >
                     <motion.h1
                         style={{ scale }}
-                        className="text-white text-6xl md:text-8xl lg:text-9xl font-bold text-center mix-blend-screen"
+                        className="text-white text-6xl md:text-8xl lg:text-9xl font-bold text-center mix-blend-screen font-headline"
                     >
-                        Unforgettable
+                        evntos
                     </motion.h1>
                 </motion.div>
             </div>
         </section>
     );
 }
+
