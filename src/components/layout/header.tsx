@@ -56,7 +56,10 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
           data-active={isActive}
           onClick={onClick}
         >
-          <Link href={href}>{children}</Link>
+          <Link href={href} className="flex items-center justify-between w-full">
+             <span className="flex items-center gap-2">{children}</span>
+             <ArrowRight className={cn("h-4 w-4 shrink-0 text-primary transition-opacity duration-300", isActive ? "opacity-100" : "opacity-0")} />
+          </Link>
         </Button>
       );
     }
