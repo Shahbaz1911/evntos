@@ -114,6 +114,7 @@ export default function PublicEventPage() {
   
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY";
   const hasLocationInfo = event.venueName || event.venueAddress || event.mapLink;
+  const mapQuery = event.venueAddress || event.venueName || event.title;
 
 
   return (
@@ -157,7 +158,7 @@ export default function PublicEventPage() {
               </p>
             </div>
 
-            {hasLocationInfo && (
+            {hasLocationInfo ? (
               <div>
                 <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
                   <MapPin className="mr-3 h-6 w-6" /> Location
@@ -168,38 +169,46 @@ export default function PublicEventPage() {
                   </p>
                 )}
                 {event.venueAddress && (
-                  <p className="text-md text-foreground/80 whitespace-pre-line mb-3 ml-7">{event.venueAddress}</p>
+                  <p className="text-md text-foreground/80 whitespace-pre-line mb-3">{event.venueAddress}</p>
                 )}
+                
                 {event.mapLink && (
-                  <>
-                    <Button variant="outline" asChild className={ (event.venueName || event.venueAddress) ? 'mt-2' : ''}>
+                    <Button variant="outline" asChild className="mt-2">
                       <a href={event.mapLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-primary hover:underline">
                          <Map className="mr-2 h-4 w-4" /> View on Google Maps <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
                     </Button>
-                    <div className="mt-4 aspect-video rounded-lg overflow-hidden border">
+                )}
+                
+                {(event.venueAddress || event.venueName) && (
+                  <div className="mt-4">
+                    <div className="aspect-video rounded-lg overflow-hidden border">
                       <iframe
                         width="100%"
                         height="100%"
                         loading="lazy"
                         allowFullScreen
                         referrerPolicy="no-referrer-when-downgrade"
-                        src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(event.mapLink.includes('goo.gl') || event.mapLink.includes('maps.app.goo.gl') ? event.title : event.mapLink)}`}
+                        src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(mapQuery)}`}
                         title="Event Location"
                         data-ai-hint="map location"
                         >
                       </iframe>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                        Note: Map preview is indicative. Please use the "View on Google Maps" link for accurate directions. 
+                        Note: Map preview is indicative. For precise directions, use the "View on Google Maps" link if available. 
                         {googleMapsApiKey === "YOUR_API_KEY" && " (Map functionality limited without a valid API key)."}
                     </p>
-                  </>
-                )}
-                 {!event.mapLink && !event.venueName && !event.venueAddress && (
-                    <p className="text-muted-foreground">Location details not provided.</p>
+                  </div>
                 )}
               </div>
+            ) : (
+                 <div>
+                    <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
+                        <MapPin className="mr-3 h-6 w-6" /> Location
+                    </h2>
+                    <p className="text-muted-foreground">Location details have not been provided.</p>
+                 </div>
             )}
 
 
