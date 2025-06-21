@@ -94,7 +94,7 @@ export default function HeroSection() {
                 Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="border-white/80 text-white hover:bg-white/10 md:border-primary md:text-primary md:hover:bg-primary/10 shadow-md">
+            <Button size="lg" asChild className="bg-white/20 border border-white/50 text-white hover:bg-white/30 backdrop-blur-sm md:bg-transparent md:border-primary md:text-primary md:hover:bg-primary/10 shadow-md">
               <Link href="#features">
                 Learn More
               </Link>
