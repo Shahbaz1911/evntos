@@ -1,4 +1,3 @@
-
 "use client";
 import * as React from 'react';
 import Link from 'next/link';
@@ -16,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from 'react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
@@ -111,6 +110,8 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 
   return (
     <>
+      <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
+      <SheetDescription className="sr-only">A menu for navigating the application on mobile devices.</SheetDescription>
       <div className="flex justify-between items-center p-4 border-b">
         <Link href="/" className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
           evntos
