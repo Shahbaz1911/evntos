@@ -55,18 +55,22 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.15,
     },
   },
 };
 
 const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+  hidden: (index: number) => ({
+    opacity: 0,
+    x: index % 2 === 0 ? -50 : 50, // Alternate direction based on index
+  }),
   visible: {
-    y: 0,
     opacity: 1,
+    x: 0,
     transition: {
       duration: 0.5,
+      ease: "easeOut",
     },
   },
 };
@@ -114,7 +118,11 @@ export default function FeaturesSection() {
           viewport={{ once: true, amount: 0.2 }}
         >
           {features.map((feature, index) => (
-            <motion.div key={index} variants={itemVariants}>
+            <motion.div 
+              key={index} 
+              variants={itemVariants}
+              custom={index}
+            >
               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border bg-card h-full flex flex-col">
                 <CardHeader className="items-center text-center">
                   <div className={`p-4 rounded-full ${feature.bgColor} mb-4 inline-block`}>
