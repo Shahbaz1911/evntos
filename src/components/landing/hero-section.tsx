@@ -83,7 +83,7 @@ export default function HeroSection() {
         {/* Left Column: Text Content */}
         <div className="space-y-6 md:space-y-8 text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight text-white md:text-primary">
-            Host <span className="inline-block min-h-[1.2em] min-w-[200px] sm:min-w-[300px] md:min-w-[350px] lg:min-w-[400px] bg-gradient-to-r from-primary to-accent md:from-indigo-400 md:via-pink-500 md:to-orange-500 bg-clip-text text-transparent">{text}</span> Events, <span className="block">Effortlessly.</span>
+            Host <span className="inline-block min-h-[1.2em] min-w-[200px] sm:min-w-[300px] md:min-w-[350px] lg:min-w-[400px] bg-gradient-to-r from-indigo-400 via-pink-500 to-orange-500 bg-clip-text text-transparent">{text}</span> Events, <span className="block">Effortlessly.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/90 md:text-foreground/80 max-w-xl mx-auto md:mx-0">
             Evntos provides the tools you need to create, promote, and manage any event with ease. From meetups to conferences, make your next event a stunning success.
