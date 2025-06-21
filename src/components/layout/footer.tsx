@@ -29,7 +29,7 @@ export default function Footer() {
     {
       label: "Product",
       items: [
-        { href: '/#services', name: 'Services' },
+        { href: '/#features', name: 'Features' },
         { href: '/#pricing', name: 'Pricing' },
         { href: '/#faq', name: 'FAQ' },
         { href: '/#testimonials', name: 'Testimonials' },
@@ -105,4 +105,3 @@ export default function Footer() {
     </footer>
   );
 }
-

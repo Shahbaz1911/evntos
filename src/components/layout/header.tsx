@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart 
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, Handshake, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -235,8 +235,8 @@ export default function Header() {
 
   const commonNavLinks = [
     { href: "/#hero", label: "Home", id: "hero", icon: Home },
+    { href: "/#features", label: "Features", id: "features", icon: Zap },
     { href: "/#about", label: "About", id: "about", icon: Info },
-    { href: "/#services", label: "Services", id: "services", icon: Handshake },
     { href: "/#pricing", label: "Pricing", id: "pricing", icon: DollarSign },
     { href: "/#testimonials", label: "Testimonials", id: "testimonials", icon: Star },
     { href: "/#faq", label: "FAQ", id: "faq", icon: HelpCircle },

@@ -55,7 +55,7 @@ export default function FeaturesSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
-            Our Features
+            Features
           </h2>
           <p className="text-3xl md:text-4xl font-bold font-headline text-foreground">
             Everything You Need for Event Success

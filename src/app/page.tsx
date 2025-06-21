@@ -3,7 +3,7 @@
 
 import HeroSection from '@/components/landing/hero-section';
 import AboutSection from '@/components/landing/about-section';
-import ServicesSection from '@/components/landing/services-section';
+import FeaturesSection from '@/components/landing/features-section';
 import PricingSection from '@/components/landing/pricing-section';
 import TestimonialsSection from '@/components/landing/testimonials-section';
 import FaqSection from '@/components/landing/faq-section';
@@ -13,8 +13,8 @@ export default function LandingPage() {
   return (
     <>
       <HeroSection />
+      <FeaturesSection />
       <AboutSection />
-      <ServicesSection />
       <PricingSection />
       <TestimonialsSection />
       <FaqSection />
@@ -22,4 +22,3 @@ export default function LandingPage() {
     </>
   );
 }
-

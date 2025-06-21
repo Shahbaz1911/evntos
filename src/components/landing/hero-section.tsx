@@ -77,7 +77,7 @@ export default function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-primary text-primary hover:bg-primary/10 shadow-md">
-              <Link href="#services">
+              <Link href="#features">
                 Learn More
               </Link>
             </Button>
