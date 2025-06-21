@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Check, DollarSign, Star, Zap } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 
 const pricingTiers = [
   {
@@ -71,6 +72,28 @@ const pricingTiers = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { y: 50, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+    },
+  },
+};
+
 export default function PricingSection() {
   const { user, loading, userSubscriptionStatus, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -127,43 +150,55 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+        >
           {pricingTiers.map((tier) => (
-            <Card key={tier.name} className={`flex flex-col ${tier.highlightClass} rounded-xl`}>
-              <CardHeader className="text-center p-6">
-                <div className="mb-4">
-                  <tier.icon className={`w-12 h-12 mx-auto ${tier.mostPopular ? 'text-primary' : 'text-muted-foreground'}`} />
-                </div>
-                <CardTitle className="font-headline text-2xl text-foreground">{tier.name}</CardTitle>
-                <div className="mt-2">
-                  <span className="text-4xl font-bold text-primary">{tier.price}</span>
-                  <span className="text-sm text-muted-foreground">{tier.frequency}</span>
-                </div>
-                <CardDescription className="mt-3 text-muted-foreground text-sm min-h-[40px]">{tier.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow p-6 space-y-3">
-                <ul className="space-y-3">
-                  {tier.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-foreground/90">
-                      <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter className="p-6 mt-auto">
-                <Button 
-                  onClick={() => handlePlanSelection(tier)}
-                  size="lg" 
-                  className={`w-full ${tier.mostPopular ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
-                  disabled={loading}
-                >
-                  {tier.buttonText}
-                </Button>
-              </CardFooter>
-            </Card>
+            <motion.div key={tier.name} variants={cardVariants} className="h-full flex">
+              <Card className={`flex flex-col w-full ${tier.highlightClass} rounded-xl`}>
+                <CardHeader className="text-center p-6">
+                  <motion.div 
+                    className="mb-4 inline-block"
+                    whileHover={{ scale: 1.2, rotate: 10 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    <tier.icon className={`w-12 h-12 mx-auto ${tier.mostPopular ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </motion.div>
+                  <CardTitle className="font-headline text-2xl text-foreground">{tier.name}</CardTitle>
+                  <div className="mt-2">
+                    <span className="text-4xl font-bold text-primary">{tier.price}</span>
+                    <span className="text-sm text-muted-foreground">{tier.frequency}</span>
+                  </div>
+                  <CardDescription className="mt-3 text-muted-foreground text-sm min-h-[40px]">{tier.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow p-6 space-y-3">
+                  <ul className="space-y-3">
+                    {tier.features.map((feature, index) => (
+                      <li key={index} className="flex items-center text-foreground/90">
+                        <Check className="h-5 w-5 text-green-500 mr-2 shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="p-6 mt-auto">
+                  <Button 
+                    onClick={() => handlePlanSelection(tier)}
+                    size="lg" 
+                    className={`w-full ${tier.mostPopular ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
+                    disabled={loading}
+                  >
+                    {tier.buttonText}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
