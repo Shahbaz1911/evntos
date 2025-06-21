@@ -255,6 +255,7 @@ export default function Header() {
   const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
   const { toast } = useToast();
+  const [isHeroAnimationActive, setIsHeroAnimationActive] = useState(pathname === '/');
   
 
   useEffect(() => {
@@ -264,6 +265,30 @@ export default function Header() {
       document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
     }
   }, []);
+
+  useEffect(() => {
+    if (pathname !== '/') {
+        setIsHeroAnimationActive(false);
+        return;
+    }
+
+    const handleScroll = () => {
+        // The hero animation scrolls over 200vh.
+        // Reveal the header when the animation is mostly complete.
+        const scrollThreshold = window.innerHeight * 1.8; 
+        if (window.scrollY > scrollThreshold) {
+            setIsHeroAnimationActive(false);
+        } else {
+            setIsHeroAnimationActive(true);
+        }
+    };
+    
+    // Run on mount to set initial state correctly
+    handleScroll(); 
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
   
 
   const commonNavLinks = [
@@ -344,7 +369,11 @@ export default function Header() {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className={cn(
+        "sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+        isHeroAnimationActive ? 'opacity-0' : 'opacity-100',
+        'transition-opacity duration-500'
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity text-primary">

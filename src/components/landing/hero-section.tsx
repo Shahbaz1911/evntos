@@ -20,12 +20,7 @@ export default function HeroSection() {
         offset: ['start start', 'end start']
     });
 
-    // Scale the text from its original size up to a very large size
-    // Start scaling a bit after the scroll starts (at 10%) and finish scaling when the user is 70% through the section.
-    const scale = useTransform(scrollYProgress, [0.1, 0.7], [1, 50]);
-    
-    // Fade out the entire masking effect at the very end of the animation
-    // Start fading at 85% and be fully gone by 100%
+    const scale = useTransform(scrollYProgress, [0, 0.7], [1, 50]);
     const maskOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
 
     return (
@@ -46,8 +41,8 @@ export default function HeroSection() {
                     <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
                         <div className="space-y-6 md:space-y-8">
                             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight">
-                                Host Events,
-                                <span className="block md:inline-block">Effortlessly.</span>
+                                Welcome to evntos,
+                                <span className="block md:inline-block">Host Events Effortlessly.</span>
                             </h1>
                             <p className="text-lg md:text-xl text-white/90 max-w-xl mx-auto">
                                 Evntos provides the tools you need to create, promote, and manage any event with ease.
@@ -84,4 +79,3 @@ export default function HeroSection() {
         </section>
     );
 }
-
