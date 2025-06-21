@@ -42,7 +42,6 @@ const formatEventDateTimeForPdf = (dateStr?: string, timeStr?: string) => {
     return "N/A";
   }
   try {
-    // Changed to string concatenation to avoid template literal parsing issue
     const dateTimeString = dateStr.trim() + 'T' + timeStr.trim() + ':00';
     const dateTime = new Date(dateTimeString);
     if (isNaN(dateTime.getTime())) return "Invalid Date/Time";
@@ -399,19 +398,36 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
         <CardHeader className="text-center pt-8 pb-4">
           <CheckCircle className="mx-auto h-20 w-20 text-accent mb-4" />
           <CardTitle className="text-foreground font-headline text-3xl">Registration Confirmed!</CardTitle>
-          <CardDescription className="text-muted-foreground text-base pt-2">
-            Thank you for registering for <span className="font-semibold text-primary">"${eventName}"</span>.<br/> 
-            Your ticket has been emailed to you. You can also download it directly below.
+          <CardDescription className="text-muted-foreground text-base pt-2 max-w-md mx-auto">
+            You're all set! Your ticket for <span className="font-semibold text-primary">{eventName}</span> has been sent to your email. You can also download it now.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-3 pt-4 pb-6 px-6 text-center">
-          <p className="text-md text-foreground"><strong className="font-medium">Name:</strong> ${submittedRegistration.name}</p>
-          <p className="text-md text-foreground"><strong className="font-medium">Email:</strong> ${submittedRegistration.email}</p>
+        <CardContent className="w-full max-w-sm text-left px-4 py-4 mt-4 space-y-4 border bg-background/50 rounded-lg">
+          <div className="flex items-start">
+            <User className="h-5 w-5 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+            <div>
+              <p className="text-xs text-muted-foreground">Name</p>
+              <p className="font-medium text-foreground break-words">{submittedRegistration.name}</p>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <Mail className="h-5 w-5 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+            <div>
+              <p className="text-xs text-muted-foreground">Email</p>
+              <p className="font-medium text-foreground break-words">{submittedRegistration.email}</p>
+            </div>
+          </div>
           {submittedRegistration.contactNumber && (
-            <p className="text-md text-foreground"><strong className="font-medium">Contact:</strong> ${submittedRegistration.contactNumber}</p>
+            <div className="flex items-start">
+              <Phone className="h-5 w-5 mr-3 mt-1 text-muted-foreground flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Contact Number</p>
+                <p className="font-medium text-foreground break-words">{submittedRegistration.contactNumber}</p>
+              </div>
+            </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 p-6 pt-2 w-full max-w-sm">
+        <CardFooter className="flex flex-col gap-3 p-6 pt-6 w-full max-w-sm">
             <Button
               variant="default"
               onClick={handleDownloadTicket}
@@ -431,7 +447,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
     <Card className="shadow-xl border-t-4 border-primary h-full flex flex-col">
       <CardHeader className="pb-4 text-center">
          <TicketIconLucide className="mx-auto h-12 w-12 text-primary mb-3" />
-        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for ${eventName}</CardTitle>
+        <CardTitle className="font-headline text-2xl md:text-3xl text-primary">Register for {eventName}</CardTitle>
         <CardDescription className="text-muted-foreground text-base pt-1">Fill in your details below to secure your spot.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-grow h-full">
@@ -448,7 +464,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.name ? "true" : "false"}
             />
-            {`${errors.name ? `<p className="text-sm text-destructive pt-1">${errors.name.message}</p>` : ''}`}
+            {errors.name && <p className="text-sm text-destructive pt-1">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="text-base flex items-center">
@@ -463,7 +479,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.email ? "true" : "false"}
             />
-            {`${errors.email ? `<p className="text-sm text-destructive pt-1">${errors.email.message}</p>` : ''}`}
+            {errors.email && <p className="text-sm text-destructive pt-1">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="contactNumber" className="text-base flex items-center">
@@ -478,7 +494,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
               className="py-6 text-base"
               aria-invalid={errors.contactNumber ? "true" : "false"}
             />
-            {`${errors.contactNumber ? `<p className="text-sm text-destructive pt-1">${errors.contactNumber.message}</p>` : ''}`}
+            {errors.contactNumber && <p className="text-sm text-destructive pt-1">{errors.contactNumber.message}</p>}
           </div>
         </CardContent>
         <CardFooter className="p-6 md:p-8 mt-auto">
