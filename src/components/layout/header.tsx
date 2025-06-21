@@ -108,7 +108,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
   return (
     <>
       <div className="flex justify-between items-center p-4 border-b">
-        <Link href={user ? "/dashboard" : "/"} className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
+        <Link href="/" className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
           evntos
         </Link>
         <SheetClose asChild>
@@ -311,7 +311,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link href={user ? "/dashboard" : "/"} className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity text-primary">
+          <Link href="/" className="text-2xl font-bold font-headline hover:opacity-90 transition-opacity text-primary">
             evntos
           </Link>
           
