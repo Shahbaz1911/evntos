@@ -4,17 +4,18 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Html5QrcodeScanner, type Html5QrcodeError, type Html5QrcodeResult, Html5QrcodeScanType } from 'html5-qrcode';
+import { Html5Qrcode, type Html5QrcodeError, type Html5QrcodeResult } from 'html5-qrcode';
 import { useEvents } from '@/context/EventContext';
 import { useAuth } from '@/context/AuthContext';
-// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff, Phone, Mail, Camera } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const SCANNER_REGION_ID = "qr-scanner-region";
 
@@ -35,7 +36,9 @@ export default function ScanTicketPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [showScannerUI, setShowScannerUI] = useState(false); 
 
-  const html5QrCodeScannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!eventContextLoading && !authLoading) {
@@ -48,7 +51,7 @@ export default function ScanTicketPage() {
         }
         setEvent(foundEvent);
       } else {
-        if (!eventContextLoading) { // Avoid false "not found" during initial load
+        if (!eventContextLoading) {
              toast({ title: "Event Not Found", description: "The event you are trying to scan for does not exist.", variant: "destructive" });
              router.push('/');
              return;
@@ -60,12 +63,18 @@ export default function ScanTicketPage() {
     }
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
-
   const processScanResult = useCallback(async (decodedText: string) => {
+    if (html5QrCodeRef.current?.isScanning) {
+      await html5QrCodeRef.current.stop().catch(err => console.warn("Error stopping scanner on success:", err));
+    }
+    html5QrCodeRef.current = null;
+    setShowScannerUI(false);
+    setCameras([]);
+    setSelectedCameraId(undefined);
+
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage("Verifying ticket...");
-    setShowScannerUI(false); 
 
     try {
         const registration = await getRegistrationByIdFromFirestore(decodedText);
@@ -99,103 +108,82 @@ export default function ScanTicketPage() {
     }
   }, [eventId, getRegistrationByIdFromFirestore, toast]);
 
-
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-    if (showScannerUI && hasCameraPermission) {
+    if (selectedCameraId && showScannerUI) {
       const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
-      const scannerConfig = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        rememberLastUsedCamera: false, 
-        facingMode: "environment",
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-      };
+      if (!scannerRegionElement) {
+        console.error("Scanner region not found");
+        return;
+      }
+      
+      const qrCode = new Html5Qrcode(SCANNER_REGION_ID, { verbose: false });
+      html5QrCodeRef.current = qrCode;
+
       const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
-        if (html5QrCodeScannerRef.current) {
-             html5QrCodeScannerRef.current.clear().catch(err => console.warn("Error clearing scanner on success:", err));
-             html5QrCodeScannerRef.current = null;
-        }
         processScanResult(decodedText);
       };
-      const onScanFailure = (errorMessage: string, error: Html5QrcodeError) => { /* console.warn(`QR error = ${errorMessage}`); */ };
 
-      if (!scannerRegionElement) {
-          console.error(`Scanner region element with ID '${SCANNER_REGION_ID}' not found in the DOM.`);
-          setTimeout(() => { // Retry finding element after a short delay, DOM might not be ready
-            const delayedScannerRegionElement = document.getElementById(SCANNER_REGION_ID);
-            if (!delayedScannerRegionElement) {
-                toast({ title: "Scanner Error", description: "Could not initialize scanner view. Please refresh.", variant: "destructive" });
-                setShowScannerUI(false); 
-            } else {
-                html5QrCodeScannerRef.current = new Html5QrcodeScanner(SCANNER_REGION_ID, scannerConfig, false);
-                html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
-            }
-          }, 100); 
-          return; 
-      }
-
-      html5QrCodeScannerRef.current = new Html5QrcodeScanner(SCANNER_REGION_ID, scannerConfig, false);
-      html5QrCodeScannerRef.current.render(onScanSuccess, onScanFailure);
-      scanner = html5QrCodeScannerRef.current; 
+      const onScanFailure = (error: any) => { /* ignore */ };
+      
+      qrCode.start(
+        selectedCameraId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess,
+        onScanFailure
+      ).catch(err => {
+        console.error("Failed to start scanner:", err);
+        toast({ title: "Scanner Error", description: "Could not start scanner. Please select a different camera or refresh.", variant: "destructive" });
+        setShowScannerUI(false);
+      });
     }
 
     return () => {
-      if (scanner) { 
-        scanner.clear()
-          .catch(err => { console.warn("Error clearing scanner during cleanup:", err); })
-          .finally(() => { 
-            if (html5QrCodeScannerRef.current === scanner) { 
-                 html5QrCodeScannerRef.current = null;
-            }
-          });
-      } else if (html5QrCodeScannerRef.current && !showScannerUI) { 
-          html5QrCodeScannerRef.current.clear()
-            .catch(err => { console.warn("Error clearing scanner during manual stop:", err); })
-            .finally(() => { html5QrCodeScannerRef.current = null; });
+      if (html5QrCodeRef.current?.isScanning) {
+        html5QrCodeRef.current.stop().catch(err => console.warn("Failed to stop scanner cleanly during cleanup:", err));
+        html5QrCodeRef.current = null;
       }
     };
-  }, [showScannerUI, hasCameraPermission, processScanResult, toast]);
-
+  }, [selectedCameraId, showScannerUI, processScanResult, toast]);
 
   const handleStartScanning = async () => {
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage(null);
+    setShowScannerUI(true);
 
-    if (hasCameraPermission === false) { 
-       toast({
+    try {
+      const availableCameras = await Html5Qrcode.getCameras();
+      setHasCameraPermission(true);
+
+      if (availableCameras && availableCameras.length > 0) {
+        setCameras(availableCameras);
+        const backCamera = availableCameras.find(c => c.label.toLowerCase().includes('back')) || availableCameras.find(c => c.label.toLowerCase().includes('environment'));
+        setSelectedCameraId(backCamera ? backCamera.id : availableCameras[0].id);
+      } else {
+        setHasCameraPermission(false);
+        setShowScannerUI(false);
+        toast({ variant: 'destructive', title: 'No Camera Found', description: 'Could not find a camera on this device.' });
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setHasCameraPermission(false);
+      setShowScannerUI(false);
+      toast({
         variant: 'destructive',
         title: 'Camera Access Denied',
         description: 'Please enable camera permissions in your browser settings to use the scanner.',
       });
-      return;
-    }
-
-    if (hasCameraPermission === null) { 
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        setShowScannerUI(true); 
-      } catch (err) {
-        console.error('Error accessing camera:', err);
-        setHasCameraPermission(false);
-        setShowScannerUI(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use the scanner.',
-        });
-      }
-    } else { 
-        setShowScannerUI(true);
     }
   };
 
   const handleStopScanning = () => {
-    setShowScannerUI(false); 
+    if (html5QrCodeRef.current?.isScanning) {
+        html5QrCodeRef.current.stop().catch(err => console.warn("Error stopping scanner manually:", err));
+    }
+    setShowScannerUI(false);
+    setCameras([]);
+    setSelectedCameraId(undefined);
   };
-
 
   if (pageLoading || authLoading || eventContextLoading) {
     return (
@@ -207,19 +195,16 @@ export default function ScanTicketPage() {
 
   if (!event) {
     return (
-      // <AuthGuard> // Removed page-level AuthGuard
         <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">Event details could not be loaded or access denied.</p>
           <Button asChild className="mt-4">
             <Link href="/">Back to Dashboard</Link>
           </Button>
         </div>
-      // </AuthGuard> // Removed page-level AuthGuard
     );
   }
 
   return (
-    // <AuthGuard> // Removed page-level AuthGuard
       <div className="max-w-2xl mx-auto py-8">
         <Button variant="outline" size="sm" asChild className="mb-6">
           <Link href={`/events/${eventId}/edit`}>
@@ -256,6 +241,27 @@ export default function ScanTicketPage() {
                 <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
               )}
             </div>
+
+            {showScannerUI && cameras.length > 1 && (
+              <div className="space-y-2">
+                <Label htmlFor="camera-select" className="flex items-center text-muted-foreground font-medium">
+                  <Camera className="mr-2 h-4 w-4" />
+                  Camera Source
+                </Label>
+                <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
+                  <SelectTrigger id="camera-select" className="w-full bg-background text-foreground">
+                    <SelectValue placeholder="Select a camera..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cameras.map((camera) => (
+                      <SelectItem key={camera.id} value={camera.id}>
+                        {camera.label || `Camera ${camera.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {showScannerUI ? (
               <Button onClick={handleStopScanning} variant="outline" className="w-full">
@@ -308,6 +314,6 @@ export default function ScanTicketPage() {
           </CardContent>
         </Card>
       </div>
-    // </AuthGuard> // Removed page-level AuthGuard
   );
 }
+
