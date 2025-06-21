@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,8 +13,16 @@ const heroImage = {
     hint: "festival crowd",
 };
 
+const wordsToAnimate = ["Effortlessly", "Beautifully", "Successfully", "Creatively"];
+const typingSpeed = 150;
+const deletingSpeed = 75;
+const delayAfterTyping = 2000;
+
 export default function HeroSection() {
     const [isLoading, setIsLoading] = useState(true);
+    const [wordIndex, setWordIndex] = useState(0);
+    const [text, setText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         // This will remove the splash screen after the animation sequence
@@ -23,6 +32,32 @@ export default function HeroSection() {
 
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        // Don't start typing until the splash screen is gone
+        if (isLoading) return;
+
+        const handleTyping = () => {
+            const currentWord = wordsToAnimate[wordIndex];
+            const updatedText = isDeleting
+                ? currentWord.substring(0, text.length - 1)
+                : currentWord.substring(0, text.length + 1);
+
+            setText(updatedText);
+
+            if (!isDeleting && updatedText === currentWord) {
+                // Pause at end of word before starting to delete
+                setTimeout(() => setIsDeleting(true), delayAfterTyping);
+            } else if (isDeleting && updatedText === "") {
+                setIsDeleting(false);
+                setWordIndex((prev) => (prev + 1) % wordsToAnimate.length);
+            }
+        };
+
+        const timeout = setTimeout(handleTyping, isDeleting ? deletingSpeed : typingSpeed);
+
+        return () => clearTimeout(timeout);
+    }, [text, isDeleting, wordIndex, isLoading]);
 
     return (
         <section id="hero" className="relative h-screen bg-background -mt-16 pt-16">
@@ -71,7 +106,15 @@ export default function HeroSection() {
                         >
                             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight">
                                 Welcome to evntos,
-                                <span className="block md:inline-block">Host Events Effortlessly.</span>
+                                <span className="block md:inline-block">
+                                    Host Events{' '}
+                                    <span className="relative inline-block h-[1.2em]">
+                                      <span className="bg-gradient-to-r from-fuchsia-500 via-red-500 to-orange-400 bg-clip-text text-transparent">
+                                          {text}
+                                      </span>
+                                      <span className="ml-1 inline-block h-full w-[2px] animate-pulse bg-white/70" aria-hidden="true"></span>
+                                    </span>
+                                </span>
                             </h1>
                             <p className="mt-4 text-lg md:text-xl text-white/90 max-w-xl mx-auto">
                                 Evntos provides the tools you need to create, promote, and manage any event with ease.
