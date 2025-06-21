@@ -14,7 +14,7 @@ import {
   useCarousel,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { motion, useTransform } from 'framer-motion';
+import { motion, useTransform, useMotionValue } from 'framer-motion';
 import { useRef, useState, useEffect, useCallback } from 'react';
 
 const testimonials = [
@@ -74,7 +74,7 @@ function TestimonialCard({
   index: number;
 }) {
   const { api } = useCarousel();
-  const [progress, setProgress] = useState(0);
+  const progress = useMotionValue(0);
 
   // This factor controls how tight the effect is.
   // Smaller number = wider spread, larger number = tighter.
@@ -103,8 +103,8 @@ function TestimonialCard({
     }
 
     const tweenValue = 1 - Math.abs(diffToTarget * TWEEN_FACTOR);
-    setProgress(Math.max(0, tweenValue));
-  }, [api, index]);
+    progress.set(Math.max(0, tweenValue));
+  }, [api, index, progress]);
 
   useEffect(() => {
     if (!api) return;
