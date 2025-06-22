@@ -22,14 +22,19 @@ export default function HeroSection() {
                     <motion.div
                         key="animation-overlay"
                         className="absolute inset-0 z-50 flex items-center justify-center bg-black"
-                        onAnimationComplete={() => setAnimationComplete(true)}
+                        exit={{ opacity: 0 }} // This will make the black screen fade out
+                        transition={{ duration: 0.5 }}
                     >
                         <motion.h1
-                            className="text-6xl md:text-8xl lg:text-9xl font-bold font-headline text-white"
+                            className="text-6xl md:text-8xl lg:text-9xl font-bold font-headline text-primary"
                             style={{ mixBlendMode: 'screen' }}
                             initial={{ scale: 1 }}
                             animate={{ scale: 50 }}
                             transition={{ duration: 2.5, ease: 'easeIn' }}
+                            onAnimationComplete={() => {
+                                // Once text zoom is done, start removing the overlay
+                                setAnimationComplete(true);
+                            }}
                         >
                             evntos
                         </motion.h1>
@@ -37,7 +42,7 @@ export default function HeroSection() {
                 )}
             </AnimatePresence>
 
-            {/* The actual hero content, which will be revealed through the mask */}
+            {/* The actual hero content, which will be revealed */}
             <div className="relative h-full">
                 <div className="absolute inset-0">
                     <Image
@@ -52,12 +57,12 @@ export default function HeroSection() {
                 </div>
 
                 <div className="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
-                    {/* The content fades in after the mask animation is gone */}
+                    {/* The content fades in after the zoom animation is gone */}
                     <motion.div
                         className="space-y-6 md:space-y-8"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: animationComplete ? 1 : 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
+                        transition={{ duration: 0.8, delay: 2.5 }} // Delay matches the zoom animation
                     >
                         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight">
                             Welcome to evntos, Host Events Effortlessly
