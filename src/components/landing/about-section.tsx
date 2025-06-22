@@ -97,9 +97,6 @@ export default function AboutSection() {
           <p className="text-3xl md:text-4xl font-bold font-headline">
             Powering Connections, One Event at a Time
           </p>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Evntos was born from a passion for bringing people together. We believe that well-organized events can create lasting memories, foster communities, and drive innovation. Our mission is to provide an intuitive, powerful, and affordable platform for anyone looking to host successful events.
-          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -136,9 +133,6 @@ export default function AboutSection() {
                 </div>
               </div>
             ))}
-            <p className="text-muted-foreground">
-              We are committed to continuous improvement, listening to our users, and building a platform that truly serves the event organizing community.
-            </p>
           </div>
         </div>
       </div>
