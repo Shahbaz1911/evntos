@@ -21,7 +21,7 @@ const splashImages = [
     {
         src: "https://media-alpha-green.vercel.app/evnto/even-5.jpg",
         alt: "Crowd watching a spectacular fireworks display at an outdoor festival.",
-        aiHint: "outdoor festival"
+aiHint: "outdoor festival"
     },
     {
         src: "https://media-alpha-green.vercel.app/evnto/event-3.jpg",
@@ -149,10 +149,27 @@ export default function HeroSection() {
                     >
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10 z-10" />
                         <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
-                            <div className="space-y-6 md:space-y-8">
-                                <svg viewBox="0 0 1000 200" className="w-full">
-                                    <text x="50%" y="50%" className="animated-svg-text">Host Events, Reimagined</text>
-                                </svg>
+                            <div className="space-y-8">
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white text-center drop-shadow-lg leading-tight max-w-4xl mx-auto">
+                                    <span>Where Every </span>
+                                    <span className="relative inline-block px-2">
+                                        <span className="relative z-10">Event</span>
+                                        <svg
+                                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[200%] text-primary z-0"
+                                            viewBox="0 0 180 90"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                            <path
+                                                d="M17.8281 45.1953C17.8281 28.3203 72.8281 -4.67969 90.3281 4.80469C107.828 14.2891 148.828 20.1953 162.328 45.1953C175.828 70.1953 107.828 94.8047 90.3281 85.3203C72.8281 75.8359 -37.1719 62.0703 17.8281 45.1953Z"
+                                                stroke="currentColor"
+                                                strokeWidth="8"
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                    </span>
+                                    <span> Becomes an Experience</span>
+                                </h1>
                                 <div className="flex justify-center">
                                     <Button size="lg" asChild className="bg-white/20 border border-white/50 text-white hover:bg-white/30 backdrop-blur-sm shadow-md">
                                         <Link href="#features">
