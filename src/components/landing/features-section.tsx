@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarCog, Ticket, Users, Share2, BarChart3, QrCode } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useLayoutEffect, useRef } from 'react';
 
 const features = [
   {
@@ -50,127 +51,99 @@ const features = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
 
-const cardVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
-  },
-};
-
-const textVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
-  },
+const FeatureCard = ({ feature }: { feature: (typeof features)[0] }) => {
+  return (
+    <Card className="flex flex-col w-full h-full shadow-lg border-border bg-card p-6">
+      <CardHeader className="items-center text-center p-0 mb-6">
+        <div className={`p-4 rounded-full ${feature.bgColor} mb-4 inline-block`}>
+          <feature.icon className={`w-12 h-12 ${feature.iconColor}`} />
+        </div>
+        <CardTitle className="font-headline text-xl text-card-foreground sm:text-2xl">{feature.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 flex-grow">
+        <CardDescription className="text-center text-card-foreground/80 text-base">{feature.description}</CardDescription>
+      </CardContent>
+    </Card>
+  );
 };
 
 
 export default function FeaturesSection() {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "-25%"]);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(min-width: 768px)", () => {
+      const cards = cardsContainerRef.current;
+      if (!cards || !triggerRef.current) return;
+
+      const pin = gsap.fromTo(
+        cards,
+        { translateX: 0 },
+        {
+          translateX: () => `-${cards.scrollWidth - window.innerWidth}px`,
+          ease: "none",
+          scrollTrigger: {
+            trigger: triggerRef.current,
+            start: "top top",
+            end: () => `+=${cards.scrollWidth - window.innerWidth}`,
+            scrub: 1,
+            pin: true,
+            invalidateOnRefresh: true,
+          },
+        }
+      );
+      
+      return () => {
+        pin.kill();
+      };
+    });
+
+    return () => mm.revert();
+  }, []);
 
   return (
-    <section id="features" ref={ref} className="bg-secondary text-secondary-foreground overflow-hidden">
-      <div className="container mx-auto px-4">
-        <motion.div 
-          className="text-center mb-16"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ staggerChildren: 0.2 }}
-        >
-          <motion.h2 variants={textVariants} className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
+    <section id="features" ref={sectionRef} className="bg-secondary text-secondary-foreground">
+      <div className="container mx-auto px-4 pt-16 md:pt-24">
+        <div className="text-center mb-16">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
             Features
-          </motion.h2>
-          <motion.p variants={textVariants} className="text-3xl md:text-4xl font-bold font-headline text-foreground">
+          </h2>
+          <p className="text-3xl md:text-4xl font-bold font-headline text-foreground">
             Everything You Need for Event Success
-          </motion.p>
-          <motion.p variants={textVariants} className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          </p>
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             Evntos offers a comprehensive suite of features designed to simplify event management and amplify your impact.
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
+      </div>
+      
+      {/* Horizontal scroll section for desktop */}
+      <div ref={triggerRef} className="h-screen hidden md:block overflow-hidden">
+          <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-16">
+              {features.map((feature) => (
+                  <div key={feature.title} className="w-[70vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] h-[60vh] flex-shrink-0">
+                      <FeatureCard feature={feature} />
+                  </div>
+              ))}
+          </div>
+      </div>
 
-        <motion.div style={{ y }}>
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            onMouseLeave={() => setHoveredId(null)}
-          >
-            {features.map((feature, index) => {
-              const isHovered = hoveredId === feature.title;
-              const isDimmed = hoveredId !== null && !isHovered;
-
-              return (
-                <motion.div
-                  key={feature.title}
-                  variants={cardVariants}
-                  className="h-full flex"
-                  onMouseEnter={() => setHoveredId(feature.title)}
-                  animate={{ scale: isHovered ? 1.05 : 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <Card className={`flex flex-col w-full shadow-lg hover:shadow-xl transition-all duration-300 border-border bg-card`}>
-                    <CardHeader className="items-center text-center transition-all duration-300">
-                      <motion.div
-                        className="mb-4 inline-block"
-                        animate={{ y: isDimmed ? -10 : 0 }}
-                      >
-                        <div className={`p-4 rounded-full ${feature.bgColor} inline-block`}>
-                          <feature.icon className={`w-10 h-10 ${feature.iconColor}`} />
-                        </div>
-                      </motion.div>
-                      <CardTitle className="font-headline text-lg text-card-foreground sm:text-xl">{feature.title}</CardTitle>
-                    </CardHeader>
-
-                    <AnimatePresence>
-                      {!isDimmed && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto', flexGrow: 1 }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden flex flex-col"
-                          >
-                            <CardContent className="flex-grow">
-                              <CardDescription className="text-center text-card-foreground/80">{feature.description}</CardDescription>
-                            </CardContent>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </Card>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </motion.div>
+      {/* Vertical grid for mobile */}
+      <div className="md:hidden container mx-auto px-4 pb-16">
+        <div className="grid grid-cols-1 gap-8">
+            {features.map((feature) => (
+                <div key={feature.title}>
+                    <FeatureCard feature={feature} />
+                </div>
+            ))}
+        </div>
       </div>
     </section>
   );
