@@ -44,6 +44,10 @@ export default function HeroSection() {
     const imageRefs = useRef<Array<HTMLDivElement | null>>([]);
     const whiteBgRef = useRef<HTMLDivElement>(null);
 
+    // Refs for the new text animation
+    const eventTextRef = useRef<HTMLSpanElement>(null);
+    const evntosWordRef = useRef<HTMLSpanElement>(null);
+
     useLayoutEffect(() => {
         gsap.registerPlugin(ScrollTrigger);
 
@@ -90,8 +94,25 @@ export default function HeroSection() {
             }
         }
 
+        // New text animation timeline
+        const textAnim = gsap.timeline({
+            repeat: -1,
+            repeatDelay: 2,
+            yoyo: true, // Reverses the animation on each repeat
+        });
+
+        // The animation sequence
+        textAnim.to(eventTextRef.current, {
+            opacity: 0,
+            duration: 0.5,
+        }).to(evntosWordRef.current, {
+            opacity: 1,
+            duration: 0.5,
+        }, "-=0.25"); // Overlap the animations for a smoother transition
+
         return () => {
             ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+            textAnim.kill(); // Kill the new timeline as well
         };
     }, []);
 
@@ -153,23 +174,12 @@ export default function HeroSection() {
                             <div className="space-y-8">
                                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white text-center drop-shadow-lg leading-tight max-w-4xl mx-auto">
                                     <span>Where Every </span>
-                                    <span className="relative inline-block px-2">
-                                        <span className="relative z-10">Event</span>
-                                        <svg
-                                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180%] h-[180%] text-primary z-0"
-                                            viewBox="0 0 100 100"
-                                            fill="none"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                            <circle
-                                                cx="50"
-                                                cy="50"
-                                                r="45"
-                                                stroke="currentColor"
-                                                strokeWidth="5"
-                                                strokeLinecap="round"
-                                            />
-                                        </svg>
+                                     <span className="relative inline-grid place-items-center">
+                                        {/* This span is only for sizing the container and is invisible */}
+                                        <span className="opacity-0 col-start-1 row-start-1 pointer-events-none font-bold">evntos</span>
+                                        {/* These are the animating words */}
+                                        <span ref={eventTextRef} className="col-start-1 row-start-1">Event</span>
+                                        <span ref={evntosWordRef} className="opacity-0 col-start-1 row-start-1 text-primary font-bold">evntos</span>
                                     </span>
                                     <span> Becomes an Experience</span>
                                 </h1>
