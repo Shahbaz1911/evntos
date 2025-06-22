@@ -77,35 +77,29 @@ export default function FeaturesSection() {
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const mm = gsap.matchMedia();
+    const cards = cardsContainerRef.current;
+    if (!cards || !triggerRef.current) return;
 
-    mm.add("(min-width: 768px)", () => {
-      const cards = cardsContainerRef.current;
-      if (!cards || !triggerRef.current) return;
-
-      const pin = gsap.fromTo(
-        cards,
-        { translateX: 0 },
-        {
-          translateX: () => `-${cards.scrollWidth - window.innerWidth}px`,
-          ease: "none",
-          scrollTrigger: {
-            trigger: triggerRef.current,
-            start: "top top",
-            end: () => `+=${cards.scrollWidth - window.innerWidth}`,
-            scrub: 1,
-            pin: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      );
-      
-      return () => {
-        pin.kill();
-      };
-    });
-
-    return () => mm.revert();
+    const pin = gsap.fromTo(
+      cards,
+      { translateX: 0 },
+      {
+        translateX: () => `-${cards.scrollWidth - window.innerWidth}px`,
+        ease: "none",
+        scrollTrigger: {
+          trigger: triggerRef.current,
+          start: "top top",
+          end: () => `+=${cards.scrollWidth - window.innerWidth}`,
+          scrub: 1,
+          pin: true,
+          invalidateOnRefresh: true,
+        },
+      }
+    );
+    
+    return () => {
+      pin.kill();
+    };
   }, []);
 
   return (
@@ -124,26 +118,15 @@ export default function FeaturesSection() {
         </div>
       </div>
       
-      {/* Horizontal scroll section for desktop */}
-      <div ref={triggerRef} className="h-screen hidden md:block overflow-hidden">
-          <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-16">
+      {/* Horizontal scroll section for all devices */}
+      <div ref={triggerRef} className="h-screen overflow-hidden">
+          <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
               {features.map((feature) => (
-                  <div key={feature.title} className="w-[70vw] sm:w-[50vw] md:w-[40vw] lg:w-[30vw] h-[60vh] flex-shrink-0">
+                  <div key={feature.title} className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[30vw] h-[60vh] flex-shrink-0">
                       <FeatureCard feature={feature} />
                   </div>
               ))}
           </div>
-      </div>
-
-      {/* Vertical grid for mobile */}
-      <div className="md:hidden container mx-auto px-4 pb-16">
-        <div className="grid grid-cols-1 gap-8">
-            {features.map((feature) => (
-                <div key={feature.title}>
-                    <FeatureCard feature={feature} />
-                </div>
-            ))}
-        </div>
       </div>
     </section>
   );
