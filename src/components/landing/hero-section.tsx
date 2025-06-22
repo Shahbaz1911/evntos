@@ -28,8 +28,8 @@ export default function HeroSection() {
                             className="text-6xl md:text-8xl lg:text-9xl font-bold font-headline text-white"
                             style={{ mixBlendMode: 'screen' }}
                             initial={{ scale: 1 }}
-                            animate={{ scale: 50, opacity: [1, 1, 0] }}
-                            transition={{ duration: 2.5, ease: 'easeIn', times: [0, 0.9, 1] }}
+                            animate={{ scale: 50 }}
+                            transition={{ duration: 2.5, ease: 'easeIn' }}
                         >
                             evntos
                         </motion.h1>
@@ -57,7 +57,7 @@ export default function HeroSection() {
                         className="space-y-6 md:space-y-8"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: animationComplete ? 1 : 0 }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
                     >
                         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight">
                             Welcome to evntos, Host Events Effortlessly
