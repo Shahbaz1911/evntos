@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
@@ -15,21 +14,20 @@ export default function HeroSection() {
         offset: ['start start', 'end start'] // Animate over the first viewport height
     });
 
-    const scale = useTransform(scrollYProgress, [0, 1], [1, 50]);
-    const opacity = useTransform(scrollYProgress, [0.95, 1], [1, 0]); // Fade out the mask at the end
-
-    const heroContentOpacity = useTransform(scrollYProgress, [0.8, 1], [0, 1]);
-    const heroContentY = useTransform(scrollYProgress, [0.8, 1], ["2rem", "0rem"]);
+    const heroContentOpacity = useTransform(scrollYProgress, [0.9, 1], [0, 1]);
+    const heroContentY = useTransform(scrollYProgress, [0.9, 1], ["2rem", "0rem"]);
+    const textScale = useTransform(scrollYProgress, [0, 0.8], [1, 50]);
+    const textOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
 
     return (
-        <section ref={heroRef} className="relative h-[200vh] bg-black">
+        <section ref={heroRef} className="relative h-[200vh] bg-black -mt-16">
             <div className="sticky top-0 h-screen flex flex-col items-center justify-center">
                 {/* The masked content */}
                 <div
                     className="absolute inset-0"
                     style={{
-                        maskImage: 'url(#evntos-mask-2)',
-                        WebkitMaskImage: 'url(#evntos-mask-2)',
+                        maskImage: 'url(#evntos-mask)',
+                        WebkitMaskImage: 'url(#evntos-mask)',
                         maskSize: 'auto',
                         WebkitMaskSize: 'auto',
                         maskRepeat: 'no-repeat',
@@ -55,7 +53,7 @@ export default function HeroSection() {
                             className="space-y-6 md:space-y-8"
                         >
                             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight drop-shadow-lg">
-                                Host Events Effortlessly
+                                Host Events, Reimagined
                             </h1>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">
@@ -75,19 +73,19 @@ export default function HeroSection() {
 
                 {/* The black background and the text that will be the mask */}
                 <motion.div
-                    style={{ opacity }}
+                    style={{ opacity: textOpacity }}
                     className="absolute inset-0 bg-black flex items-center justify-center"
                 >
                     <svg width="0" height="0" className="absolute">
                         <defs>
-                            <mask id="evntos-mask-2">
+                            <mask id="evntos-mask">
                                 <rect width="100%" height="100%" fill="white" />
                                 <motion.text
                                     x="50%"
                                     y="50%"
                                     dy="0.35em"
                                     textAnchor="middle"
-                                    style={{ scale }}
+                                    style={{ scale: textScale }}
                                     className="text-6xl md:text-9xl font-bold font-headline fill-black"
                                 >
                                     evntos
@@ -96,7 +94,7 @@ export default function HeroSection() {
                         </defs>
                     </svg>
                     <motion.h1 
-                        style={{ scale }}
+                        style={{ scale: textScale }}
                         className="text-white text-6xl md:text-9xl font-bold font-headline"
                     >
                         evntos
