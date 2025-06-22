@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLayoutEffect, useRef } from 'react';
@@ -10,27 +11,27 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const splashImages = [
     {
-        src: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070",
+        src: "https://media-alpha-green.vercel.app/evnto/event.jpg",
         alt: "Vibrant outdoor social event with people relaxing by a pool.",
         aiHint: "social event"
     },
     {
-        src: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070",
+        src: "https://media-alpha-green.vercel.app/evnto/event-1.jpg",
         alt: "Group of friends celebrating at a dinner party with festive lights.",
         aiHint: "event celebration"
     },
     {
-        src: "https://images.unsplash.com/photo-1519751061734-7b49e1c3135c?q=80&w=2070",
+        src: "https://media-alpha-green.vercel.app/evnto/even-5.jpg",
         alt: "Crowd watching a spectacular fireworks display at an outdoor festival.",
         aiHint: "outdoor festival"
     },
     {
-        src: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=2070",
+        src: "https://media-alpha-green.vercel.app/evnto/event-3.jpg",
         alt: "A speaker on stage giving a presentation at a large conference.",
         aiHint: "conference presentation"
     },
     {
-        src: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070",
+        src: "https://media-alpha-green.vercel.app/evnto/event-6.jpg",
         alt: "An engaged audience sitting in a dark theater, lit by the stage.",
         aiHint: "event audience"
     }
@@ -112,6 +113,8 @@ export default function HeroSection() {
                     
                     {/* Splash Images Container */}
                     <div className="absolute inset-0 w-full h-full z-10">
+                        {/* Add a black background to prevent flashes during transitions */}
+                        <div className="absolute inset-0 bg-black" />
                         {splashImages.map((image, index) => (
                            <div
                                 key={image.src}

@@ -319,24 +319,32 @@ export default function Header() {
       .filter(el => el !== null) as HTMLElement[];
   
     const handleScroll = () => {
-      const activationPoint = window.innerHeight * 0.4;
       let currentSectionId = '';
-
-      // Loop from the last section upwards
-      for (let i = sectionElements.length - 1; i >= 0; i--) {
-        const section = sectionElements[i];
-        const rect = section.getBoundingClientRect();
   
-        // If the section's top has passed the activation point (is at or above it)
-        if (rect.top <= activationPoint) {
+      for (const section of sectionElements) {
+        const rect = section.getBoundingClientRect();
+        // Check if the section is in the upper part of the viewport
+        if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
           currentSectionId = section.id;
-          break; // We found the topmost section that fits the criteria
+          break;
         }
       }
 
-      // If we've scrolled back to the top and no section is past the activation point, default to hero
-      if (!currentSectionId && window.scrollY < activationPoint) {
-        currentSectionId = 'hero';
+      // If no section is in the middle (e.g., at the very top or bottom), check which is closest to the top
+      if (!currentSectionId) {
+        let closestSection: HTMLElement | null = null;
+        let smallestDistance = Infinity;
+        for (const section of sectionElements) {
+            const rect = section.getBoundingClientRect();
+            const distance = Math.abs(rect.top);
+            if (distance < smallestDistance) {
+                smallestDistance = distance;
+                closestSection = section;
+            }
+        }
+        if (closestSection) {
+            currentSectionId = closestSection.id;
+        }
       }
       
       if (lastActiveSection.current !== currentSectionId) {
@@ -529,7 +537,12 @@ export default function Header() {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[80vw] max-w-sm p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
+              <SheetContent
+                side="right"
+                className="w-full p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex flex-col"
+                data-sidebar="sidebar"
+                data-mobile="true"
+              >
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">Main navigation links for the application.</SheetDescription>
                 <MobileSidebarContent activeSection={activeSection} />
