@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useLayoutEffect, useRef } from 'react';
@@ -113,8 +112,16 @@ export default function HeroSection() {
                     
                     {/* Splash Images Container */}
                     <div className="absolute inset-0 w-full h-full z-10">
-                        {/* Add a black background to prevent flashes during transitions */}
-                        <div className="absolute inset-0 bg-black" />
+                        {/* Static background image to prevent flashes and provide a base layer */}
+                        <Image
+                            src={splashImages[0].src}
+                            alt={splashImages[0].alt}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                            priority
+                            className="z-0"
+                            data-ai-hint={splashImages[0].aiHint}
+                        />
                         {splashImages.map((image, index) => (
                            <div
                                 key={image.src}
