@@ -560,7 +560,7 @@ export default function Header() {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[80vw] max-w-sm h-full p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
+              <SheetContent side="right" className="w-[80vw] max-w-sm p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
                 <MobileSidebarContent activeSection={activeSection} commonNavLinks={commonNavLinks} />
               </SheetContent>
             </Sheet>
