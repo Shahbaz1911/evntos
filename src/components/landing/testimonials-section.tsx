@@ -94,7 +94,6 @@ function TestimonialCard({ testimonial }: { testimonial: (typeof testimonials)[0
 
 
 export default function TestimonialsSection() {
-    const sectionRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLDivElement>(null);
     const cardsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +101,8 @@ export default function TestimonialsSection() {
         gsap.registerPlugin(ScrollTrigger);
 
         const cards = cardsContainerRef.current;
-        if (!cards || !triggerRef.current) return;
+        const trigger = triggerRef.current;
+        if (!cards || !trigger) return;
 
         const pin = gsap.fromTo(
             cards,
@@ -111,7 +111,7 @@ export default function TestimonialsSection() {
                 translateX: () => `-${cards.scrollWidth - window.innerWidth}px`,
                 ease: "none",
                 scrollTrigger: {
-                    trigger: triggerRef.current,
+                    trigger: trigger,
                     start: "top top",
                     end: () => `+=${cards.scrollWidth - window.innerWidth}`,
                     scrub: 1,
@@ -127,28 +127,30 @@ export default function TestimonialsSection() {
     }, []);
 
   return (
-    <section id="testimonials" ref={sectionRef} className="bg-background text-foreground">
-        <div className="container mx-auto px-4 pt-16 md:pt-24">
-            <div className="text-center mb-8">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
-                    Testimonials
-                </h2>
-                <p className="text-3xl md:text-4xl font-bold font-headline">
-                    Loved by Organizers Worldwide
-                </p>
-                <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Hear what our users have to say about their experience with Evntos.
-                </p>
+    <section id="testimonials" className="bg-background text-foreground">
+        <div ref={triggerRef} className="overflow-hidden">
+            <div className="container mx-auto px-4 pt-16 md:pt-24">
+                <div className="text-center mb-8">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
+                        Testimonials
+                    </h2>
+                    <p className="text-3xl md:text-4xl font-bold font-headline">
+                        Loved by Organizers Worldwide
+                    </p>
+                    <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+                        Hear what our users have to say about their experience with Evntos.
+                    </p>
+                </div>
             </div>
-        </div>
       
-        <div ref={triggerRef} className="h-[70vh] md:h-screen overflow-hidden">
-            <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
-                {testimonials.map((testimonial, index) => (
-                    <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-[60vh] max-w-[500px] flex-shrink-0">
-                        <TestimonialCard testimonial={testimonial} />
-                    </div>
-                ))}
+            <div className="h-[70vh] flex items-center">
+                <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
+                    {testimonials.map((testimonial, index) => (
+                        <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-[60vh] max-w-[500px] flex-shrink-0">
+                            <TestimonialCard testimonial={testimonial} />
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     </section>
