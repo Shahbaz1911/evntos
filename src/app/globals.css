@@ -100,11 +100,11 @@ body {
 .animated-svg-text {
   font-family: 'Inter', sans-serif;
   font-weight: 800; /* Extra-bold for impact */
-  font-size: 6rem; /* Base size */
+  font-size: 8rem; /* Base size */
   stroke: white;
   stroke-width: 1;
-  stroke-dasharray: 900;
-  stroke-dashoffset: 900;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
   animation: draw 4s ease-in-out forwards, fill 2s ease-in-out 2.5s forwards;
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
 }
@@ -133,16 +133,16 @@ body {
 /* Responsive font sizes for the SVG text */
 @media (max-width: 1024px) {
   .animated-svg-text {
-    font-size: 5rem;
+    font-size: 6.5rem;
   }
 }
 @media (max-width: 768px) {
   .animated-svg-text {
-    font-size: 4rem;
+    font-size: 5rem;
   }
 }
 @media (max-width: 480px) {
   .animated-svg-text {
-    font-size: 2.8rem;
+    font-size: 3.5rem;
   }
 }
