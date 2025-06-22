@@ -3,7 +3,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -151,15 +150,10 @@ export default function HeroSection() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10 z-10" />
                         <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
                             <div className="space-y-6 md:space-y-8">
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight drop-shadow-lg">
-                                    Host Events, Reimagined
-                                </h1>
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">
-                                        <Link href="/signup">
-                                        Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
-                                        </Link>
-                                    </Button>
+                                <svg viewBox="0 0 1000 200" className="w-full">
+                                    <text x="50%" y="50%" className="animated-svg-text">Host Events, Reimagined</text>
+                                </svg>
+                                <div className="flex justify-center">
                                     <Button size="lg" asChild className="bg-white/20 border border-white/50 text-white hover:bg-white/30 backdrop-blur-sm shadow-md">
                                         <Link href="#features">
                                         Learn More
