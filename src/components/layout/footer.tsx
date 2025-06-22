@@ -3,10 +3,13 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Facebook, Twitter, Instagram, Linkedin, Rss } from 'lucide-react'; // Using Rss for blog as placeholder
-import { useEffect } from 'react';
+import { Facebook, Twitter, Instagram, Linkedin, Rss } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Footer() {
+  const footerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     // Calculate footer height and set as CSS variable
@@ -15,6 +18,30 @@ export default function Footer() {
       const footerHeight = footerElement.offsetHeight;
       document.documentElement.style.setProperty('--footer-height', `${footerHeight}px`);
     }
+  }, []);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+    
+    const ctx = gsap.context(() => {
+      // Set the initial state (hidden)
+      gsap.set(footerRef.current, { y: 100, opacity: 0 });
+
+      // Create the animation
+      gsap.to(footerRef.current, {
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: "top bottom", // Starts when the top of the footer hits the bottom of the viewport
+          end: "center bottom", // Animation completes when the center of the footer hits the bottom
+          scrub: 1, // Smoothly animates with scroll
+        },
+        y: 0,
+        opacity: 1,
+        ease: "power3.out",
+      });
+    }, footerRef);
+
+    return () => ctx.revert(); // Cleanup GSAP animations
   }, []);
 
 
@@ -55,7 +82,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-card text-card-foreground border-t border-border mt-auto">
+    <footer ref={footerRef} className="bg-card text-card-foreground border-t border-border mt-auto">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand and Social */}
