@@ -104,4 +104,21 @@ body {
   .animate-marquee-y {
     animation: marquee-y var(--marquee-duration, 30s) linear infinite;
   }
+
+  @keyframes fill-up {
+    from {
+      background-position: 0 100%;
+    }
+    to {
+      background-position: 0 0;
+    }
+  }
+  .animate-text-fill-up {
+    background-image: linear-gradient(to top, hsl(var(--primary)) 50%, hsl(var(--muted-foreground) / 0.6) 50%);
+    background-size: 100% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: fill-up 2s ease-in-out infinite alternate;
+  }
 }

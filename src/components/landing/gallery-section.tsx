@@ -6,15 +6,15 @@ import { cn } from '@/lib/utils';
 import type { ComponentProps } from 'react';
 
 const images = [
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-conference.jpg', alt: 'A speaker at a large conference hall', aiHint: 'conference event' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-music.jpg', alt: 'A musician playing guitar on a dimly lit stage', aiHint: 'music concert' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-wedding.jpg', alt: 'An elegant outdoor wedding reception dinner setup', aiHint: 'wedding reception' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-networking.jpg', alt: 'Professionals networking at a corporate event', aiHint: 'networking business' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-party.jpg', alt: 'A lively party with people dancing under colorful lights', aiHint: 'dance party' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-art.jpg', alt: 'People admiring artwork in a modern gallery exhibition', aiHint: 'art gallery' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-food.jpg', alt: 'A gourmet food festival with various food stalls', aiHint: 'food festival' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-outdoor.jpg', alt: 'An outdoor movie screening in a park at night', aiHint: 'outdoor screening' },
-  { src: 'https://media-alpha-green.vercel.app/evnto/event-charity.jpg', alt: 'Volunteers participating in a charity run event', aiHint: 'charity run' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal.jpg', alt: 'A speaker at a large conference hall', aiHint: 'conference event' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-2.jpg', alt: 'A musician playing guitar on a dimly lit stage', aiHint: 'music concert' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-3.jpg', alt: 'An elegant outdoor wedding reception dinner setup', aiHint: 'wedding reception' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/event-4.jpg', alt: 'Professionals networking at a corporate event', aiHint: 'networking business' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-5.jpg', alt: 'A lively party with people dancing under colorful lights', aiHint: 'dance party' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-6.jpg', alt: 'People admiring artwork in a modern gallery exhibition', aiHint: 'art gallery' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/event-2.jpg', alt: 'A gourmet food festival with various food stalls', aiHint: 'food festival' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-7.jpg', alt: 'An outdoor movie screening in a park at night', aiHint: 'outdoor screening' },
+  { src: 'https://media-alpha-green.vercel.app/evnto/gal-4.jpg', alt: 'Volunteers participating in a charity run event', aiHint: 'charity run' },
 ];
 
 interface GalleryColumnProps extends ComponentProps<'div'> {
