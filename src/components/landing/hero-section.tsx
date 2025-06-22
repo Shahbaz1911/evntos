@@ -20,7 +20,7 @@ export default function HeroSection() {
     const textOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
 
     return (
-        <section ref={heroRef} className="relative h-[200vh] bg-black -mt-16">
+        <section ref={heroRef} className="relative h-[200vh] bg-background -mt-16">
             <div className="sticky top-0 h-screen flex flex-col items-center justify-center">
                 {/* The masked content */}
                 <div
@@ -71,10 +71,10 @@ export default function HeroSection() {
                     </div>
                 </div>
 
-                {/* The black background and the text that will be the mask */}
+                {/* The white background and the text that will be the mask */}
                 <motion.div
                     style={{ opacity: textOpacity }}
-                    className="absolute inset-0 bg-black flex items-center justify-center"
+                    className="absolute inset-0 bg-background flex items-center justify-center"
                 >
                     <svg width="0" height="0" className="absolute">
                         <defs>
@@ -95,7 +95,7 @@ export default function HeroSection() {
                     </svg>
                     <motion.h1 
                         style={{ scale: textScale }}
-                        className="text-white text-6xl md:text-9xl font-bold font-headline"
+                        className="text-primary text-6xl md:text-9xl font-bold font-headline"
                     >
                         evntos
                     </motion.h1>
