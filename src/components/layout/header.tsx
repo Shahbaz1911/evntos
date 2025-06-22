@@ -65,9 +65,8 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
           data-active={isActive}
           onClick={onClick}
         >
-          <Link href={href} className="flex items-center justify-between w-full">
+          <Link href={href} className="flex items-center justify-center w-full">
              <span className="flex items-center gap-2">{children}</span>
-             <ArrowRight className={cn("h-4 w-4 shrink-0 text-primary transition-opacity duration-300", isActive ? "opacity-100" : "opacity-0")} />
           </Link>
         </Button>
       );
@@ -184,7 +183,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
         </>
       )}
       
-      <nav className="flex-grow p-4 space-y-1">
+      <nav className="flex-grow p-4 space-y-2 flex flex-col justify-center">
         {loading ? (
           <div className="space-y-2">
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
@@ -193,17 +192,17 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
           </div>
         ) : user ? (
           <>
-            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
+            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} className="w-full justify-center text-lg py-4" isMobile>
               <LayoutDashboard className="mr-2 h-5 w-5"/>My Dashboard
             </NavLink>
-            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
+            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} className="w-full justify-center text-lg py-4" isMobile>
               <CalendarPlus className="mr-2 h-5 w-5"/>Create Event
             </NavLink>
-            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
+            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-center text-lg py-4" isMobile>
               <QrCode className="mr-2 h-5 w-5"/>Scan Dashboard
             </NavLink>
             {!isAdmin && userSubscriptionStatus === 'none' && (
-                <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-start text-base py-3 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
+                <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-center text-lg py-4 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
                     <CreditCard className="mr-2 h-5 w-5"/> View Plans
                 </NavLink>
             )}
@@ -212,7 +211,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             commonNavLinks.map(link => {
               const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
               return (
-                <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
+                <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-center text-lg py-4" isMobile>
                   <link.icon className="mr-2 h-5 w-5" /> {link.label}
                 </NavLink>
               );
@@ -231,10 +230,10 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             </Button>
         ) : (
           <div className="flex flex-col gap-2">
-            <Button asChild variant="ghost" className="w-full text-accent hover:text-accent hover:bg-accent/10 text-base py-3" onClick={closeMobileMenu}>
+            <Button asChild variant="ghost" className="w-full text-accent hover:text-accent hover:bg-accent/10 text-lg py-4" onClick={closeMobileMenu}>
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild variant="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3" onClick={closeMobileMenu}>
+            <Button asChild variant="default" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-4" onClick={closeMobileMenu}>
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>
