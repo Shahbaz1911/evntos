@@ -5,10 +5,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useRouter, usePathname } from 'next/navigation';
 import { User, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import LoadingSpinner from '@/components/loading-spinner';
 import type { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email-flow';
+import PreLoader from '@/components/pre-loader';
 
 const ADMIN_EMAIL = "sk@gmail.com";
 
@@ -187,11 +187,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const isPublicPage = PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix));
   
-  if (loading || userSubscriptionStatus === 'loading' && !isPublicPage) {
+  if (loading || (userSubscriptionStatus === 'loading' && !isPublicPage)) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-background">
-        <LoadingSpinner size={48} />
-      </div>
+      <PreLoader />
     );
   }
 
