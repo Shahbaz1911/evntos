@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLayoutEffect, useRef } from 'react';
@@ -155,15 +156,17 @@ export default function HeroSection() {
                                     <span className="relative inline-block px-2">
                                         <span className="relative z-10">Event</span>
                                         <svg
-                                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[200%] text-primary z-0"
-                                            viewBox="0 0 180 90"
+                                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180%] h-[180%] text-primary z-0"
+                                            viewBox="0 0 100 100"
                                             fill="none"
                                             xmlns="http://www.w3.org/2000/svg"
                                             >
-                                            <path
-                                                d="M17.8281 45.1953C17.8281 28.3203 72.8281 -4.67969 90.3281 4.80469C107.828 14.2891 148.828 20.1953 162.328 45.1953C175.828 70.1953 107.828 94.8047 90.3281 85.3203C72.8281 75.8359 -37.1719 62.0703 17.8281 45.1953Z"
+                                            <circle
+                                                cx="50"
+                                                cy="50"
+                                                r="45"
                                                 stroke="currentColor"
-                                                strokeWidth="8"
+                                                strokeWidth="5"
                                                 strokeLinecap="round"
                                             />
                                         </svg>
