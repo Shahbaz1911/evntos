@@ -275,6 +275,7 @@ export default function Header() {
   const [activeSection, setActiveSection] = useState('');
   const isHomePage = pathname === '/';
   const [showHeader, setShowHeader] = useState(!isHomePage);
+  const lastActiveSection = useRef('');
   
 
   useEffect(() => {
@@ -337,8 +338,11 @@ export default function Header() {
       if (!currentSectionId && window.scrollY < activationPoint) {
         currentSectionId = 'hero';
       }
-  
-      setActiveSection(currentSectionId);
+      
+      if (lastActiveSection.current !== currentSectionId) {
+        lastActiveSection.current = currentSectionId;
+        setActiveSection(currentSectionId);
+      }
     };
   
     handleScroll();
@@ -526,6 +530,8 @@ export default function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[80vw] max-w-sm p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Main navigation links for the application.</SheetDescription>
                 <MobileSidebarContent activeSection={activeSection} />
               </SheetContent>
             </Sheet>
