@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -22,17 +22,15 @@ export default function HeroSection() {
                     <motion.div
                         key="animation-overlay"
                         className="absolute inset-0 z-50 flex items-center justify-center bg-black"
-                        exit={{ opacity: 0 }} // This will make the black screen fade out
-                        transition={{ duration: 0.5 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5, delay: 2.5 }}
                     >
                         <motion.h1
                             className="text-6xl md:text-8xl lg:text-9xl font-bold font-headline text-primary"
-                            style={{ mixBlendMode: 'screen' }}
                             initial={{ scale: 1 }}
                             animate={{ scale: 50 }}
                             transition={{ duration: 2.5, ease: 'easeIn' }}
                             onAnimationComplete={() => {
-                                // Once text zoom is done, start removing the overlay
                                 setAnimationComplete(true);
                             }}
                         >
@@ -43,7 +41,12 @@ export default function HeroSection() {
             </AnimatePresence>
 
             {/* The actual hero content, which will be revealed */}
-            <div className="relative h-full">
+            <motion.div
+                className="relative h-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: animationComplete ? 1 : 0 }}
+                transition={{ duration: 0.8 }}
+            >
                 <div className="absolute inset-0">
                     <Image
                       src={heroImage.src}
@@ -67,9 +70,6 @@ export default function HeroSection() {
                         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight">
                             Welcome to evntos, Host Events Effortlessly
                         </h1>
-                        <p className="mt-4 text-lg md:text-xl text-white/90 max-w-xl mx-auto">
-                            Evntos provides the tools you need to create, promote, and manage any event with ease.
-                        </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform">
                               <Link href="/signup">
@@ -84,7 +84,7 @@ export default function HeroSection() {
                         </div>
                     </motion.div>
                 </div>
-            </div>
+            </motion.div>
         </section>
     );
 }
