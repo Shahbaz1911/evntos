@@ -539,7 +539,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full p-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex flex-col"
+                className="w-full p-0 bg-background flex flex-col"
                 data-sidebar="sidebar"
                 data-mobile="true"
               >
