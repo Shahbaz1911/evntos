@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef } from 'react';
@@ -11,30 +12,34 @@ export default function HeroSection() {
     const heroRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({
         target: heroRef,
-        offset: ['start start', 'end start'] // Animate over the first viewport height
+        offset: ['start start', 'end start']
     });
 
-    const heroContentOpacity = useTransform(scrollYProgress, [0.9, 1], [0, 1]);
-    const heroContentY = useTransform(scrollYProgress, [0.9, 1], ["2rem", "0rem"]);
-    const textScale = useTransform(scrollYProgress, [0, 0.8], [1, 50]);
-    const textOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0]);
+    // Text animation for the first 40% of the scroll
+    const textScale = useTransform(scrollYProgress, [0, 0.4], [1, 50]);
+    // Fade out text between 40% and 50%
+    const textOpacity = useTransform(scrollYProgress, [0.4, 0.5], [1, 0]);
+
+    // Fade in hero content between 50% and 70%
+    const heroContentOpacity = useTransform(scrollYProgress, [0.5, 0.7], [0, 1]);
 
     return (
-        <section ref={heroRef} className="relative h-[200vh] bg-background -mt-16">
-            <div className="sticky top-0 h-screen flex flex-col items-center justify-center">
-                {/* The masked content */}
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        maskImage: 'url(#evntos-mask)',
-                        WebkitMaskImage: 'url(#evntos-mask)',
-                        maskSize: 'auto',
-                        WebkitMaskSize: 'auto',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskRepeat: 'no-repeat',
-                        maskPosition: 'center',
-                        WebkitMaskPosition: 'center',
-                    }}
+        <section ref={heroRef} className="relative h-[200vh] bg-background">
+            <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
+                {/* The Intro Text */}
+                <motion.div
+                    style={{ opacity: textOpacity, scale: textScale }}
+                    className="absolute inset-0 flex items-center justify-center"
+                >
+                    <h1 className="text-primary text-6xl md:text-9xl font-bold font-headline">
+                        evntos
+                    </h1>
+                </motion.div>
+
+                {/* The Hero Content */}
+                <motion.div 
+                    style={{ opacity: heroContentOpacity }}
+                    className="absolute inset-0 w-full h-full"
                 >
                     <Image
                         src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZXN0aXZhbCUyMGNyb3dkfGVufDB8fHx8MTc1MjI2MjM4OXww&ixlib=rb-4.1.0&q=80&w=1080"
@@ -42,16 +47,12 @@ export default function HeroSection() {
                         fill
                         style={{ objectFit: 'cover' }}
                         priority
+                        className="z-0"
                         data-ai-hint="festival crowd"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
-
-                     {/* Final revealed content with fade-in */}
-                    <div className="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
-                        <motion.div 
-                            style={{ opacity: heroContentOpacity, y: heroContentY }}
-                            className="space-y-6 md:space-y-8"
-                        >
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/10 z-10" />
+                    <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-center items-center text-center text-white">
+                        <div className="space-y-6 md:space-y-8">
                             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold font-headline leading-tight drop-shadow-lg">
                                 Host Events, Reimagined
                             </h1>
@@ -67,38 +68,8 @@ export default function HeroSection() {
                                     </Link>
                                 </Button>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
-                </div>
-
-                {/* The white background and the text that will be the mask */}
-                <motion.div
-                    style={{ opacity: textOpacity }}
-                    className="absolute inset-0 bg-background flex items-center justify-center"
-                >
-                    <svg width="0" height="0" className="absolute">
-                        <defs>
-                            <mask id="evntos-mask">
-                                <rect width="100%" height="100%" fill="white" />
-                                <motion.text
-                                    x="50%"
-                                    y="50%"
-                                    dy="0.35em"
-                                    textAnchor="middle"
-                                    style={{ scale: textScale }}
-                                    className="text-6xl md:text-9xl font-bold font-headline fill-black"
-                                >
-                                    evntos
-                                </motion.text>
-                            </mask>
-                        </defs>
-                    </svg>
-                    <motion.h1 
-                        style={{ scale: textScale }}
-                        className="text-primary text-6xl md:text-9xl font-bold font-headline"
-                    >
-                        evntos
-                    </motion.h1>
                 </motion.div>
             </div>
         </section>
