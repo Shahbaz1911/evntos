@@ -181,7 +181,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
         </>
       )}
       
-      <nav className="flex-grow p-4 space-y-3 flex flex-col">
+      <nav className="p-4 space-y-3 flex flex-col">
         {loading ? (
           <div className="space-y-2">
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
@@ -536,7 +536,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full p-0 bg-background flex flex-col"
+                className="w-full p-0 bg-card flex flex-col"
                 data-sidebar="sidebar"
                 data-mobile="true"
               >
