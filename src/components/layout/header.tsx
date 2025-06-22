@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Menu, X, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -144,11 +144,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 
   return (
     <>
-      <div className="flex justify-between items-center p-4 border-b">
-        <Link href="/" className="text-xl font-bold text-primary" onClick={closeMobileMenu}>
-          evntos
-        </Link>
-      </div>
+      <div className="pt-4" />
 
       {user && (
         <>
