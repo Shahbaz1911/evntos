@@ -11,19 +11,19 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const splashImages = [
     {
-        src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmZXN0aXZhbCUyMGNyb3dkfGVufDB8fHx8MTc1MjI2MjM4OXww&ixlib=rb-4.1.0&q=80&w=1080",
-        alt: "A vibrant festival crowd enjoying a concert",
-        aiHint: "festival crowd"
+        src: "https://images.unsplash.com/photo-1604328702803-011fce1a238e?q=80&w=2070",
+        alt: "Empty chairs in a bright, modern conference room with a white background.",
+        aiHint: "conference room"
     },
     {
-        src: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb25jZXJ0fGVufDB8fHx8MTc1MjI2ODg4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-        alt: "A concert with bright lights and a cheering audience",
-        aiHint: "concert lights"
+        src: "https://images.unsplash.com/photo-1543269664-7e94994d9812?q=80&w=2070",
+        alt: "Two colleagues having a discussion in a bright, sunlit workspace.",
+        aiHint: "business meeting"
     },
     {
-        src: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxldmVudCUyMG11c2ljfGVufDB8fHx8MTc1MjI2ODkyNXww&ixlib=rb-4.1.0&q=80&w=1080",
-        alt: "People dancing and enjoying a music event outdoors",
-        aiHint: "music event"
+        src: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=2070",
+        alt: "A person presenting on stage at a modern, well-lit event.",
+        aiHint: "stage presentation"
     }
 ];
 
@@ -79,7 +79,7 @@ export default function HeroSection() {
     }, []);
 
     return (
-        <section ref={sectionRef} id="hero" className="relative h-auto bg-background">
+        <section ref={sectionRef} id="hero" className="relative h-auto bg-background -mt-[var(--header-height,0px)]">
             <div ref={triggerRef} className="h-screen w-full">
                 <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden">
 
