@@ -95,3 +95,13 @@ body {
     @apply py-16 md:py-24;
   }
 }
+
+@layer utilities {
+  @keyframes marquee-y {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+  .animate-marquee-y {
+    animation: marquee-y var(--marquee-duration, 30s) linear infinite;
+  }
+}
