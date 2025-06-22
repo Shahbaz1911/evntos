@@ -247,6 +247,37 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
   );
 };
 
+const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
+    <div className="relative w-6 h-5 flex flex-col justify-between">
+      <motion.span
+        className="block h-[2px] w-full bg-foreground rounded-full"
+        variants={{
+          open: { rotate: 45, y: 5 },
+          closed: { rotate: 0, y: 0 },
+        }}
+        animate={open ? 'open' : 'closed'}
+        transition={{ duration: 0.3 }}
+      />
+      <motion.span
+        className="block h-[2px] w-full bg-foreground rounded-full"
+        variants={{
+          open: { opacity: 0 },
+          closed: { opacity: 1 },
+        }}
+        animate={open ? 'open' : 'closed'}
+        transition={{ duration: 0.3 }}
+      />
+      <motion.span
+        className="block h-[2px] w-full bg-foreground rounded-full"
+        variants={{
+          open: { rotate: -45, y: -5 },
+          closed: { rotate: 0, y: 0 },
+        }}
+        animate={open ? 'open' : 'closed'}
+        transition={{ duration: 0.3 }}
+      />
+    </div>
+  );
 
 export default function Header() {
   const { user, logOut, loading, isAdmin, userSubscriptionStatus } = useAuth();
@@ -529,11 +560,11 @@ export default function Header() {
             <Sheet open={openMobile} onOpenChange={setOpenMobile}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <MoreVertical />
+                  <AnimatedHamburgerIcon open={openMobile} />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="top" className="h-full p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
+              <SheetContent side="right" className="w-[80vw] max-w-sm h-full p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
                 <MobileSidebarContent activeSection={activeSection} commonNavLinks={commonNavLinks} />
               </SheetContent>
             </Sheet>
