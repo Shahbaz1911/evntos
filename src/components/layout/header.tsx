@@ -254,8 +254,8 @@ export default function Header() {
   const router = useRouter();
   const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
-  const { toast } = useToast();
-  const [showHeader, setShowHeader] = useState(pathname !== '/');
+  const isHomePage = pathname === '/';
+  const [showHeader, setShowHeader] = useState(!isHomePage);
   
 
   useEffect(() => {
@@ -267,7 +267,7 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    if (pathname !== '/') {
+    if (!isHomePage) {
         setShowHeader(true);
         return;
     }
@@ -289,7 +289,7 @@ export default function Header() {
     return () => {
         window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname]);
+  }, [isHomePage]);
   
 
   const commonNavLinks = [
@@ -302,7 +302,7 @@ export default function Header() {
   ];
 
   useEffect(() => {
-    if (typeof window === 'undefined' || pathname !== '/') return;
+    if (typeof window === 'undefined' || !isHomePage) return;
 
     let initialSectionId = '';
     if (window.location.hash && window.location.hash !== '#') {
@@ -347,7 +347,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname]);
+  }, [isHomePage]);
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -371,8 +371,9 @@ export default function Header() {
 
   return (
     <header className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+        "top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
         "transition-all duration-300 ease-in-out",
+        isHomePage ? 'fixed' : 'sticky',
         showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'
     )}>
       <div className="container mx-auto px-4">
