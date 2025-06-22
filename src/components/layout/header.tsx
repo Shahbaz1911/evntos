@@ -313,44 +313,38 @@ export default function Header() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isHomePage) return;
-
+  
     const sectionElements = commonNavLinks
       .map(link => document.getElementById(link.id))
       .filter(el => el !== null) as HTMLElement[];
-
-    // This function will be called on scroll
+  
     const handleScroll = () => {
-      // Set the activation point to be slightly above the vertical center of the viewport
-      const activationPoint = window.innerHeight * 0.4;
-      let currentSectionId = '';
-
-      // Check which section is in view
-      for (const section of sectionElements) {
+      const activationPoint = window.innerHeight * 0.5; // Use 50% for a more centered feel
+      let currentSectionId = 'hero'; // Default to hero for the top of the page
+  
+      // Loop from the last section upwards
+      for (let i = sectionElements.length - 1; i >= 0; i--) {
+        const section = sectionElements[i];
         const sectionTop = section.offsetTop;
-        // If the top of the section is above the activation point, it's a candidate
+  
+        // If the section's top is above the activation point, it's our current section
         if (window.scrollY >= sectionTop - activationPoint) {
           currentSectionId = section.id;
+          break; // Exit the loop once the active section is found
         }
       }
-      
-      // A special check for the bottom of the page. If we are very close to the bottom,
-      // force the last section to be active. This handles cases where the last section is too short.
-      const bottomReached = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 50);
-      if (bottomReached && sectionElements.length > 0) {
-        currentSectionId = sectionElements[sectionElements.length - 1].id;
-      }
-
+  
       setActiveSection(currentSectionId);
     };
-
+  
     // Set initial active section on page load
-    handleScroll(); 
-
+    handleScroll();
+  
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isHomePage, commonNavLinks]);
+  }, [isHomePage]); // Removed commonNavLinks from dependencies as it's a stable object
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
