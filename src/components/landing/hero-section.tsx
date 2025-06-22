@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useLayoutEffect, useRef } from 'react';
@@ -11,19 +10,29 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const splashImages = [
     {
-        src: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=2070",
-        alt: "Professionals collaborating in a modern, bright office space.",
-        aiHint: "team collaboration"
+        src: "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070",
+        alt: "Vibrant outdoor social event with people relaxing by a pool.",
+        aiHint: "social event"
     },
     {
-        src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=2070",
-        alt: "A large crowd at a music concert with their hands in the air.",
-        aiHint: "event crowd"
+        src: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070",
+        alt: "Group of friends celebrating at a dinner party with festive lights.",
+        aiHint: "event celebration"
     },
     {
-        src: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=2070",
-        alt: "A person presenting on stage at a modern, well-lit event.",
-        aiHint: "stage presentation"
+        src: "https://images.unsplash.com/photo-1519751061734-7b49e1c3135c?q=80&w=2070",
+        alt: "Crowd watching a spectacular fireworks display at an outdoor festival.",
+        aiHint: "outdoor festival"
+    },
+    {
+        src: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=2070",
+        alt: "A speaker on stage giving a presentation at a large conference.",
+        aiHint: "conference presentation"
+    },
+    {
+        src: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070",
+        alt: "An engaged audience sitting in a dark theater, lit by the stage.",
+        aiHint: "event audience"
     }
 ];
 
@@ -41,7 +50,7 @@ export default function HeroSection() {
             scrollTrigger: {
                 trigger: triggerRef.current,
                 start: "top top",
-                end: "+=200%", // Pin for the height of 2 viewports
+                end: "+=400%", // Pin for the height of 4 viewports (for 5 images)
                 scrub: 1,
                 pin: true,
             }
@@ -65,12 +74,12 @@ export default function HeroSection() {
         // Animation for image transitions
         const images = imageRefs.current.filter(el => el !== null) as HTMLDivElement[];
         if (images.length > 1) {
-            pin.to(images[0], { opacity: 0 }, 1);
-            pin.to(images[1], { opacity: 1 }, 1);
-        }
-        if (images.length > 2) {
-            pin.to(images[1], { opacity: 0 }, 2);
-            pin.to(images[2], { opacity: 1 }, 2);
+            // Start transitions from the second image
+            for (let i = 1; i < images.length; i++) {
+                const position = i; // Position in the timeline
+                pin.to(images[i - 1], { opacity: 0 }, position); // Fade out previous image
+                pin.to(images[i], { opacity: 1 }, position);   // Fade in current image
+            }
         }
 
         return () => {
