@@ -11,9 +11,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const splashImages = [
     {
-        src: "https://images.unsplash.com/photo-1604328702803-011fce1a238e?q=80&w=2070",
-        alt: "Empty chairs in a bright, modern conference room with a white background.",
-        aiHint: "conference room"
+        src: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=2070",
+        alt: "Professionals collaborating in a modern, bright office space.",
+        aiHint: "team collaboration"
     },
     {
         src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=2070",
