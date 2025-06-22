@@ -26,6 +26,15 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
+// Moved commonNavLinks outside the component to prevent re-creation on every render.
+const commonNavLinks = [
+    { href: "/#hero", label: "Home", id: "hero", icon: Home },
+    { href: "/#features", label: "Features", id: "features", icon: Zap },
+    { href: "/#about", label: "About", id: "about", icon: Info },
+    { href: "/#pricing", label: "Pricing", id: "pricing", icon: DollarSign },
+    { href: "/#testimonials", label: "Testimonials", id: "testimonials", icon: Star },
+    { href: "/#faq", label: "FAQ", id: "faq", icon: HelpCircle },
+];
 
 interface NavLinkProps {
   href: string;
@@ -94,7 +103,7 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
   };
 
 
-const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection: string; commonNavLinks: Array<{ href: string; label: string; id: string; icon: React.ElementType }> }) => {
+const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
   const { user, logOut, loading, isAdmin, userSubscriptionStatus } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -301,16 +310,6 @@ export default function Header() {
     };
   }, [isHomePage]);
   
-
-  const commonNavLinks = [
-    { href: "/#hero", label: "Home", id: "hero", icon: Home },
-    { href: "/#features", label: "Features", id: "features", icon: Zap },
-    { href: "/#about", label: "About", id: "about", icon: Info },
-    { href: "/#pricing", label: "Pricing", id: "pricing", icon: DollarSign },
-    { href: "/#testimonials", label: "Testimonials", id: "testimonials", icon: Star },
-    { href: "/#faq", label: "FAQ", id: "faq", icon: HelpCircle },
-  ];
-
   useEffect(() => {
     if (typeof window === 'undefined' || !isHomePage) return;
   
@@ -319,32 +318,37 @@ export default function Header() {
       .filter(el => el !== null) as HTMLElement[];
   
     const handleScroll = () => {
-      const activationPoint = window.innerHeight * 0.5; // Use 50% for a more centered feel
-      let currentSectionId = 'hero'; // Default to hero for the top of the page
-  
+      const activationPoint = window.innerHeight * 0.4;
+      let currentSectionId = '';
+
       // Loop from the last section upwards
       for (let i = sectionElements.length - 1; i >= 0; i--) {
         const section = sectionElements[i];
-        const sectionTop = section.offsetTop;
+        const rect = section.getBoundingClientRect();
   
-        // If the section's top is above the activation point, it's our current section
-        if (window.scrollY >= sectionTop - activationPoint) {
+        // If the section's top has passed the activation point (is at or above it)
+        if (rect.top <= activationPoint) {
           currentSectionId = section.id;
-          break; // Exit the loop once the active section is found
+          break; // We found the topmost section that fits the criteria
         }
+      }
+
+      // If we've scrolled back to the top and no section is past the activation point, default to hero
+      if (!currentSectionId && window.scrollY < activationPoint) {
+        currentSectionId = 'hero';
       }
   
       setActiveSection(currentSectionId);
     };
   
-    // Set initial active section on page load
     handleScroll();
   
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isHomePage]); // Removed commonNavLinks from dependencies as it's a stable object
+  }, [isHomePage]);
+
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -522,7 +526,7 @@ export default function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[80vw] max-w-sm p-0 bg-background flex flex-col" data-sidebar="sidebar" data-mobile="true">
-                <MobileSidebarContent activeSection={activeSection} commonNavLinks={commonNavLinks} />
+                <MobileSidebarContent activeSection={activeSection} />
               </SheetContent>
             </Sheet>
           </div>
