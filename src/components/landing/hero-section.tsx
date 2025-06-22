@@ -16,9 +16,9 @@ const splashImages = [
         aiHint: "conference room"
     },
     {
-        src: "https://images.unsplash.com/photo-1543269664-7e94994d9812?q=80&w=2070",
-        alt: "Two colleagues having a discussion in a bright, sunlit workspace.",
-        aiHint: "business meeting"
+        src: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=2070",
+        alt: "A large crowd at a music concert with their hands in the air.",
+        aiHint: "event crowd"
     },
     {
         src: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=2070",
@@ -79,7 +79,7 @@ export default function HeroSection() {
     }, []);
 
     return (
-        <section ref={sectionRef} id="hero" className="relative h-auto bg-background -mt-[var(--header-height,0px)]">
+        <section ref={sectionRef} id="hero" className="relative h-auto -mt-[var(--header-height,0px)]">
             <div ref={triggerRef} className="h-screen w-full">
                 <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden">
 
