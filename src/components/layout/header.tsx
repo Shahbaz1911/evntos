@@ -244,30 +244,21 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
 };
 
 const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
-    <div className="relative w-6 h-5 flex flex-col justify-between">
+    <div className="relative w-6 h-5 flex flex-col justify-center items-center">
       <motion.span
-        className="block h-[2px] w-full bg-foreground rounded-full"
+        className="absolute block h-[2px] w-full bg-foreground rounded-full"
         variants={{
-          open: { rotate: 45, y: 5 },
-          closed: { rotate: 0, y: 0 },
+          open: { rotate: 45 },
+          closed: { rotate: 0, y: -3 },
         }}
         animate={open ? 'open' : 'closed'}
         transition={{ duration: 0.3 }}
       />
       <motion.span
-        className="block h-[2px] w-full bg-foreground rounded-full"
+        className="absolute block h-[2px] w-full bg-foreground rounded-full"
         variants={{
-          open: { opacity: 0 },
-          closed: { opacity: 1 },
-        }}
-        animate={open ? 'open' : 'closed'}
-        transition={{ duration: 0.3 }}
-      />
-      <motion.span
-        className="block h-[2px] w-full bg-foreground rounded-full"
-        variants={{
-          open: { rotate: -45, y: -5 },
-          closed: { rotate: 0, y: 0 },
+          open: { rotate: -45 },
+          closed: { rotate: 0, y: 3 },
         }}
         animate={open ? 'open' : 'closed'}
         transition={{ duration: 0.3 }}
