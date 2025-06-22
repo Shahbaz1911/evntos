@@ -79,7 +79,7 @@ export default function HeroSection() {
     }, []);
 
     return (
-        <section ref={sectionRef} id="hero" className="relative h-auto bg-background">
+        <section ref={sectionRef} id="hero" className="relative h-auto bg-background -mt-16">
             <div ref={triggerRef} className="h-screen w-full">
                 <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden">
 
