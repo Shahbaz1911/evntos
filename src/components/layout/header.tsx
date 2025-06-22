@@ -100,6 +100,7 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
   const router = useRouter();
   const { setOpenMobile } = useSidebar(); 
   const { toast } = useToast();
+  const isHomePage = pathname === '/';
 
   const closeMobileMenu = () => setOpenMobile(false);
 
@@ -200,21 +201,12 @@ const MobileSidebarContent = ({ activeSection, commonNavLinks }: { activeSection
           </>
         ) : (
             commonNavLinks.map(link => {
-            let isLinkActive = false;
-            if (pathname === '/') {
-                if (activeSection) {
-                isLinkActive = activeSection === link.id;
-                } else if (link.id === commonNavLinks[0].id) {
-                isLinkActive = true;
-                }
-            } else {
-                isLinkActive = pathname === link.href;
-            }
-            return (
-              <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
-                <link.icon className="mr-2 h-5 w-5" /> {link.label}
-              </NavLink>
-            );
+              const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
+              return (
+                <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-start text-base py-3" isMobile>
+                  <link.icon className="mr-2 h-5 w-5" /> {link.label}
+                </NavLink>
+              );
             })
         )}
       </nav>
@@ -322,50 +314,43 @@ export default function Header() {
   useEffect(() => {
     if (typeof window === 'undefined' || !isHomePage) return;
 
-    let initialSectionId = '';
-    if (window.location.hash && window.location.hash !== '#') {
-        initialSectionId = window.location.hash.substring(1);
-    } else if (commonNavLinks.length > 0) {
-        initialSectionId = commonNavLinks[0].id;
-    }
-    setActiveSection(initialSectionId);
-
     const sectionElements = commonNavLinks
       .map(link => document.getElementById(link.id))
       .filter(el => el !== null) as HTMLElement[];
 
+    // This function will be called on scroll
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const activationPoint = 100; 
-      let newActiveSectionId = '';
+      // Set the activation point to be slightly above the vertical center of the viewport
+      const activationPoint = window.innerHeight * 0.4;
+      let currentSectionId = '';
 
-      for (let i = sectionElements.length - 1; i >= 0; i--) {
-        const section = sectionElements[i];
-        if (section.offsetTop <= scrollY + activationPoint) {
-          newActiveSectionId = section.id;
-          break;
+      // Check which section is in view
+      for (const section of sectionElements) {
+        const sectionTop = section.offsetTop;
+        // If the top of the section is above the activation point, it's a candidate
+        if (window.scrollY >= sectionTop - activationPoint) {
+          currentSectionId = section.id;
         }
       }
-
-      if (!newActiveSectionId && scrollY < activationPoint && sectionElements.length > 0) {
-        newActiveSectionId = sectionElements[0].id;
-      }
       
-      const bottomReached = window.innerHeight + scrollY >= document.body.offsetHeight - 50;
+      // A special check for the bottom of the page. If we are very close to the bottom,
+      // force the last section to be active. This handles cases where the last section is too short.
+      const bottomReached = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 50);
       if (bottomReached && sectionElements.length > 0) {
-         newActiveSectionId = sectionElements[sectionElements.length - 1].id;
+        currentSectionId = sectionElements[sectionElements.length - 1].id;
       }
 
-      setActiveSection(newActiveSectionId);
+      setActiveSection(currentSectionId);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Set initial active section on page load
     handleScroll(); 
 
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isHomePage]);
+  }, [isHomePage, commonNavLinks]);
 
   const getInitials = (email?: string | null) => {
     if (!email) return 'U';
@@ -424,16 +409,7 @@ export default function Header() {
                   </>
                 ) : (
                   commonNavLinks.map((link, index) => {
-                    let isLinkActive = false;
-                    if (pathname === '/') { 
-                      if (activeSection) {
-                        isLinkActive = activeSection === link.id;
-                      } else if (link.id === commonNavLinks[0].id) { 
-                        isLinkActive = true;
-                      }
-                    } else {
-                      isLinkActive = pathname === link.href; 
-                    }
+                    const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
                     return (
                       <React.Fragment key={link.href}>
                         <NavLink href={link.href} isActive={isLinkActive}>
