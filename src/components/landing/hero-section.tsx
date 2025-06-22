@@ -42,6 +42,7 @@ export default function HeroSection() {
     const evntosTextRef = useRef<HTMLHeadingElement>(null);
     const heroContentRef = useRef<HTMLDivElement>(null);
     const imageRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const whiteBgRef = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
         gsap.registerPlugin(ScrollTrigger);
@@ -50,7 +51,7 @@ export default function HeroSection() {
             scrollTrigger: {
                 trigger: triggerRef.current,
                 start: "top top",
-                end: "+=400%", // Pin for the height of 4 viewports (for 5 images)
+                end: "+=500%", // Adjusted for the extra animation step
                 scrub: 1,
                 pin: true,
             }
@@ -62,6 +63,12 @@ export default function HeroSection() {
             opacity: 0,
             ease: "power2.in",
         }, 0);
+        
+        // At the same time, fade out the initial white background
+        pin.to(whiteBgRef.current, {
+            opacity: 0,
+            ease: "power1.inOut",
+        }, "<");
 
         // Animation for hero content fading in as text fades out
         pin.fromTo(heroContentRef.current, {
@@ -69,14 +76,15 @@ export default function HeroSection() {
         }, {
             opacity: 1,
             ease: "power1.inOut",
-        }, "<0.2"); // Start slightly after text animation begins
+        }, "<0.5");
 
         // Animation for image transitions
         const images = imageRefs.current.filter(el => el !== null) as HTMLDivElement[];
         if (images.length > 1) {
             // Start transitions from the second image
             for (let i = 1; i < images.length; i++) {
-                const position = i; // Position in the timeline
+                // Add an offset to account for the initial fade-in duration
+                const position = i + 0.5;
                 pin.to(images[i - 1], { opacity: 0 }, position); // Fade out previous image
                 pin.to(images[i], { opacity: 1 }, position);   // Fade in current image
             }
@@ -91,16 +99,19 @@ export default function HeroSection() {
         <section ref={sectionRef} id="hero" className="relative h-auto -mt-[var(--header-height,0px)]">
             <div ref={triggerRef} className="h-screen w-full">
                 <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+                    
+                    {/* The initial white background */}
+                    <div ref={whiteBgRef} className="absolute inset-0 bg-background z-40" />
 
                     {/* The Intro Text */}
-                    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                    <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
                         <h1 ref={evntosTextRef} className="text-primary text-6xl md:text-9xl font-bold font-headline">
                             evntos
                         </h1>
                     </div>
                     
                     {/* Splash Images Container */}
-                    <div className="absolute inset-0 w-full h-full z-0">
+                    <div className="absolute inset-0 w-full h-full z-10">
                         {splashImages.map((image, index) => (
                            <div
                                 key={image.src}
