@@ -129,7 +129,7 @@ export default function TestimonialsSection() {
   return (
     <section id="testimonials" ref={sectionRef} className="bg-background text-foreground">
         <div className="container mx-auto px-4 pt-16 md:pt-24">
-            <div className="text-center mb-16">
+            <div className="text-center mb-8">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
                     Testimonials
                 </h2>
