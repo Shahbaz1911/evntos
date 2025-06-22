@@ -255,7 +255,7 @@ export default function Header() {
   const { openMobile, setOpenMobile } = useSidebar(); 
   const [activeSection, setActiveSection] = useState('');
   const { toast } = useToast();
-  const [isHeroAnimationActive, setIsHeroAnimationActive] = useState(pathname === '/');
+  const [showHeader, setShowHeader] = useState(pathname !== '/');
   
 
   useEffect(() => {
@@ -267,17 +267,28 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    // This state controls the initial visibility of the header on the homepage.
-    // It is timed to match the splash screen animation in hero-section.tsx.
-    if (pathname === '/') {
-      setIsHeroAnimationActive(true);
-      const timer = setTimeout(() => {
-        setIsHeroAnimationActive(false);
-      }, 2500); // This duration should match the hero splash screen
-      return () => clearTimeout(timer);
-    } else {
-      setIsHeroAnimationActive(false);
+    if (pathname !== '/') {
+        setShowHeader(true);
+        return;
     }
+
+    const handleScroll = () => {
+        // Show header after scrolling past 90% of the first screen height
+        if (window.scrollY > window.innerHeight * 0.9) {
+            setShowHeader(true);
+        } else {
+            setShowHeader(false);
+        }
+    };
+
+    // Initial check in case of page refresh at a scrolled position
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+    };
   }, [pathname]);
   
 
@@ -361,8 +372,8 @@ export default function Header() {
   return (
     <header className={cn(
         "sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
-        isHeroAnimationActive ? 'opacity-0' : 'opacity-100',
-        'transition-opacity duration-500'
+        "transition-all duration-300 ease-in-out",
+        showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'
     )}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
