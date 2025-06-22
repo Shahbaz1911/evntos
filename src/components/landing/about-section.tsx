@@ -57,7 +57,7 @@ export default function AboutSection() {
       </div>
       
       {/* The trigger for the pinning and horizontal scroll */}
-      <div ref={triggerRef} className="h-[150vh] relative">
+      <div ref={triggerRef} className="h-[150vh] relative bg-background">
           <div className="sticky top-1/2 -translate-y-1/2 flex items-center overflow-hidden">
               <div ref={textRef} className="flex items-center whitespace-nowrap pl-4">
                   <h3 className="text-6xl md:text-8xl font-bold font-headline text-foreground/80 pr-16">
