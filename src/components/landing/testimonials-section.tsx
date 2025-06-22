@@ -142,7 +142,7 @@ export default function TestimonialsSection() {
             </div>
         </div>
       
-        <div ref={triggerRef} className="h-screen overflow-hidden">
+        <div ref={triggerRef} className="h-[70vh] md:h-screen overflow-hidden">
             <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
                 {testimonials.map((testimonial, index) => (
                     <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-[60vh] max-w-[500px] flex-shrink-0">
