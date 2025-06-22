@@ -128,29 +128,27 @@ export default function TestimonialsSection() {
 
   return (
     <section id="testimonials" className="bg-background text-foreground">
-        <div ref={triggerRef} className="overflow-hidden">
-            <div className="container mx-auto px-4 pt-16 md:pt-24">
-                <div className="text-center mb-8">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
-                        Testimonials
-                    </h2>
-                    <p className="text-3xl md:text-4xl font-bold font-headline">
-                        Loved by Organizers Worldwide
-                    </p>
-                    <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                        Hear what our users have to say about their experience with Evntos.
-                    </p>
-                </div>
+        <div className="container mx-auto px-4 pt-16 md:pt-24">
+            <div className="text-center mb-16">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
+                    Testimonials
+                </h2>
+                <p className="text-3xl md:text-4xl font-bold font-headline">
+                    Loved by Organizers Worldwide
+                </p>
+                <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Hear what our users have to say about their experience with Evntos.
+                </p>
             </div>
+        </div>
       
-            <div className="h-[70vh] flex items-center">
-                <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
-                    {testimonials.map((testimonial, index) => (
-                        <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-[60vh] max-w-[500px] flex-shrink-0">
-                            <TestimonialCard testimonial={testimonial} />
-                        </div>
-                    ))}
-                </div>
+        <div ref={triggerRef} className="h-screen overflow-x-clip">
+            <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
+                {testimonials.map((testimonial, index) => (
+                    <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-auto max-w-[500px] flex-shrink-0">
+                        <TestimonialCard testimonial={testimonial} />
+                    </div>
+                ))}
             </div>
         </div>
     </section>
