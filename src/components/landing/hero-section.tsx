@@ -25,7 +25,17 @@ const splashImages = [
 aiHint: "outdoor festival"
     },
     {
-        src: "https://media-alpha-green.vercel.app/evnto/event-3.jpg",
+        src: "https://media-alpha-green.vercel.app/evnto/gal-6.jpg",
+        alt: "A speaker on stage giving a presentation at a large conference.",
+        aiHint: "conference presentation"
+    },
+    {
+        src: "https://media-alpha-green.vercel.app/evnto/gal-7.jpg",
+        alt: "A speaker on stage giving a presentation at a large conference.",
+        aiHint: "conference presentation"
+    },
+    {
+        src: "https://media-alpha-green.vercel.app/evnto/gal-4.jpg",
         alt: "A speaker on stage giving a presentation at a large conference.",
         aiHint: "conference presentation"
     },
