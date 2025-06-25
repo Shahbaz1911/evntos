@@ -57,14 +57,14 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
           asChild
           className={cn(
             baseClasses,
-            'w-full justify-center text-2xl py-6',
+            'w-full justify-start text-2xl py-6',
             isActive ? activeClasses : mobileInactiveClasses,
             className
           )}
           data-active={isActive}
           onClick={onClick}
         >
-          <Link href={href} className="flex items-center justify-center w-full">
+          <Link href={href} className="flex items-center justify-start w-full">
              <span className="flex items-center gap-2">{children}</span>
           </Link>
         </Button>
