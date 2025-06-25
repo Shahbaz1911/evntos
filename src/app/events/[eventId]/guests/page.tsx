@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEvents } from '@/context/EventContext';
@@ -9,11 +9,12 @@ import GuestListItem from '@/components/guest-list-item';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Users, FileText } from 'lucide-react';
+import { ArrowLeft, Users, FileText, Search } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 // import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 export default function GuestListPage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function GuestListPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (authLoading || eventContextLoading) {
@@ -64,6 +66,15 @@ export default function GuestListPage() {
     }
     setIsLoading(false);
   }, [eventId, getEventById, getRegistrationsByEventId, authUser, authLoading, eventContextLoading, router, toast]);
+
+  const filteredRegistrations = useMemo(() => {
+    if (!searchQuery) return registrations;
+    return registrations.filter(
+      (reg) =>
+        reg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        reg.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [registrations, searchQuery]);
 
   const downloadGuestListCSV = () => {
     if (!event || registrations.length === 0) return;
@@ -139,14 +150,27 @@ export default function GuestListPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {registrations.length === 0 ? (
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
+            
+            {filteredRegistrations.length === 0 ? (
               <div className="text-center py-10">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg text-muted-foreground">No guests have registered yet.</p>
+                <p className="text-lg text-muted-foreground">
+                  {searchQuery ? "No guests found matching your search." : "No guests have registered yet."}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {registrations.map((reg) => (
+                {filteredRegistrations.map((reg) => (
                   <GuestListItem key={reg.id} registration={reg} />
                 ))}
               </div>

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, Eye, Trash2, Share2 } from 'lucide-react';
+import { ArrowLeft, Eye, Trash2, Share2, Users } from 'lucide-react';
 import type { Event } from '@/types';
 // import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
@@ -176,6 +176,11 @@ export default function EditEventPage() {
                 <CardDescription>Update your event details and manage settings.</CardDescription>
               </div>
               <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/events/${event.id}/guests`}>
+                    <Users className="mr-2 h-4 w-4" /> View Guests
+                  </Link>
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="mr-2 h-4 w-4" /> Share Link
                 </Button>
