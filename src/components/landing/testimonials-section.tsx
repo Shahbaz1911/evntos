@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -91,7 +92,7 @@ function TestimonialCard({ testimonial }: { testimonial: (typeof testimonials)[0
 
 export default function TestimonialsSection() {
   return (
-    <section id="testimonials" className="bg-background text-foreground">
+    <section id="testimonials" className="bg-background text-foreground relative z-20">
         <div className="container mx-auto px-4 pt-16 md:pt-24">
             <div className="text-center mb-16">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">

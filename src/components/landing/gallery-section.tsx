@@ -83,7 +83,7 @@ export default function GallerySection() {
   images.forEach((image, i) => cols[i % numCols].push(image));
 
   return (
-    <section id="gallery" className="bg-secondary text-secondary-foreground overflow-hidden">
+    <section id="gallery" className="bg-secondary text-secondary-foreground overflow-hidden relative z-30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">

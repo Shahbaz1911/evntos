@@ -114,7 +114,7 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="bg-background text-foreground overflow-x-clip">
+    <section id="pricing" className="bg-background text-foreground overflow-x-clip relative z-10">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary mb-2">
