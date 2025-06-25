@@ -5,9 +5,6 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useLayoutEffect, useRef } from 'react';
 
 const testimonials = [
   {
@@ -59,7 +56,7 @@ const testimonials = [
 
 function TestimonialCard({ testimonial }: { testimonial: (typeof testimonials)[0] }) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col border-border bg-card h-full">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col border-border bg-card h-full min-h-[300px]">
       <CardContent className="p-6 flex-grow flex flex-col">
         <div className="flex items-center mb-2">
           {[...Array(5)].map((_, i) => (
@@ -94,38 +91,6 @@ function TestimonialCard({ testimonial }: { testimonial: (typeof testimonials)[0
 
 
 export default function TestimonialsSection() {
-    const triggerRef = useRef<HTMLDivElement>(null);
-    const cardsContainerRef = useRef<HTMLDivElement>(null);
-
-    useLayoutEffect(() => {
-        gsap.registerPlugin(ScrollTrigger);
-
-        const cards = cardsContainerRef.current;
-        const trigger = triggerRef.current;
-        if (!cards || !trigger) return;
-
-        const pin = gsap.fromTo(
-            cards,
-            { translateX: 0 },
-            {
-                translateX: () => `-${cards.scrollWidth - window.innerWidth}px`,
-                ease: "none",
-                scrollTrigger: {
-                    trigger: trigger,
-                    start: "top top",
-                    end: () => `+=${cards.scrollWidth - window.innerWidth}`,
-                    scrub: 1,
-                    pin: true,
-                    invalidateOnRefresh: true,
-                },
-            }
-        );
-        
-        return () => {
-            pin.kill();
-        };
-    }, []);
-
   return (
     <section id="testimonials" className="bg-background text-foreground">
         <div className="container mx-auto px-4 pt-16 md:pt-24">
@@ -142,14 +107,24 @@ export default function TestimonialsSection() {
             </div>
         </div>
       
-        <div ref={triggerRef} className="h-screen overflow-x-clip">
-            <div ref={cardsContainerRef} className="w-max h-full flex items-center gap-8 px-8 sm:px-12 md:px-16">
-                {testimonials.map((testimonial, index) => (
-                    <div key={index} className="w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] h-auto max-w-[500px] flex-shrink-0">
-                        <TestimonialCard testimonial={testimonial} />
-                    </div>
-                ))}
+        <div className="relative" style={{ height: '200vh' }}>
+          {testimonials.map((testimonial, index) => (
+            <div
+              key={testimonial.name}
+              className="sticky w-full max-w-2xl mx-auto px-4"
+              style={{
+                top: `calc(15vh + ${index * 60}px)`,
+                zIndex: index + 1,
+              }}
+            >
+              <div
+                className="w-full transition-transform duration-300 ease-in-out"
+                style={{ transform: `scale(${1 - (testimonials.length - 1 - index) * 0.05})` }}
+              >
+                <TestimonialCard testimonial={testimonial} />
+              </div>
             </div>
+          ))}
         </div>
     </section>
   );
