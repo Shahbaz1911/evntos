@@ -1,3 +1,4 @@
+
 "use client";
 
 import { gsap } from 'gsap';
@@ -21,16 +22,26 @@ export default function AboutSection() {
 
     // Only apply animation if text is wider than the viewport
     if (amountToScroll > 0) {
-      const tween = gsap.to(textElement, {
+      const tween = gsap.timeline();
+
+      // Horizontal scroll animation
+      tween.to(textElement, {
         x: -amountToScroll,
         duration: 3,
         ease: "none",
       });
+      
+      // Color fill animation
+      tween.to(textElement, {
+        '--text-fill-progress': 1,
+        duration: 3,
+        ease: "none",
+      }, 0); // Start at the same time as horizontal scroll
 
       ScrollTrigger.create({
         trigger: triggerElement,
         start: "center center",
-        end: `+=${amountToScroll}`,
+        end: `+=${amountToScroll * 1.5}`, // Extend the scroll duration
         pin: true,
         scrub: 1,
         animation: tween,
@@ -57,16 +68,16 @@ export default function AboutSection() {
       </div>
       
       {/* The trigger for the pinning and horizontal scroll */}
-      <div ref={triggerRef} className="h-[150vh] relative bg-background">
+      <div ref={triggerRef} className="h-[200vh] relative bg-background">
           <div className="sticky top-1/2 -translate-y-1/2 flex items-center overflow-hidden">
-              <div ref={textRef} className="flex items-center whitespace-nowrap pl-4">
-                  <h3 className="text-6xl md:text-8xl font-bold font-headline text-foreground/80 pr-16">
+              <div ref={textRef} className="flex items-center whitespace-nowrap pl-4 text-fill-scroll" style={{'--text-fill-progress': 0} as React.CSSProperties}>
+                  <h3 className="text-6xl md:text-8xl font-bold font-headline pr-16">
                       We believe in the power of connection,
                   </h3>
-                  <h3 className="text-6xl md:text-8xl font-bold font-headline text-primary pr-16">
+                  <h3 className="text-6xl md:text-8xl font-bold font-headline pr-16">
                       the magic of shared experiences,
                   </h3>
-                  <h3 className="text-6xl md:text-8xl font-bold font-headline text-foreground/80">
+                  <h3 className="text-6xl md:text-8xl font-bold font-headline">
                       and the simplicity of technology to bring people together.
                   </h3>
               </div>

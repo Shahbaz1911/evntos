@@ -121,4 +121,14 @@ body {
     color: transparent;
     animation: fill-up 2s ease-in-out infinite alternate;
   }
+  .text-fill-scroll {
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    /* Gradient goes from primary color to the default foreground text color */
+    background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary)) 50%, hsl(var(--foreground) / 0.8) 50%);
+    background-size: 200% 100%;
+    /* The CSS variable --text-fill-progress will be animated from 0 to 1 by GSAP */
+    background-position-x: calc(100% - (var(--text-fill-progress, 0) * 100%));
+  }
 }
