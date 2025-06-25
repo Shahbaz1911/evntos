@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow to send a welcome email to new users.
@@ -42,8 +43,7 @@ const sendWelcomeEmailFlow = ai.defineFlow(
     }
 
     const resend = new Resend(resendApiKey);
-    // IMPORTANT: Replace 'onboarding@resend.dev' with an email from YOUR VERIFIED Resend domain for production.
-    const fromEmail = 'Evntos Welcome <onboarding@resend.dev>'; 
+    const fromEmail = 'Evntos Welcome <welcome@evntosupdates.oursblogs24.com>'; 
     const userName = input.userName || 'New User';
     const appBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'; // Fallback for local dev
 

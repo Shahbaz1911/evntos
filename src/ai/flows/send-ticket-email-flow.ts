@@ -308,8 +308,7 @@ const sendTicketEmailFlow = ai.defineFlow(
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const filename = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
 
-      // IMPORTANT: Replace 'onboarding@resend.dev' with an email from YOUR VERIFIED Resend domain for production.
-      const fromEmail = 'Evntos Tickets <onboarding@resend.dev>'; 
+      const fromEmail = 'Evntos Tickets <tickets@evntosupdates.oursblogs24.com>'; 
 
       const { data, error } = await resend.emails.send({
         from: fromEmail,
