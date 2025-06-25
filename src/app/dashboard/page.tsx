@@ -5,27 +5,34 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import EventCard from '@/components/event-card';
 import { useEvents } from '@/context/EventContext';
-import { PlusCircle, CalendarX2 } from 'lucide-react';
-// import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
+import { PlusCircle, CalendarX2, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/loading-spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import type { Event } from '@/types';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Input } from '@/components/ui/input';
 
 export default function DashboardPage() {
   const { events, contextLoading } = useEvents();
   const { user: authUser, loading: authLoading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const userEvents = useMemo(() => {
     if (!authUser || !events) return [];
     return events.filter(event => event.userId === authUser.uid);
   }, [events, authUser]);
 
+  const filteredEvents = useMemo(() => {
+    if (!searchQuery) return userEvents;
+    return userEvents.filter(event =>
+      event.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [userEvents, searchQuery]);
+
   const isLoading = contextLoading || authLoading;
 
   return (
-    // <AuthGuard>  Removed page-level AuthGuard
       <div className="space-y-8 container mx-auto px-4 py-8">
         <Card className="shadow-md border border-border">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -58,13 +65,36 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
+          <div>
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search for an event by title..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full md:w-1/2 lg:w-1/3"
+              />
+            </div>
+            {filteredEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <Card className="shadow-md border border-border">
+                <CardContent className="py-12 flex flex-col items-center text-center">
+                  <Search className="mx-auto h-20 w-20 text-muted-foreground mb-6" />
+                  <h2 className="text-2xl font-semibold mb-2">No Events Found</h2>
+                  <p className="text-muted-foreground">
+                    Your search for "{searchQuery}" did not match any of your events.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>
-    // </AuthGuard> Removed page-level AuthGuard
   );
 }
