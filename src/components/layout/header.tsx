@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical, Users
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -58,14 +58,14 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
           asChild
           className={cn(
             baseClasses,
-            'gap-2',
+            'w-full justify-start text-xl py-4',
             isActive ? activeClasses : mobileInactiveClasses,
             className
           )}
           data-active={isActive}
           onClick={onClick}
         >
-          <Link href={href} className="flex items-center justify-center w-full">
+          <Link href={href} className="flex items-center justify-start w-full">
              <span className="flex items-center gap-2">{children}</span>
           </Link>
         </Button>
@@ -181,7 +181,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
         </>
       )}
       
-      <nav className="flex flex-col p-4">
+      <nav className="flex flex-col p-4 space-y-2">
         {loading ? (
           <div className="space-y-2">
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
@@ -189,14 +189,17 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
           </div>
         ) : user ? (
-          <div className="space-y-2">
-            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
-              <LayoutDashboard className="mr-2 h-5 w-5"/>My Dashboard
+          <>
+            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} isMobile>
+              <LayoutDashboard className="mr-2 h-5 w-5"/>Dashboard
             </NavLink>
-            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
+             <NavLink href="/dashboard" isActive={pathname.includes('/guests')} onClick={closeMobileMenu} isMobile>
+              <Users className="mr-2 h-5 w-5"/>Guests
+            </NavLink>
+            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} isMobile>
               <QrCode className="mr-2 h-5 w-5"/>Scan Tickets
             </NavLink>
-            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
+            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} isMobile>
               <CalendarPlus className="mr-2 h-5 w-5"/>Create Event
             </NavLink>
             {!isAdmin && userSubscriptionStatus === 'none' && (
@@ -204,18 +207,18 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
                     <CreditCard className="mr-2 h-5 w-5"/> View Plans
                 </NavLink>
             )}
-          </div>
+          </>
         ) : (
-          <div className="space-y-2">
+          <>
             {commonNavLinks.map(link => {
                 const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
                 return (
-                  <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
+                  <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} isMobile>
                     <link.icon className="mr-2 h-5 w-5" /> {link.label}
                   </NavLink>
                 );
             })}
-          </div>
+          </>
         )}
       </nav>
       <div className="p-4 border-t mt-auto">
@@ -411,6 +414,11 @@ export default function Header() {
                       Dashboard
                     </NavLink>
                     <Separator orientation="vertical" className="mx-1 h-4 bg-border/70" />
+                    <NavLink href="/dashboard" isActive={pathname.includes('/guests')}>
+                        <Users />
+                        Guests
+                    </NavLink>
+                    <Separator orientation="vertical" className="mx-1 h-4 bg-border/70" />
                     <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"}>
                         <QrCode />
                         Scan Tickets
@@ -475,6 +483,12 @@ export default function Header() {
                      <Link href="/dashboard" className="flex items-center">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Dashboard
+                      </Link>
+                  </DropdownMenuItem>
+                   <DropdownMenuItem asChild className="cursor-pointer">
+                     <Link href="/dashboard" className="flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        Guests
                       </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
@@ -543,7 +557,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full p-0 flex flex-col bg-background/80 backdrop-blur-sm"
+                className="w-full p-0 flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
                 data-sidebar="sidebar"
                 data-mobile="true"
               >
