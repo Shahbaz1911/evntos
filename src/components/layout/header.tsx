@@ -181,7 +181,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
         </>
       )}
       
-      <nav className="p-4 space-y-4 flex flex-col">
+      <nav className="flex flex-col p-4">
         {loading ? (
           <div className="space-y-2">
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
@@ -189,31 +189,33 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
           </div>
         ) : user ? (
-          <>
-            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} className="w-full justify-center text-xl py-6" isMobile>
+          <div className="space-y-2">
+            <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
               <LayoutDashboard className="mr-2 h-5 w-5"/>My Dashboard
             </NavLink>
-            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} className="w-full justify-center text-xl py-6" isMobile>
+            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
+              <QrCode className="mr-2 h-5 w-5"/>Scan Tickets
+            </NavLink>
+            <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
               <CalendarPlus className="mr-2 h-5 w-5"/>Create Event
             </NavLink>
-            <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} className="w-full justify-center text-xl py-6" isMobile>
-              <QrCode className="mr-2 h-5 w-5"/>Scan Dashboard
-            </NavLink>
             {!isAdmin && userSubscriptionStatus === 'none' && (
-                <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-center text-xl py-6 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
+                <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
                     <CreditCard className="mr-2 h-5 w-5"/> View Plans
                 </NavLink>
             )}
-          </>
+          </div>
         ) : (
-            commonNavLinks.map(link => {
-              const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
-              return (
-                <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-center text-xl py-6" isMobile>
-                  <link.icon className="mr-2 h-5 w-5" /> {link.label}
-                </NavLink>
-              );
-            })
+          <div className="space-y-2">
+            {commonNavLinks.map(link => {
+                const isLinkActive = isHomePage ? activeSection === link.id : pathname === link.href;
+                return (
+                  <NavLink key={link.href} href={link.href} isActive={isLinkActive} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4" isMobile>
+                    <link.icon className="mr-2 h-5 w-5" /> {link.label}
+                  </NavLink>
+                );
+            })}
+          </div>
         )}
       </nav>
       <div className="p-4 border-t mt-auto">
@@ -408,6 +410,11 @@ export default function Header() {
                       <LayoutDashboard />
                       Dashboard
                     </NavLink>
+                    <Separator orientation="vertical" className="mx-1 h-4 bg-border/70" />
+                    <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"}>
+                        <QrCode />
+                        Scan Tickets
+                    </NavLink>
                      <Separator orientation="vertical" className="h-4 mx-1 bg-border/70" />
                     <NavLink href="/events/create" isActive={pathname === "/events/create"}>
                       <CalendarPlus/>
@@ -536,7 +543,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full p-0 flex flex-col bg-background/90 backdrop-blur-sm"
+                className="w-full p-0 flex flex-col bg-background/80 backdrop-blur-sm"
                 data-sidebar="sidebar"
                 data-mobile="true"
               >
