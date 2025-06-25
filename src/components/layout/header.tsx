@@ -1,4 +1,3 @@
-
 "use client";
 import * as React from 'react';
 import Link from 'next/link';
@@ -58,14 +57,14 @@ const NavLink = ({ href, children, onClick, isActive, className, isMobile = fals
           asChild
           className={cn(
             baseClasses,
-            'w-full justify-start text-xl py-4',
+            'w-full justify-center text-2xl py-6',
             isActive ? activeClasses : mobileInactiveClasses,
             className
           )}
           data-active={isActive}
           onClick={onClick}
         >
-          <Link href={href} className="flex items-center justify-start w-full">
+          <Link href={href} className="flex items-center justify-center w-full">
              <span className="flex items-center gap-2">{children}</span>
           </Link>
         </Button>
@@ -181,7 +180,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
         </>
       )}
       
-      <nav className="flex flex-col p-4 space-y-2">
+      <nav className="flex flex-col p-4 space-y-4">
         {loading ? (
           <div className="space-y-2">
             <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md"></div>
@@ -193,7 +192,7 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             <NavLink href="/dashboard" isActive={pathname === "/dashboard"} onClick={closeMobileMenu} isMobile>
               <LayoutDashboard className="mr-2 h-5 w-5"/>Dashboard
             </NavLink>
-             <NavLink href="/dashboard" isActive={pathname.includes('/guests')} onClick={closeMobileMenu} isMobile>
+             <NavLink href="/guests" isActive={pathname === '/guests'} onClick={closeMobileMenu} isMobile>
               <Users className="mr-2 h-5 w-5"/>Guests
             </NavLink>
             <NavLink href="/scan-dashboard" isActive={pathname === "/scan-dashboard"} onClick={closeMobileMenu} isMobile>
@@ -414,7 +413,7 @@ export default function Header() {
                       Dashboard
                     </NavLink>
                     <Separator orientation="vertical" className="mx-1 h-4 bg-border/70" />
-                    <NavLink href="/dashboard" isActive={pathname.includes('/guests')}>
+                    <NavLink href="/guests" isActive={pathname === '/guests'}>
                         <Users />
                         Guests
                     </NavLink>
@@ -486,7 +485,7 @@ export default function Header() {
                       </Link>
                   </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer">
-                     <Link href="/dashboard" className="flex items-center">
+                     <Link href="/guests" className="flex items-center">
                         <Users className="mr-2 h-4 w-4" />
                         Guests
                       </Link>
