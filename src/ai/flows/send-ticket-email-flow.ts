@@ -172,7 +172,7 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
         errorCorrectionLevel: 'H', width: 350, margin: 1, type: 'image/png',
         color: { dark: '#000000', light: '#FFFFFF' }
     });
-    const qrImageBytes = Uint8Array.from(atob(qrCodeDataUrl.split(',')[1]), c => c.charCodeAt(0));
+    const qrImageBytes = Buffer.from(qrCodeDataUrl.split(',')[1], 'base64');
     const qrImage = await pdfDoc.embedPng(qrImageBytes);
     const qrDisplaySize = mmToPoints(40); 
     page1.drawImage(qrImage, {
@@ -366,5 +366,4 @@ const sendTicketEmailFlow = ai.defineFlow(
     }
   }
 );
-
     
