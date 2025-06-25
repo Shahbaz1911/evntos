@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
-import { toBuffer as QRCodeToBuffer } from 'qrcode';
+import { toDataURL as QRCodeToDataURL } from 'qrcode';
 import { Resend } from 'resend';
 // import { streamToBuffer } from '@jorgeferrero/stream-to-buffer'; // Not strictly needed as pdfDoc.save() returns Uint8Array
 import type { Event } from '@/types'; // Assuming Event type is available
@@ -168,11 +168,13 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
     });
     p1Y -= (guestTicketSize + mmToPoints(5));
 
-    const qrImageBuffer = await QRCodeToBuffer(input.registrationId, {
-        errorCorrectionLevel: 'H', width: 350, margin: 1, type: 'image/png',
-        color: { dark: '#000000', light: '#FFFFFF' }
+    const qrCodeDataUrl = await QRCodeToDataURL(input.registrationId, {
+      errorCorrectionLevel: 'H', width: 350, margin: 1, type: 'image/png',
+      color: { dark: '#000000', light: '#FFFFFF' }
     });
-    const qrImage = await pdfDoc.embedPng(qrImageBuffer);
+    const qrImageBytes = Buffer.from(qrCodeDataUrl.split(',')[1], 'base64');
+    const qrImage = await pdfDoc.embedPng(qrImageBytes);
+
     const qrDisplaySize = mmToPoints(40); 
     page1.drawImage(qrImage, {
         x: p1W / 2 - qrDisplaySize / 2,
@@ -365,6 +367,8 @@ const sendTicketEmailFlow = ai.defineFlow(
     }
   }
 );
+    
+
     
 
     
