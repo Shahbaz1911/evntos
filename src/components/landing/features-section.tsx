@@ -54,17 +54,19 @@ const features = [
 
 const FeatureCard = ({ feature }: { feature: (typeof features)[0] }) => {
   return (
-    <Card className="flex flex-col w-full h-full shadow-lg border-border bg-card p-6">
-      <CardHeader className="items-center text-center p-0 mb-6">
-        <div className={`p-4 rounded-full ${feature.bgColor} mb-4 inline-block`}>
-          <feature.icon className={`w-12 h-12 ${feature.iconColor}`} />
-        </div>
-        <CardTitle className="font-headline text-xl text-card-foreground sm:text-2xl">{feature.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 flex-grow">
-        <CardDescription className="text-center text-card-foreground/80 text-base">{feature.description}</CardDescription>
-      </CardContent>
-    </Card>
+    <div className="animated-gradient-border h-full">
+        <Card className="flex flex-col w-full h-full shadow-lg border-none bg-card p-6">
+            <CardHeader className="items-center text-center p-0 mb-6">
+                <div className={`p-4 rounded-full ${feature.bgColor} mb-4 inline-block`}>
+                <feature.icon className={`w-12 h-12 ${feature.iconColor}`} />
+                </div>
+                <CardTitle className="font-headline text-xl text-card-foreground sm:text-2xl">{feature.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 flex-grow">
+                <CardDescription className="text-center text-card-foreground/80 text-base">{feature.description}</CardDescription>
+            </CardContent>
+        </Card>
+    </div>
   );
 };
 
