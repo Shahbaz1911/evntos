@@ -39,8 +39,10 @@ const sendWelcomeEmailFlow = ai.defineFlow(
     try {
       const resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
+        // Log the error on the server for debugging
         console.error("RESEND_API_KEY environment variable is not configured for welcome email.");
-        return { success: false, message: "Email service (welcome) is not configured on the server. Please contact the administrator." };
+        // Return a clear error message to the client
+        return { success: false, message: "Welcome email service is not configured on the server." };
       }
 
       const resend = new Resend(resendApiKey);
@@ -70,33 +72,15 @@ const sendWelcomeEmailFlow = ai.defineFlow(
 
       if (error) {
         console.error("Resend API Error (welcome email):", error);
-        let displayMessage = "An unknown Resend API error occurred sending the welcome email.";
-        // Attempt to extract a more specific message from the error object
-        if (error && typeof error === 'object') {
-          if ('message' in error && typeof error.message === 'string' && error.message.trim() !== "") {
-            displayMessage = error.message;
-          } else if ('name' in error && typeof error.name === 'string' && error.name.trim() !== "") {
-            displayMessage = error.name.toLowerCase().includes("error") ? error.name : `Error: ${error.name}`;
-          } else if (Object.keys(error).length > 0) {
-            displayMessage = `Resend API Error: ${JSON.stringify(error)}. Check server logs.`;
-          }
-        } else if (typeof error === 'string' && error.trim() !== "") {
-           displayMessage = error;
-        }
-        return { success: false, message: `Failed to send welcome email. Reason: ${displayMessage}` };
+        return { success: false, message: `Failed to send welcome email: ${error.message}` };
       }
 
       return { success: true, message: "Welcome email sent successfully.", emailId: data?.id };
 
     } catch (e: any) {
       console.error("Error in sendWelcomeEmailFlow (outer catch):", e);
-      let displayMessage = "An unexpected error occurred sending the welcome email.";
-       if (e && typeof e.message === 'string' && e.message.trim() !== "") {
-        displayMessage = e.message;
-      } else if (typeof e === 'string' && e.trim() !== "") {
-        displayMessage = e;
-      }
-      return { success: false, message: `${displayMessage} Please check server logs.` };
+      // This allows the client to know an unexpected error occurred, while the server logs have the details.
+      return { success: false, message: e.message || 'An unexpected server error occurred.' };
     }
   }
 );

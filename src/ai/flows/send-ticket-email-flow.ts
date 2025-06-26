@@ -312,8 +312,7 @@ const sendTicketEmailFlow = ai.defineFlow(
     try {
       const resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
-        console.error("RESEND_API_KEY environment variable is not set.");
-        return { success: false, message: "Email service is not configured on the server. Please contact the administrator." };
+        throw new Error("Email service is not configured on the server. RESEND_API_KEY is missing.");
       }
 
       const resend = new Resend(resendApiKey);
@@ -348,40 +347,17 @@ const sendTicketEmailFlow = ai.defineFlow(
       });
 
       if (error) {
-        console.error("Resend API Error (full object):", error); 
-        let displayMessage = "An unknown Resend API error occurred."; 
-        if (typeof error === 'string' && error.trim() !== "") {
-          displayMessage = error;
-        } else if (error && typeof error === 'object') {
-          if (typeof (error as any).message === 'string' && (error as any).message.trim() !== "") {
-            displayMessage = (error as any).message;
-          } else if (typeof (error as any).name === 'string' && (error as any).name.trim() !== "") {
-            displayMessage = (error as any).name.toLowerCase().includes("error") ? (error as any).name : `Error: ${(error as any).name}`;
-          } else if (Object.keys(error).length > 0) {
-            displayMessage = `Resend API Error: ${JSON.stringify(error)}. Check server logs.`;
-          }
-        }
-        return { success: false, message: `Failed to send email. Reason: ${displayMessage} Please check server logs for complete details.` };
+        console.error("Resend API Error:", error);
+        throw new Error(`Failed to send email via Resend: ${error.message}`);
       }
 
       return { success: true, message: "Ticket email sent successfully.", emailId: data?.id };
 
     } catch (e: any) {
-      console.error("Error in sendTicketEmailFlow (outer catch):", e);
-      let displayMessage = "An unexpected error occurred processing your request.";
-      if (typeof e === 'string' && e.trim() !== "") {
-        displayMessage = e;
-      } else if (e && typeof e.message === 'string' && e.message.trim() !== "") {
-          displayMessage = e.message;
-        } else if (e && typeof e.name === 'string' && e.name.trim() !== "") {
-          displayMessage = e.name.toLowerCase().includes("error") ? e.name : `Error: ${e.name}`;
-      }
-      return { success: false, message: `${displayMessage} Please check server logs.` };
+      console.error("Error in sendTicketEmailFlow:", e);
+      // This will be caught by the client and trigger the generic server error message.
+      // The detailed error is logged on the server for debugging.
+      throw e;
     }
   }
 );
-    
-
-    
-
-    
