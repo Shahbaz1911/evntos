@@ -31,10 +31,11 @@ interface EventContextType {
   deleteEvent: (eventId: string) => Promise<void>;
   getEventById: (id: string) => Event | undefined;
   getEventBySlug: (slug: string) => Event | undefined;
-  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'>) => Promise<Registration | null>;
+  addRegistration: (newRegistrationData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'> & { eventOwnerId: string }) => Promise<Registration | null>;
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
+  checkInGuest: (registrationId: string) => Promise<boolean>;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -110,6 +111,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
                   contactNumber: data.contactNumber,
                   registeredAt: data.registeredAt,
                   source: data.source,
+                  eventOwnerId: data.eventOwnerId,
                   checkedIn: data.checkedIn || false,
                   checkedInAt: data.checkedInAt,
                 } as Registration;
@@ -295,9 +297,10 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const getEventById = useCallback((id: string) => events.find((event) => event.id === id), [events]);
   const getEventBySlug = useCallback((slug: string) => events.find((event) => event.slug === slug), [events]);
 
-  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'>): Promise<Registration | null> => {
+  const addRegistration = useCallback(async (newRegData: Pick<Registration, 'eventId' | 'name' | 'email' | 'contactNumber'> & { eventOwnerId: string }): Promise<Registration | null> => {
     const registrationData: Omit<Registration, 'id'> = {
       eventId: newRegData.eventId,
+      eventOwnerId: newRegData.eventOwnerId,
       name: newRegData.name,
       email: newRegData.email,
       ...(newRegData.contactNumber && { contactNumber: newRegData.contactNumber }),
@@ -321,8 +324,12 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   }, [toast, authUser, events]);
 
   const recordSharedLinkVisit = useCallback(async (eventId: string, eventSlug: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
     const registrationDraft: Omit<Registration, 'id'> = {
       eventId,
+      eventOwnerId: event.userId, // Include owner ID for shared links too
       name: "Viewed via Shared Link",
       email: `shared-view-${Date.now()}@${eventSlug}.local`,
       registeredAt: new Date().toISOString(),
@@ -334,11 +341,11 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error recording shared link visit in Firestore:", error);
     }
-  }, []); 
+  }, [events]); 
 
   const getRegistrationsByEventId = useCallback((eventId: string) =>
     registrations.filter((reg) => reg.eventId === eventId && reg.source === 'form')
-    .sort((a,b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()), [registrations]);
+    .sort((a,b) => new Date(b.registeredAt).getTime() - new Date(a.createdAt).getTime()), [registrations]);
 
   const getRegistrationByIdFromFirestore = useCallback(async (registrationId: string): Promise<Registration | null> => {
     try {
@@ -349,6 +356,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         return {
           id: docSnap.id,
           eventId: data.eventId,
+          eventOwnerId: data.eventOwnerId,
           name: data.name,
           email: data.email,
           contactNumber: data.contactNumber,
@@ -366,6 +374,46 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
   }, [toast]);
+  
+  const checkInGuest = useCallback(async (registrationId: string): Promise<boolean> => {
+    if (!authUser) {
+        toast({ title: "Authentication Error", description: "You must be logged in to check in guests.", variant: "destructive" });
+        return false;
+    }
+
+    try {
+        const registration = await getRegistrationByIdFromFirestore(registrationId);
+        if (!registration) {
+            toast({ title: "Check-in Failed", description: "Registration not found.", variant: "destructive" });
+            return false;
+        }
+
+        // Client-side check for ownership before attempting DB update
+        if (registration.eventOwnerId !== authUser.uid) {
+            toast({ title: "Authorization Error", description: "You are not authorized to check in guests for this event.", variant: "destructive" });
+            return false;
+        }
+
+        const regRef = doc(db, "registrations", registrationId);
+        await updateDoc(regRef, {
+            checkedIn: true,
+            checkedInAt: new Date().toISOString(),
+        });
+        
+        // Update local state for immediate UI feedback
+        setRegistrations(prev => prev.map(r => 
+            r.id === registrationId 
+            ? { ...r, checkedIn: true, checkedInAt: new Date().toISOString() } 
+            : r
+        ));
+        
+        return true;
+    } catch (error) {
+        console.error("Error during check-in:", error);
+        toast({ title: "Check-in Error", description: "An error occurred while checking in the guest. Please check the console.", variant: "destructive" });
+        return false;
+    }
+}, [authUser, toast, getRegistrationByIdFromFirestore]);
 
 
   return (
@@ -384,6 +432,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         recordSharedLinkVisit,
         getRegistrationsByEventId,
         getRegistrationByIdFromFirestore,
+        checkInGuest,
       }}
     >
       {children}

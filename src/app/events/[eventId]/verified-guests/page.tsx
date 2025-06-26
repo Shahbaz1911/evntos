@@ -9,11 +9,12 @@ import VerifiedGuestListItem from '@/components/verified-guest-list-item';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, UserCheck, FileText, Users } from 'lucide-react';
+import { ArrowLeft, UserCheck, FileText, Users, Search } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 // import AuthGuard from '@/components/auth-guard'; // Removed page-level AuthGuard
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 export default function VerifiedGuestListPage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function VerifiedGuestListPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [verifiedRegistrations, setVerifiedRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (authLoading || eventContextLoading) {
@@ -47,7 +49,7 @@ export default function VerifiedGuestListPage() {
         }
         setEvent(foundEvent);
         const allRegistrations = getRegistrationsByEventId(eventId);
-        setVerifiedRegistrations(allRegistrations.filter(reg => reg.checkedIn && reg.source === 'form'));
+        setVerifiedRegistrations(allRegistrations.filter(reg => reg.checkedIn)); // No need to filter by source here
       } else {
          if (!eventContextLoading) {
             toast({
@@ -65,6 +67,16 @@ export default function VerifiedGuestListPage() {
     }
     setIsLoading(false);
   }, [eventId, getEventById, getRegistrationsByEventId, authUser, authLoading, eventContextLoading, router, toast]);
+  
+  const filteredRegistrations = useMemo(() => {
+    if (!searchQuery) return verifiedRegistrations;
+    return verifiedRegistrations.filter(
+      (reg) =>
+        reg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        reg.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [verifiedRegistrations, searchQuery]);
+
 
   const downloadVerifiedGuestListCSV = () => {
     if (!event || verifiedRegistrations.length === 0) return;
@@ -146,14 +158,25 @@ export default function VerifiedGuestListPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {verifiedRegistrations.length === 0 ? (
+             <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
+
+            {filteredRegistrations.length === 0 ? (
               <div className="text-center py-10">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg text-muted-foreground">No guests have been checked in yet.</p>
+                <p className="text-lg text-muted-foreground">{searchQuery ? "No verified guests found matching your search." : "No guests have been checked in yet."}</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {verifiedRegistrations.map((reg) => (
+                {filteredRegistrations.map((reg) => (
                   <VerifiedGuestListItem key={reg.id} registration={reg} />
                 ))}
               </div>

@@ -116,57 +116,57 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
 
   const onSubmit: SubmitHandler<RegistrationFormValues> = async (data) => {
     setIsSubmitting(true);
+    const eventDetails = getEventById(eventId);
+    if (!eventDetails) {
+        toast({ title: "Error", description: "Event details not found. Cannot register.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
       const newRegistration = await addRegistration({
         eventId,
+        eventOwnerId: eventDetails.userId, // Add owner ID to registration
         name: data.name,
         email: data.email,
         contactNumber: data.contactNumber || undefined,
       });
+
       if (newRegistration) {
         setSubmittedRegistration(newRegistration);
-        // Now call the Genkit flow to send the email
-        const eventDetails = getEventById(eventId);
-        if (eventDetails) {
-            try {
-                const emailResult = await sendTicketEmail({
-                    registrationId: newRegistration.id,
-                    userName: newRegistration.name,
-                    userEmail: newRegistration.email,
-                    eventDetails: {
-                        title: eventDetails.title,
-                        eventDate: eventDetails.eventDate,
-                        eventTime: eventDetails.eventTime,
-                        venueName: eventDetails.venueName,
-                        venueAddress: eventDetails.venueAddress,
-                        mapLink: eventDetails.mapLink,
-                    }
-                });
-                if (emailResult.success) {
-                    toast({
-                        title: "Registration Successful!",
-                        description: `You're registered for "${eventName}". Your PDF ticket has been emailed to ${newRegistration.email}.`,
-                        variant: "success",
-                    });
-                } else {
-                     toast({
-                        title: "Registration Successful (Email Failed)",
-                        description: `You're registered, but we couldn't email your ticket: ${emailResult.message}. You can download it below.`,
-                        variant: "default", // or "warning" if you have one
-                    });
+        
+        try {
+            const emailResult = await sendTicketEmail({
+                registrationId: newRegistration.id,
+                userName: newRegistration.name,
+                userEmail: newRegistration.email,
+                eventDetails: {
+                    title: eventDetails.title,
+                    eventDate: eventDetails.eventDate,
+                    eventTime: eventDetails.eventTime,
+                    venueName: eventDetails.venueName,
+                    venueAddress: eventDetails.venueAddress,
+                    mapLink: eventDetails.mapLink,
                 }
-            } catch (flowError: any) {
-                console.error("Error calling sendTicketEmail flow:", flowError);
+            });
+            if (emailResult.success) {
                 toast({
-                    title: "Registration Successful (Email Error)",
-                    description: `You're registered, but there was an error sending your ticket email: ${flowError.message || 'Unknown flow error'}. You can download it below.`,
+                    title: "Registration Successful!",
+                    description: `You're registered for "${eventName}". Your PDF ticket has been emailed to ${newRegistration.email}.`,
+                    variant: "success",
+                });
+            } else {
+                 toast({
+                    title: "Registration Successful (Email Failed)",
+                    description: `You're registered, but we couldn't email your ticket: ${emailResult.message}. You can download it below.`,
                     variant: "default",
                 });
             }
-        } else {
+        } catch (flowError: any) {
+            console.error("Error calling sendTicketEmail flow:", flowError);
             toast({
-                title: "Registration Successful (Event Details Missing)",
-                description: "You're registered, but we couldn't find event details to email your ticket. You can download it below.",
+                title: "Registration Successful (Email Error)",
+                description: `You're registered, but there was an error sending your ticket email: ${flowError.message || 'Unknown flow error'}. You can download it below.`,
                 variant: "default",
             });
         }
@@ -262,7 +262,7 @@ export default function RegistrationForm({ eventId, eventName }: RegistrationFor
             errorCorrectionLevel: 'H', width: 350, margin: 1, type: 'image/png',
             color: { dark: '#000000', light: '#FFFFFF' }
         });
-        const qrImageBytes = Uint8Array.from(atob(qrCodeDataUrl.split(',')[1]), c => c.charCodeAt(0));
+        const qrImageBytes = Buffer.from(qrCodeDataUrl.split(',')[1], 'base64');
         const qrImage = await pdfDoc.embedPng(qrImageBytes);
         const qrDisplaySize = mmToPoints(40); 
         page1.drawImage(qrImage, {

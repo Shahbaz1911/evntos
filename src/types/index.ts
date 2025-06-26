@@ -18,6 +18,7 @@ export interface Event {
 export interface Registration {
   id: string;
   eventId: string;
+  eventOwnerId: string; // ID of the user who owns the event
   name: string;
   email: string;
   contactNumber?: string; // Optional contact number
@@ -26,4 +27,3 @@ export interface Registration {
   checkedIn?: boolean;
   checkedInAt?: string; // ISO date string, time of check-in
 }
-

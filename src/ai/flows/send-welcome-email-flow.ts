@@ -36,18 +36,18 @@ const sendWelcomeEmailFlow = ai.defineFlow(
     outputSchema: SendWelcomeEmailOutputSchema,
   },
   async (input) => {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      console.error("Resend API key is not configured for welcome email.");
-      return { success: false, message: "Email sending (welcome) is not configured on the server." };
-    }
-
-    const resend = new Resend(resendApiKey);
-    const fromEmail = 'Evntos Welcome <welcome@evntosupdates.oursblogs24.com>'; 
-    const userName = input.userName || 'New User';
-    const appBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'; // Fallback for local dev
-
     try {
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        console.error("RESEND_API_KEY environment variable is not configured for welcome email.");
+        return { success: false, message: "Email service (welcome) is not configured on the server. Please contact the administrator." };
+      }
+
+      const resend = new Resend(resendApiKey);
+      const fromEmail = 'Evntos Welcome <welcome@evntosupdates.oursblogs24.com>'; 
+      const userName = input.userName || 'New User';
+      const appBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'; // Fallback for local dev
+
       const { data, error } = await resend.emails.send({
         from: fromEmail,
         to: [input.userEmail],

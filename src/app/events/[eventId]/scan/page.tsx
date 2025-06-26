@@ -23,7 +23,7 @@ export default function ScanTicketPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, getRegistrationByIdFromFirestore, contextLoading: eventContextLoading } = useEvents();
+  const { getEventById, getRegistrationByIdFromFirestore, checkInGuest, contextLoading: eventContextLoading } = useEvents();
   const { user: authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -86,9 +86,18 @@ export default function ScanTicketPage() {
                     setScanMessage(`Guest ${registration.name} was already verified/checked in at ${new Date(registration.checkedInAt!).toLocaleString()}.`);
                     toast({ title: "Already Verified", description: `${registration.name} was previously verified.`});
                 } else {
-                    setScanStatus("success");
-                    setScanMessage(`Ticket Verified for ${registration.name}! This guest can proceed.`);
-                    toast({ title: "Ticket Verified", description: `${registration.name} (${registration.email}) is a valid guest.`, variant: "success" });
+                    const checkInSuccess = await checkInGuest(registration.id);
+                    if (checkInSuccess) {
+                        const updatedRegistration = await getRegistrationByIdFromFirestore(decodedText);
+                        setScannedData(updatedRegistration);
+                        setScanStatus("success");
+                        setScanMessage(`Ticket Verified for ${registration.name}! This guest can proceed.`);
+                        toast({ title: "Ticket Verified", description: `${registration.name} (${registration.email}) is a valid guest.`, variant: "success" });
+                    } else {
+                        // The checkInGuest function already shows a toast on failure
+                        setScanStatus("error");
+                        setScanMessage("Failed to mark ticket as checked-in. The guest cannot proceed. Please try again.");
+                    }
                 }
             } else {
                 setScanStatus("error");
@@ -106,7 +115,7 @@ export default function ScanTicketPage() {
         setScanMessage("An error occurred during verification. Please try again.");
         toast({ title: "Verification System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
     }
-  }, [eventId, getRegistrationByIdFromFirestore, toast]);
+  }, [eventId, getRegistrationByIdFromFirestore, checkInGuest, toast]);
 
   useEffect(() => {
     if (selectedCameraId && showScannerUI) {
@@ -316,4 +325,5 @@ export default function ScanTicketPage() {
       </div>
   );
 }
+
 

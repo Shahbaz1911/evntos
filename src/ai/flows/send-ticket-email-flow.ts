@@ -13,7 +13,6 @@ import { z } from 'genkit';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
 import { toDataURL as QRCodeToDataURL } from 'qrcode';
 import { Resend } from 'resend';
-// import { streamToBuffer } from '@jorgeferrero/stream-to-buffer'; // Not strictly needed as pdfDoc.save() returns Uint8Array
 import type { Event } from '@/types'; // Assuming Event type is available
 
 // Helper function from registration-form, slightly adapted
@@ -115,6 +114,7 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
     const whiteColor = rgb(1, 1, 1);
     const grayColor = rgb(0.3, 0.3, 0.3); 
     const lightGrayColor = rgb(0.5, 0.5, 0.5);
+    const lightCreamBg = rgb(255/255, 247/255, 237/255);
 
     const ticketWidthMm = 80;
     const ticketHeightMm = 150;
@@ -209,63 +209,79 @@ async function generatePdfTicket(input: SendTicketEmailInput): Promise<Uint8Arra
     // --- Page 2: Additional Details ---
     const page2 = pdfDoc.addPage([pageTicketWidth, pageTicketHeight]);
     const { width: p2W, height: p2H } = page2.getSize();
+    
+    page2.drawRectangle({
+        x: 0,
+        y: 0,
+        width: p2W,
+        height: p2H,
+        color: lightCreamBg,
+    });
+
     const p2Margin = mmToPoints(8); 
     const p2ContentWidth = p2W - 2 * p2Margin;
     let p2Y = p2H - p2Margin - mmToPoints(6);
 
     const sectionHeaderFontSize = 13;
-    const detailLabelFontSize = 9;
-    const detailValueFontSize = 9;
-    const detailLineHeight = detailValueFontSize + 4; 
-    const sectionSpacing = mmToPoints(7);
-    const itemSpacing = mmToPoints(3.5);
+    const detailLabelFontSize = 8;
+    const detailValueFontSize = 10;
+    const sectionSpacing = mmToPoints(8);
+    const itemSpacing = mmToPoints(4.5);
 
 
-    const drawDetailItemPage2 = (label: string, value: string) => {
-        if (p2Y < p2Margin + sectionHeaderFontSize + detailLineHeight * 2) { 
+    const drawDetailItemPage2 = (label: string, value: string, font: PDFFont, valueFont: PDFFont) => {
+        if (p2Y < p2Margin + sectionHeaderFontSize + detailValueFontSize * 2) { 
             console.warn("Not enough space on page 2 for detail:", label);
             return;
         }
-        page2.drawText(label, { x: p2Margin, y: p2Y, font: helveticaBoldFont, size: detailLabelFontSize, color: blackColor });
-        p2Y -= detailLineHeight;
-        p2Y = drawWrappedText(page2, value, p2Margin, p2Y, p2ContentWidth, detailLineHeight, helveticaFont, detailValueFontSize, grayColor );
+        page2.drawText(label.toUpperCase(), { x: p2Margin, y: p2Y, font: font, size: detailLabelFontSize, color: grayColor, characterSpacing: 0.5 });
+        p2Y -= (detailLabelFontSize + mmToPoints(1.5));
+        p2Y = drawWrappedText(page2, value, p2Margin, p2Y, p2ContentWidth, detailValueFontSize + 2, valueFont, detailValueFontSize, blackColor );
         p2Y -= itemSpacing; 
     };
     
-    page2.drawText("Guest Information", {
-        x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange
+    page2.drawText("GUEST INFORMATION", {
+        x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange, characterSpacing: 1
     });
     p2Y -= (sectionHeaderFontSize + mmToPoints(2));
-    page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.7, color: lightGrayColor});
-    p2Y -= mmToPoints(5);
+    page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 1, color: primaryOrange, opacity: 0.5});
+    p2Y -= mmToPoints(6);
 
-    drawDetailItemPage2("Full Name:", input.userName);
-    drawDetailItemPage2("Email:", input.userEmail);
-    // Assuming contactNumber is not passed for now, or make it optional in input schema
-    drawDetailItemPage2("Ticket ID:", input.registrationId);
+    drawDetailItemPage2("Full Name", input.userName, helveticaFont, helveticaBoldFont);
+    drawDetailItemPage2("Email", input.userEmail, helveticaFont, helveticaFont);
+    drawDetailItemPage2("Ticket ID", input.registrationId, helveticaFont, helveticaFont);
     
     p2Y -= (sectionSpacing - itemSpacing); 
 
-     page2.drawText("Event Details", {
-        x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange
+     page2.drawText("EVENT DETAILS", {
+        x: p2Margin, y: p2Y, font: helveticaBoldFont, size: sectionHeaderFontSize, color: primaryOrange, characterSpacing: 1
     });
     p2Y -= (sectionHeaderFontSize + mmToPoints(2));
-    page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 0.7, color: lightGrayColor});
-    p2Y -= mmToPoints(5);
+    page2.drawLine({start: {x: p2Margin, y: p2Y}, end: {x: p2W - p2Margin, y:p2Y}, thickness: 1, color: primaryOrange, opacity: 0.5});
+    p2Y -= mmToPoints(6);
 
-    drawDetailItemPage2("Event Name:", input.eventDetails.title);
-    drawDetailItemPage2("Date & Time:", formatEventDateTimeForPdf(input.eventDetails.eventDate, input.eventDetails.eventTime));
+    drawDetailItemPage2("Event Name", input.eventDetails.title, helveticaFont, helveticaBoldFont);
+    drawDetailItemPage2("Date & Time", formatEventDateTimeForPdf(input.eventDetails.eventDate, input.eventDetails.eventTime), helveticaFont, helveticaFont);
     if (input.eventDetails.venueName) {
-        drawDetailItemPage2("Venue Name:", input.eventDetails.venueName);
+        drawDetailItemPage2("Venue", input.eventDetails.venueName, helveticaFont, helveticaFont);
     }
     if (input.eventDetails.venueAddress) {
-        drawDetailItemPage2("Venue Address:", input.eventDetails.venueAddress.replace(/\\n/g, ', '));
+        drawDetailItemPage2("Address", input.eventDetails.venueAddress.replace(/\\n/g, ', '), helveticaFont, helveticaFont);
     }
     if (input.eventDetails.mapLink) {
-        drawDetailItemPage2("Map Link:", input.eventDetails.mapLink);
+        page2.drawText("MAP LINK", { x: p2Margin, y: p2Y, font: helveticaFont, size: detailLabelFontSize, color: grayColor, characterSpacing: 0.5 });
+        p2Y -= (detailLabelFontSize + mmToPoints(1.5));
+        page2.drawText(input.eventDetails.mapLink, {
+            x: p2Margin,
+            y: p2Y,
+            font: helveticaFont,
+            size: 8, // Smaller font for link
+            color: rgb(0, 0, 1) // Blue for link
+        });
+        p2Y -= itemSpacing;
     }
     if (!input.eventDetails.venueName && !input.eventDetails.venueAddress && !input.eventDetails.mapLink) {
-         drawDetailItemPage2("Location:", "Not specified");
+         drawDetailItemPage2("Location:", "Not specified", helveticaFont, helveticaFont);
     }
 
     const footerText = "Powered by evntos";
@@ -293,17 +309,16 @@ const sendTicketEmailFlow = ai.defineFlow(
     outputSchema: SendTicketEmailOutputSchema,
   },
   async (input) => {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      console.error("Resend API key is not configured.");
-      return { success: false, message: "Email sending is not configured on the server." };
-    }
-
-    const resend = new Resend(resendApiKey);
-
     try {
-      const pdfBytes = await generatePdfTicket(input); // Uint8Array
-      const pdfBase64 = Buffer.from(pdfBytes).toString('base64'); // Convert to Base64 string
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        console.error("RESEND_API_KEY environment variable is not set.");
+        return { success: false, message: "Email service is not configured on the server. Please contact the administrator." };
+      }
+
+      const resend = new Resend(resendApiKey);
+      const pdfBytes = await generatePdfTicket(input);
+      const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
 
       const safeEventName = input.eventDetails.title.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
@@ -327,7 +342,7 @@ const sendTicketEmailFlow = ai.defineFlow(
         attachments: [
           {
             filename: filename,
-            content: pdfBase64, // Use Base64 encoded string
+            content: pdfBase64,
           },
         ],
       });
@@ -356,12 +371,10 @@ const sendTicketEmailFlow = ai.defineFlow(
       let displayMessage = "An unexpected error occurred processing your request.";
       if (typeof e === 'string' && e.trim() !== "") {
         displayMessage = e;
-      } else if (e && typeof e === 'object') {
-        if (typeof e.message === 'string' && e.message.trim() !== "") {
-            displayMessage = e.message;
-          } else if (typeof e.name === 'string' && e.name.trim() !== "") {
-            displayMessage = e.name.toLowerCase().includes("error") ? e.name : `Error: ${e.name}`;
-          }
+      } else if (e && typeof e.message === 'string' && e.message.trim() !== "") {
+          displayMessage = e.message;
+        } else if (e && typeof e.name === 'string' && e.name.trim() !== "") {
+          displayMessage = e.name.toLowerCase().includes("error") ? e.name : `Error: ${e.name}`;
       }
       return { success: false, message: `${displayMessage} Please check server logs.` };
     }
