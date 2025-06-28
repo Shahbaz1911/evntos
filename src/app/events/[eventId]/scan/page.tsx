@@ -11,13 +11,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import LoadingSpinner from '@/components/loading-spinner';
-import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff, Phone, Mail, Camera } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, ScanLine, CameraOff, Phone, Mail, Camera, QrCode } from 'lucide-react';
 import type { Event, Registration } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
 const SCANNER_REGION_ID = "qr-scanner-region";
+
+type ScanStatus = "idle" | "scanning" | "verifying" | "success" | "error" | "not_found" | "already_verified";
 
 export default function ScanTicketPage() {
   const params = useParams();
@@ -30,16 +32,16 @@ export default function ScanTicketPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   
+  const [scanStatus, setScanStatus] = useState<ScanStatus>("idle");
   const [scannedData, setScannedData] = useState<Registration | null>(null);
-  const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error" | "not_found" | "already_verified">("idle");
   const [scanMessage, setScanMessage] = useState<string | null>(null);
+  
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [showScannerUI, setShowScannerUI] = useState(false); 
-
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | undefined>(undefined);
 
+  // Initial data loading
   useEffect(() => {
     if (!eventContextLoading && !authLoading) {
       const foundEvent = getEventById(eventId);
@@ -51,30 +53,20 @@ export default function ScanTicketPage() {
         }
         setEvent(foundEvent);
       } else {
-        if (!eventContextLoading) {
+         if (!eventContextLoading) {
              toast({ title: "Event Not Found", description: "The event you are trying to scan for does not exist.", variant: "destructive" });
              router.push('/');
              return;
-        }
+         }
       }
       setPageLoading(false);
-    } else if (authLoading || eventContextLoading) {
-        setPageLoading(true);
     }
   }, [eventId, getEventById, authUser, authLoading, eventContextLoading, router, toast]);
 
   const processScanResult = useCallback(async (decodedText: string) => {
-    if (html5QrCodeRef.current?.isScanning) {
-      await html5QrCodeRef.current.stop().catch(err => console.warn("Error stopping scanner on success:", err));
-    }
-    html5QrCodeRef.current = null;
-    setShowScannerUI(false);
-    setCameras([]);
-    setSelectedCameraId(undefined);
-
-    setScanStatus("idle");
-    setScannedData(null);
+    setScanStatus("verifying");
     setScanMessage("Verifying ticket...");
+    setScannedData(null);
 
     try {
         const registration = await getRegistrationByIdFromFirestore(decodedText);
@@ -83,115 +75,114 @@ export default function ScanTicketPage() {
                 setScannedData(registration);
                 if (registration.checkedIn) {
                     setScanStatus("already_verified");
-                    setScanMessage(`Guest ${registration.name} was already verified/checked in at ${new Date(registration.checkedInAt!).toLocaleString()}.`);
-                    toast({ title: "Already Verified", description: `${registration.name} was previously verified.`});
+                    setScanMessage(`Guest ${registration.name} was already checked in at ${new Date(registration.checkedInAt!).toLocaleString()}.`);
+                    toast({ title: "Already Verified", description: `${registration.name} was previously checked in.`});
                 } else {
                     const checkInSuccess = await checkInGuest(registration.id);
                     if (checkInSuccess) {
-                        const updatedRegistration = await getRegistrationByIdFromFirestore(decodedText);
+                        const updatedRegistration = await getRegistrationByIdFromFirestore(decodedText); // Re-fetch to get checkInAt time
                         setScannedData(updatedRegistration);
                         setScanStatus("success");
-                        setScanMessage(`Ticket Verified for ${registration.name}! This guest can proceed.`);
-                        toast({ title: "Ticket Verified", description: `${registration.name} (${registration.email}) is a valid guest.`, variant: "success" });
+                        setScanMessage(`Ticket Verified for ${registration.name}! Guest can proceed.`);
+                        toast({ title: "Ticket Verified", description: `${registration.name} is a valid guest.`, variant: "success" });
                     } else {
-                        // The checkInGuest function already shows a toast on failure
                         setScanStatus("error");
-                        setScanMessage("Failed to mark ticket as checked-in. The guest cannot proceed. Please try again.");
+                        setScanMessage("Failed to mark ticket as checked-in. Please try again.");
                     }
                 }
             } else {
                 setScanStatus("error");
-                setScanMessage("Ticket is for a different event.");
+                setScanMessage("This ticket is for a different event.");
                 toast({ title: "Verification Error", description: "This ticket is not valid for the current event.", variant: "destructive" });
             }
         } else {
             setScanStatus("not_found");
-            setScanMessage("Invalid Ticket: Guest not found.");
-            toast({ title: "Verification Error", description: "This QR code does not correspond to a valid registration.", variant: "destructive" });
+            setScanMessage("Invalid Ticket: This QR code does not match any registration.");
+            toast({ title: "Verification Error", description: "Invalid QR code.", variant: "destructive" });
         }
     } catch(error) {
         console.error("Error verifying ticket:", error);
         setScanStatus("error");
-        setScanMessage("An error occurred during verification. Please try again.");
-        toast({ title: "Verification System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
+        setScanMessage("A system error occurred during verification. Please try again.");
+        toast({ title: "System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
     }
   }, [eventId, getRegistrationByIdFromFirestore, checkInGuest, toast]);
 
+  // Scanner Lifecycle Effect
   useEffect(() => {
-    if (selectedCameraId && showScannerUI) {
-      const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
-      if (!scannerRegionElement) {
-        console.error("Scanner region not found");
+    if (scanStatus !== 'scanning' || !selectedCameraId) {
+        if (html5QrCodeRef.current?.isScanning) {
+            html5QrCodeRef.current.stop().catch(err => console.warn("Scanner stop failed", err));
+        }
         return;
-      }
-      
-      const qrCode = new Html5Qrcode(SCANNER_REGION_ID, { verbose: false });
-      html5QrCodeRef.current = qrCode;
+    }
 
-      const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
+    const scannerRegionElement = document.getElementById(SCANNER_REGION_ID);
+    if (!scannerRegionElement) return;
+
+    // Ensure we don't create multiple instances
+    if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode(SCANNER_REGION_ID, { verbose: false });
+    }
+    const html5QrCode = html5QrCodeRef.current;
+
+    const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
+        if (html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.warn("Scanner stop on success failed", err));
+        }
         processScanResult(decodedText);
-      };
+    };
+    const onScanFailure = (error: any) => { /* ignore */ };
 
-      const onScanFailure = (error: any) => { /* ignore */ };
-      
-      qrCode.start(
+    html5QrCode.start(
         selectedCameraId,
         { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess,
         onScanFailure
-      ).catch(err => {
+    ).catch(err => {
         console.error("Failed to start scanner:", err);
         toast({ title: "Scanner Error", description: "Could not start scanner. Please select a different camera or refresh.", variant: "destructive" });
-        setShowScannerUI(false);
-      });
-    }
-
+        setScanStatus("idle");
+    });
+    
     return () => {
-      if (html5QrCodeRef.current?.isScanning) {
-        html5QrCodeRef.current.stop().catch(err => console.warn("Failed to stop scanner cleanly during cleanup:", err));
-        html5QrCodeRef.current = null;
-      }
+        if (html5QrCodeRef.current?.isScanning) {
+            html5QrCodeRef.current.stop().catch(err => console.warn("Scanner cleanup stop failed", err));
+        }
     };
-  }, [selectedCameraId, showScannerUI, processScanResult, toast]);
+  }, [scanStatus, selectedCameraId, processScanResult, toast]);
+
 
   const handleStartScanning = async () => {
+    // Reset previous scan state
     setScanStatus("idle");
     setScannedData(null);
     setScanMessage(null);
-    setShowScannerUI(true);
 
     try {
-      const availableCameras = await Html5Qrcode.getCameras();
-      setHasCameraPermission(true);
-
-      if (availableCameras && availableCameras.length > 0) {
-        setCameras(availableCameras);
-        const backCamera = availableCameras.find(c => c.label.toLowerCase().includes('back')) || availableCameras.find(c => c.label.toLowerCase().includes('environment'));
-        setSelectedCameraId(backCamera ? backCamera.id : availableCameras[0].id);
-      } else {
-        setHasCameraPermission(false);
-        setShowScannerUI(false);
-        toast({ variant: 'destructive', title: 'No Camera Found', description: 'Could not find a camera on this device.' });
-      }
+        if (!hasCameraPermission) {
+            const availableCameras = await Html5Qrcode.getCameras();
+            if (availableCameras && availableCameras.length > 0) {
+                setCameras(availableCameras);
+                setHasCameraPermission(true);
+                const backCamera = availableCameras.find(c => c.label.toLowerCase().includes('back')) || availableCameras.find(c => c.label.toLowerCase().includes('environment'));
+                setSelectedCameraId(backCamera ? backCamera.id : availableCameras[0].id);
+            } else {
+                setHasCameraPermission(false);
+                toast({ variant: 'destructive', title: 'No Camera Found', description: 'Could not find a camera on this device.' });
+                return;
+            }
+        }
+        setScanStatus("scanning");
     } catch (err) {
-      console.error('Error accessing camera:', err);
-      setHasCameraPermission(false);
-      setShowScannerUI(false);
-      toast({
-        variant: 'destructive',
-        title: 'Camera Access Denied',
-        description: 'Please enable camera permissions in your browser settings to use the scanner.',
-      });
+        console.error('Error accessing camera:', err);
+        setHasCameraPermission(false);
+        toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings to use the scanner.',
+        });
     }
-  };
-
-  const handleStopScanning = () => {
-    if (html5QrCodeRef.current?.isScanning) {
-        html5QrCodeRef.current.stop().catch(err => console.warn("Error stopping scanner manually:", err));
-    }
-    setShowScannerUI(false);
-    setCameras([]);
-    setSelectedCameraId(undefined);
   };
 
   if (pageLoading || authLoading || eventContextLoading) {
@@ -213,6 +204,48 @@ export default function ScanTicketPage() {
     );
   }
 
+  const renderScannerContent = () => {
+    switch(scanStatus) {
+      case 'scanning':
+        return <div id={SCANNER_REGION_ID} className="w-full h-full" />;
+      case 'verifying':
+        return (
+          <div className="flex flex-col items-center justify-center h-full text-foreground">
+            <LoadingSpinner size={64} />
+            <p className="mt-4 font-semibold text-lg">{scanMessage}</p>
+          </div>
+        );
+      case 'success':
+      case 'already_verified':
+        return (
+            <div className={`text-center p-4 ${scanStatus === 'success' ? 'text-green-600' : 'text-blue-600'}`}>
+              <UserCheck size={64} className="mx-auto mb-4"/>
+              <p className="text-lg font-semibold">{scanStatus === "success" ? "Ticket Verified!" : "Already Verified!"}</p>
+            </div>
+          );
+      case 'error':
+      case 'not_found':
+        return (
+            <div className="text-center p-4 text-destructive">
+              <UserX size={64} className="mx-auto mb-4"/>
+              <p className="text-lg font-semibold">{scanStatus === "error" ? "Scan Error" : "Ticket Not Found"}</p>
+            </div>
+          );
+       case 'idle':
+        if (hasCameraPermission === false) {
+             return (
+                 <div className="text-center p-4 text-destructive">
+                    <CameraOff size={48} className="mx-auto mb-2"/>
+                    <p>Camera access denied. Please enable permissions in your browser settings and try again.</p>
+                </div>
+              );
+        }
+        return <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>;
+      default:
+        return null;
+    }
+  }
+
   return (
       <div className="max-w-2xl mx-auto py-8">
         <Button variant="outline" size="sm" asChild className="mb-6">
@@ -224,38 +257,20 @@ export default function ScanTicketPage() {
 
         <Card className="shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-3xl text-primary">Scan Tickets</CardTitle>
+             <QrCode className="mx-auto h-12 w-12 text-primary" />
+            <CardTitle className="font-headline text-3xl">Scan Tickets</CardTitle>
             <CardDescription>For event: {event.title}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="w-full border-dashed border-2 border-muted-foreground/50 rounded-lg aspect-square bg-muted/20 flex items-center justify-center overflow-hidden">
-              {showScannerUI && hasCameraPermission ? (
-                <div id={SCANNER_REGION_ID} className="w-full h-full" />
-              ) : hasCameraPermission === false ? (
-                 <div className="text-center p-4 text-destructive">
-                    <CameraOff size={48} className="mx-auto mb-2"/>
-                    <p>Camera access denied. Enable permissions and click "Start Scanning".</p>
-                </div>
-              ) : !showScannerUI && (scanStatus === "success" || scanStatus === "already_verified") ? (
-                <div className="text-center p-4 text-green-600">
-                  <UserCheck size={64} className="mx-auto mb-4"/>
-                  <p className="text-lg font-semibold">{scanStatus === "success" ? "Ticket Verified!" : "Already Verified!"}</p>
-                </div>
-              ) : !showScannerUI && (scanStatus === "error" || scanStatus === "not_found") ? (
-                <div className="text-center p-4 text-destructive">
-                  <UserX size={64} className="mx-auto mb-4"/>
-                  <p className="text-lg font-semibold">{scanStatus === "error" ? "Scan Error" : "Ticket Not Found"}</p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground p-4 text-center">Click "Start Scanning" to activate the camera.</p>
-              )}
+              {renderScannerContent()}
             </div>
 
-            {showScannerUI && cameras.length > 1 && (
+            {scanStatus === 'scanning' && cameras.length > 1 && (
               <div className="space-y-2">
                 <Label htmlFor="camera-select" className="flex items-center text-muted-foreground font-medium">
                   <Camera className="mr-2 h-4 w-4" />
-                  Camera Source
+                  Select Camera
                 </Label>
                 <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
                   <SelectTrigger id="camera-select" className="w-full bg-background text-foreground">
@@ -271,36 +286,31 @@ export default function ScanTicketPage() {
                 </Select>
               </div>
             )}
-
-            {showScannerUI ? (
-              <Button onClick={handleStopScanning} variant="outline" className="w-full">
-                Stop Scanning
-              </Button>
-            ) : (
-              <Button onClick={handleStartScanning} className="w-full bg-primary hover:bg-primary/90">
+            
+            {scanStatus !== 'scanning' && (
+              <Button onClick={handleStartScanning} className="w-full bg-primary hover:bg-primary/90 text-lg py-6">
                 <ScanLine className="mr-2 h-5 w-5" /> 
-                {scanStatus === "idle" && hasCameraPermission !== false ? "Start Scanning" : "Scan Another Ticket"}
+                {scanStatus === "idle" ? "Start Scanning" : "Scan Another Ticket"}
               </Button>
             )}
             
-            {!showScannerUI && scanMessage && (
+            {scanStatus !== 'scanning' && scanStatus !== 'verifying' && scanStatus !== 'idle' && scanMessage && (
                 <Alert 
-                    variant={scanStatus === "success" || scanStatus === "already_verified" ? "default" : (scanStatus === "idle" ? "default" : "destructive")} 
-                    className={`mt-4 ${scanStatus === "success" || scanStatus === "already_verified" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700" : (scanStatus === "error" || scanStatus === "not_found" ? "border-destructive bg-red-50 text-destructive dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" : "")}`}
+                    variant={scanStatus === "success" || scanStatus === "already_verified" ? "default" : "destructive"} 
+                    className={`mt-4 ${scanStatus === "success" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700" : (scanStatus === 'already_verified' ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700' : "")}`}
                 >
                      {(scanStatus === "success" || scanStatus === "already_verified") && <UserCheck className="h-5 w-5 text-current" />}
                      {(scanStatus === "error" || scanStatus === "not_found") && <UserX className="h-5 w-5 text-current" />}
                     <AlertTitle className="font-semibold text-lg">
                         {scanStatus === "success" ? "Ticket Verified" : 
                          scanStatus === "already_verified" ? "Already Verified" :
-                         scanStatus === "error" ? "Scan Error" : 
-                         scanStatus === "not_found" ? "Ticket Not Found" : "Scan Status"}
+                         scanStatus === "error" ? "Scan Error" : "Ticket Not Found"}
                     </AlertTitle>
                     <AlertDescription className="text-base">{scanMessage}</AlertDescription>
                 </Alert>
             )}
 
-            {!showScannerUI && (scanStatus === "success" || scanStatus === "already_verified") && scannedData && (
+            {scannedData && (scanStatus === "success" || scanStatus === "already_verified") && (
               <Card className={`mt-4 ${scanStatus === "already_verified" ? "bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700" : "bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700"}`}>
                 <CardHeader>
                   <CardTitle className={`font-headline text-xl ${scanStatus === "already_verified" ? "text-blue-700 dark:text-blue-300" : "text-green-700 dark:text-green-300"}`}>
@@ -315,7 +325,7 @@ export default function ScanTicketPage() {
                   )}
                    <p className="text-xs text-muted-foreground pt-1"><strong>Registered:</strong> {new Date(scannedData.registeredAt).toLocaleString()}</p>
                   {scannedData.checkedIn && scannedData.checkedInAt && (
-                     <p className={`text-xs ${scanStatus === "already_verified" ? "text-blue-700 dark:text-blue-400" : "text-green-700 dark:text-green-400"} font-semibold pt-1`}><strong>Previously Verified/Checked In at:</strong> {new Date(scannedData.checkedInAt).toLocaleString()}</p>
+                     <p className={`text-xs ${scanStatus === "already_verified" ? "text-blue-700 dark:text-blue-400" : "text-green-700 dark:text-green-400"} font-semibold pt-1`}><strong>Checked In at:</strong> {new Date(scannedData.checkedInAt).toLocaleString()}</p>
                   )}
                 </CardContent>
               </Card>
@@ -326,4 +336,4 @@ export default function ScanTicketPage() {
   );
 }
 
-
+    
