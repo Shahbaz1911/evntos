@@ -5,29 +5,49 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // ==============================================================================
-// !! CRITICAL: UPDATE THIS CONFIGURATION !!
+// !! CRITICAL: YOUR FIREBASE CONFIGURATION IS NOW IN THE .env FILE !!
 // ==============================================================================
-// The error "auth/api-key-not-valid" means the values below are incorrect.
-// You MUST replace "YOUR_API_KEY", "YOUR_AUTH_DOMAIN", etc.,
-// with the actual Firebase configuration values for YOUR project.
+// This application now loads its Firebase credentials from your environment
+// variables, which should be stored in a `.env` file in the root of your
+// project for local development, and in your Vercel project settings for
+// deployment.
 //
-// How to find your Firebase config:
-// 1. Go to your Firebase project in the Firebase Console (console.firebase.google.com).
-// 2. Click the gear icon (Project settings) next to "Project Overview".
-// 3. In the "General" tab, scroll down to "Your apps".
-// 4. Find your web app and look for the "SDK setup and configuration" section.
-// 5. Select "Config" to view the firebaseConfig object.
-// 6. Copy those values and paste them here.
+// If you see Firebase errors, ensure the following variables are correctly set:
+// - NEXT_PUBLIC_FIREBASE_API_KEY
+// - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+// - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+// ...and so on for all firebase config values.
 // ==============================================================================
+
 const firebaseConfig = {
-  apiKey: "AIzaSyA6FCx0TdqvsFnwGR35D-C4AdSK6UNV2gc",
-  authDomain: "eventos-74593.firebaseapp.com",
-  projectId: "eventos-74593",
-  storageBucket: "eventos-74593.firebasestorage.app",
-  messagingSenderId: "480526111994",
-  appId: "1:480526111994:web:d40e1e290f454a190c2543",
-  measurementId: "G-HCLCXQR3J0"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Check that all required environment variables are set.
+if (
+    !firebaseConfig.apiKey ||
+    !firebaseConfig.authDomain ||
+    !firebaseConfig.projectId
+) {
+    // In a server-side context, you might throw an error.
+    // In a client-side (Next.js) context, this might be trickier because
+    // the app will fail to build or run. For developer convenience,
+    // we log a clear error message.
+    console.error(
+`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! FIREBASE_CONFIG_MISSING:
+!!! Your Firebase configuration is missing or incomplete.
+!!! Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set in your .env file.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`
+    );
+}
+
 
 // Initialize Firebase
 let app;

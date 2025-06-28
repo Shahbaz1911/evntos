@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email-flow';
 import PreLoader from '@/components/pre-loader';
 
-const ADMIN_EMAIL = "sk@gmail.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 interface AuthContextType {
   user: User | null;
