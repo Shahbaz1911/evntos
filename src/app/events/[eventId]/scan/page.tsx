@@ -19,13 +19,13 @@ import { Label } from '@/components/ui/label';
 
 const SCANNER_REGION_ID = "qr-scanner-region";
 
-type ScanStatus = "idle" | "scanning" | "verifying" | "success" | "error" | "not_found" | "already_verified";
+type ScanStatus = "idle" | "scanning" | "verifying" | "success" | "error" | "not_found";
 
 export default function ScanTicketPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
-  const { getEventById, getRegistrationByIdFromFirestore, checkInGuest, contextLoading: eventContextLoading } = useEvents();
+  const { getEventById, getRegistrationByIdFromFirestore, contextLoading: eventContextLoading } = useEvents();
   const { user: authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -73,23 +73,9 @@ export default function ScanTicketPage() {
         if (registration) {
             if (registration.eventId === eventId) {
                 setScannedData(registration);
-                if (registration.checkedIn) {
-                    setScanStatus("already_verified");
-                    setScanMessage(`Guest ${registration.name} was already checked in at ${new Date(registration.checkedInAt!).toLocaleString()}.`);
-                    toast({ title: "Already Verified", description: `${registration.name} was previously checked in.`});
-                } else {
-                    const checkInSuccess = await checkInGuest(registration.id);
-                    if (checkInSuccess) {
-                        const updatedRegistration = await getRegistrationByIdFromFirestore(decodedText); // Re-fetch to get checkInAt time
-                        setScannedData(updatedRegistration);
-                        setScanStatus("success");
-                        setScanMessage(`Ticket Verified for ${registration.name}! Guest can proceed.`);
-                        toast({ title: "Ticket Verified", description: `${registration.name} is a valid guest.`, variant: "success" });
-                    } else {
-                        setScanStatus("error");
-                        setScanMessage("Failed to mark ticket as checked-in. Please try again.");
-                    }
-                }
+                setScanStatus("success");
+                setScanMessage(`Ticket Verified for ${registration.name}!`);
+                toast({ title: "Ticket Verified", description: `${registration.name} is a valid guest.`, variant: "success" });
             } else {
                 setScanStatus("error");
                 setScanMessage("This ticket is for a different event.");
@@ -106,7 +92,7 @@ export default function ScanTicketPage() {
         setScanMessage("A system error occurred during verification. Please try again.");
         toast({ title: "System Error", description: "Could not verify ticket due to a system error.", variant: "destructive" });
     }
-  }, [eventId, getRegistrationByIdFromFirestore, checkInGuest, toast]);
+  }, [eventId, getRegistrationByIdFromFirestore, toast]);
 
   // Scanner Lifecycle Effect
   useEffect(() => {
@@ -216,11 +202,10 @@ export default function ScanTicketPage() {
           </div>
         );
       case 'success':
-      case 'already_verified':
         return (
-            <div className={`text-center p-4 ${scanStatus === 'success' ? 'text-green-600' : 'text-blue-600'}`}>
+            <div className="text-center p-4 text-green-600">
               <UserCheck size={64} className="mx-auto mb-4"/>
-              <p className="text-lg font-semibold">{scanStatus === "success" ? "Ticket Verified!" : "Already Verified!"}</p>
+              <p className="text-lg font-semibold">Ticket Verified!</p>
             </div>
           );
       case 'error':
@@ -296,24 +281,23 @@ export default function ScanTicketPage() {
             
             {scanStatus !== 'scanning' && scanStatus !== 'verifying' && scanStatus !== 'idle' && scanMessage && (
                 <Alert 
-                    variant={scanStatus === "success" || scanStatus === "already_verified" ? "default" : "destructive"} 
-                    className={`mt-4 ${scanStatus === "success" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700" : (scanStatus === 'already_verified' ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700' : "")}`}
+                    variant={scanStatus === "success" ? "default" : "destructive"} 
+                    className={`mt-4 ${scanStatus === "success" ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700" : ""}`}
                 >
-                     {(scanStatus === "success" || scanStatus === "already_verified") && <UserCheck className="h-5 w-5 text-current" />}
+                     {scanStatus === "success" && <UserCheck className="h-5 w-5 text-current" />}
                      {(scanStatus === "error" || scanStatus === "not_found") && <UserX className="h-5 w-5 text-current" />}
                     <AlertTitle className="font-semibold text-lg">
                         {scanStatus === "success" ? "Ticket Verified" : 
-                         scanStatus === "already_verified" ? "Already Verified" :
                          scanStatus === "error" ? "Scan Error" : "Ticket Not Found"}
                     </AlertTitle>
                     <AlertDescription className="text-base">{scanMessage}</AlertDescription>
                 </Alert>
             )}
 
-            {scannedData && (scanStatus === "success" || scanStatus === "already_verified") && (
-              <Card className={`mt-4 ${scanStatus === "already_verified" ? "bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700" : "bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700"}`}>
+            {scannedData && scanStatus === "success" && (
+              <Card className="mt-4 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700">
                 <CardHeader>
-                  <CardTitle className={`font-headline text-xl ${scanStatus === "already_verified" ? "text-blue-700 dark:text-blue-300" : "text-green-700 dark:text-green-300"}`}>
+                  <CardTitle className="font-headline text-xl text-green-700 dark:text-green-300">
                     Guest Details
                   </CardTitle>
                 </CardHeader>
@@ -324,9 +308,6 @@ export default function ScanTicketPage() {
                      <p className="flex items-center"><Phone className="mr-2 h-4 w-4 text-muted-foreground" /><strong>Contact:</strong> {scannedData.contactNumber}</p>
                   )}
                    <p className="text-xs text-muted-foreground pt-1"><strong>Registered:</strong> {new Date(scannedData.registeredAt).toLocaleString()}</p>
-                  {scannedData.checkedIn && scannedData.checkedInAt && (
-                     <p className={`text-xs ${scanStatus === "already_verified" ? "text-blue-700 dark:text-blue-400" : "text-green-700 dark:text-green-400"} font-semibold pt-1`}><strong>Checked In at:</strong> {new Date(scannedData.checkedInAt).toLocaleString()}</p>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -335,5 +316,3 @@ export default function ScanTicketPage() {
       </div>
   );
 }
-
-    

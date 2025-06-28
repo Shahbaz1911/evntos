@@ -35,7 +35,6 @@ interface EventContextType {
   recordSharedLinkVisit: (eventId: string, eventSlug: string) => Promise<void>;
   getRegistrationsByEventId: (eventId: string) => Registration[];
   getRegistrationByIdFromFirestore: (registrationId: string) => Promise<Registration | null>;
-  checkInGuest: (registrationId: string) => Promise<boolean>;
 }
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -112,8 +111,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
                   registeredAt: data.registeredAt,
                   source: data.source,
                   eventOwnerId: data.eventOwnerId,
-                  checkedIn: data.checkedIn || false,
-                  checkedInAt: data.checkedInAt,
                 } as Registration;
               });
               fetchedRegistrations.push(...regsListChunk);
@@ -306,7 +303,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       ...(newRegData.contactNumber && { contactNumber: newRegData.contactNumber }),
       registeredAt: new Date().toISOString(),
       source: 'form',
-      checkedIn: false,
     };
     try {
       const docRef = await addDoc(collection(db, "registrations"), registrationData);
@@ -334,7 +330,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       email: `shared-view-${Date.now()}@${eventSlug}.local`,
       registeredAt: new Date().toISOString(),
       source: 'shared_link',
-      checkedIn: false,
     };
     try {
       await addDoc(collection(db, "registrations"), registrationDraft);
@@ -362,8 +357,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
           contactNumber: data.contactNumber,
           registeredAt: data.registeredAt,
           source: data.source,
-          checkedIn: data.checkedIn || false,
-          checkedInAt: data.checkedInAt,
         } as Registration;
       } else {
         return null;
@@ -374,47 +367,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
   }, [toast]);
-  
-  const checkInGuest = useCallback(async (registrationId: string): Promise<boolean> => {
-    if (!authUser) {
-        toast({ title: "Authentication Error", description: "You must be logged in to check in guests.", variant: "destructive" });
-        return false;
-    }
-
-    try {
-        const registration = await getRegistrationByIdFromFirestore(registrationId);
-        if (!registration) {
-            toast({ title: "Check-in Failed", description: "Registration not found.", variant: "destructive" });
-            return false;
-        }
-
-        // Client-side check for ownership before attempting DB update
-        if (registration.eventOwnerId !== authUser.uid) {
-            toast({ title: "Authorization Error", description: "You are not authorized to check in guests for this event.", variant: "destructive" });
-            return false;
-        }
-
-        const regRef = doc(db, "registrations", registrationId);
-        await updateDoc(regRef, {
-            checkedIn: true,
-            checkedInAt: new Date().toISOString(),
-        });
-        
-        // Update local state for immediate UI feedback
-        setRegistrations(prev => prev.map(r => 
-            r.id === registrationId 
-            ? { ...r, checkedIn: true, checkedInAt: new Date().toISOString() } 
-            : r
-        ));
-        
-        return true;
-    } catch (error) {
-        console.error("Error during check-in:", error);
-        toast({ title: "Check-in Error", description: "An error occurred while checking in the guest. Please check the console.", variant: "destructive" });
-        return false;
-    }
-}, [authUser, toast, getRegistrationByIdFromFirestore]);
-
 
   return (
     <EventContext.Provider
@@ -432,7 +384,6 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         recordSharedLinkVisit,
         getRegistrationsByEventId,
         getRegistrationByIdFromFirestore,
-        checkInGuest,
       }}
     >
       {children}

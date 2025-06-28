@@ -24,6 +24,4 @@ export interface Registration {
   contactNumber?: string; // Optional contact number
   registeredAt: string; // ISO date string
   source?: 'form' | 'shared_link'; // To track how the registration was created
-  checkedIn?: boolean;
-  checkedInAt?: string; // ISO date string, time of check-in
 }
