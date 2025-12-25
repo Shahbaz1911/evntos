@@ -51,6 +51,8 @@
     "googleapis": "^140.0.0",
     "gsap": "^3.12.5",
     "html5-qrcode": "^2.3.8",
+    "imagekit": "^5.0.1",
+    "imagekit-javascript": "^3.0.0",
     "lenis": "^1.1.6",
     "lucide-react": "^0.475.0",
     "next": "15.3.8",
