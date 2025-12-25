@@ -2,11 +2,10 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import ImageKit from 'imagekit-javascript';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { UploadCloud, Image as ImageIcon, XCircle } from 'lucide-react';
+import { UploadCloud, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 
@@ -15,66 +14,58 @@ interface ImageKitUploaderProps {
   initialImageUrl?: string;
 }
 
-const imageKitPublicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
-const imageKitUrlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
-
-if (!imageKitPublicKey || !imageKitUrlEndpoint) {
-    console.error("ImageKit public key or URL endpoint is not configured in environment variables.");
-}
-
-const imagekit = new ImageKit({
-    publicKey: imageKitPublicKey!,
-    urlEndpoint: imageKitUrlEndpoint!,
-});
-
 const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({ onUploadSuccess, initialImageUrl }) => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0); // Kept for potential future use with progress reporting
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
-    if (!imageKitPublicKey || !imageKitUrlEndpoint) {
-        toast({
-            title: 'Upload Configuration Error',
-            description: 'ImageKit is not configured. Please contact support.',
-            variant: 'destructive',
-        });
-        return;
-    }
-    
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(0); // Reset progress
+
+    const form = new FormData();
+    form.append("file", file);
 
     try {
-        const response = await imagekit.upload({
-            file: file,
-            fileName: file.name,
-            useUniqueFileName: true,
-            folder: '/evntos/',
-            authenticationEndpoint: '/api/imagekit-auth',
-            onUploadProgress: (progress) => {
-                setUploadProgress(progress.percent);
-            },
-        });
+      // Simulate progress for better UX as direct server upload doesn't provide it
+      setUploadProgress(50); 
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: form,
+      });
 
-        toast({
-            title: 'Upload Successful',
-            description: 'Your event image has been uploaded.',
-            variant: 'success',
-        });
-        onUploadSuccess(response.url);
-        setPreviewUrl(response.url);
-    } catch (error) {
-        console.error('ImageKit upload error:', error);
-        toast({
-            title: 'Upload Failed',
-            description: 'There was an error uploading your image. Please try again.',
-            variant: 'destructive',
-        });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Upload failed with no specific error message.");
+      }
+      
+      setUploadProgress(100);
+      
+      toast({
+          title: 'Upload Successful',
+          description: 'Your event image has been uploaded.',
+          variant: 'success',
+      });
+      onUploadSuccess(data.url);
+      setPreviewUrl(data.url);
+
+    } catch (err: any) {
+      console.error("ImageKit full error:", err);
+      toast({
+          title: 'Upload Failed',
+          description: err.message || 'There was an error uploading your image. Please try again.',
+          variant: 'destructive',
+      });
     } finally {
-        setIsUploading(false);
+        // Add a small delay before resetting loading state to show 100% progress
+        setTimeout(() => {
+            setIsUploading(false);
+            setUploadProgress(0);
+        }, 500);
     }
   };
 
