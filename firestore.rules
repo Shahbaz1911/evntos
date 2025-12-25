@@ -1,34 +1,53 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Internal Test Collection: Allow any authenticated user to read.
-    // This is for the /firebase-test page to verify the connection.
-    match /internal-test-collection/{docId} {
-      allow read: if request.auth != null;
-    }
-
-    // Events Collection
     match /events/{eventId} {
-      // Anyone can read event details (for public event pages).
+      // Allow anyone to read event details (for public event pages)
       allow read: if true;
-      
-      // Only the event creator can create, update, or delete their own event.
-      allow create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;
+
+      // Allow authenticated users to create events,
+      // ensuring the event's 'userId' field matches their own ID.
+      allow create: if request.auth != null &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Allow authenticated users to update an event if they are the owner (userId matches)
+      // and ensure the userId field itself is not being changed to someone else.
+      allow update: if request.auth != null &&
+                       resource.data.userId == request.auth.uid && // User owns the existing document
+                       request.resource.data.userId == request.auth.uid; // User is not trying to change the owner
+
+      // Allow authenticated users to delete an event if they are the owner.
+      allow delete: if request.auth != null &&
+                       resource.data.userId == request.auth.uid;
     }
 
-    // Registrations Collection
     match /registrations/{registrationId} {
-      // Anyone can create a registration (register for an event).
-      allow create: if true;
-      
-      // Only the event owner can read the registrations for their event.
-      // The scanner function also needs read access.
-      allow read: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.userId;
+      // Allow reading a specific registration document ('get')
+      // if the authenticated user is the owner of the associated event.
+      allow get: if request.auth != null &&
+                    resource.data.eventId != null && // Ensure eventId exists on the registration
+                    get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.userId == request.auth.uid;
 
-      // No one can update or delete registrations from the client-side for data integrity.
-      allow update, delete: if false;
+      // Allow querying/listing registrations ('list') for any authenticated user.
+      // This rule supports your current EventContext's behavior of fetching all registrations
+      // and then filtering them on the client-side for the guest list.
+      // WARNING: For better security and performance with many users/events,
+      // you should update EventContext to query registrations specifically for an eventId
+      // (e.g., using .where("eventId", "==", yourEventId))
+      // and then tighten this 'list' rule accordingly.
+      allow list: if request.auth != null;
+
+      // Allow anyone to create a registration if an eventId is provided
+      // and the corresponding event document actually exists.
+      allow create: if request.resource.data.eventId != null &&
+                       exists(/databases/$(database)/documents/events/$(request.resource.data.eventId));
+
+      // Allow an authenticated user to delete a registration
+      // if they are the owner of the associated event.
+      allow delete: if request.auth != null &&
+                     resource.data.eventId != null && // Ensure eventId exists on the registration
+                     get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.userId == request.auth.uid;
     }
   }
 }
