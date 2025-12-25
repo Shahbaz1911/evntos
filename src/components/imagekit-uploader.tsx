@@ -17,19 +17,19 @@ interface ImageKitUploaderProps {
 const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({ onUploadSuccess, initialImageUrl }) => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0); // Kept for potential future use with progress reporting
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImageUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
     setIsUploading(true);
-    setUploadProgress(0); // Reset progress
+    setUploadProgress(0);
 
     const form = new FormData();
     form.append("file", file);
 
     try {
-      // Simulate progress for better UX as direct server upload doesn't provide it
+      // Simulate progress for better UX
       setUploadProgress(50); 
       
       const res = await fetch("/api/upload", {
@@ -61,7 +61,6 @@ const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({ onUploadSuccess, in
           variant: 'destructive',
       });
     } finally {
-        // Add a small delay before resetting loading state to show 100% progress
         setTimeout(() => {
             setIsUploading(false);
             setUploadProgress(0);
