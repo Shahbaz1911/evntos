@@ -53,16 +53,24 @@ export default function PublicEventPage() {
     if (!event) return;
     const shareUrl = window.location.href;
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link Copied!",
-        description: "Event share link copied to clipboard.",
-      });
+      if (navigator.share) {
+        await navigator.share({
+          title: event.title,
+          text: event.description,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Link Copied!",
+          description: "Event share link copied to clipboard.",
+        });
+      }
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      console.error('Failed to copy or share: ', err);
       toast({
         title: "Error",
-        description: "Could not copy link. Please try again.",
+        description: "Could not copy or share link. Please try again.",
         variant: "destructive",
       });
     }
@@ -101,7 +109,7 @@ export default function PublicEventPage() {
 
   if (!event) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-20 container px-4">
         <XCircle className="mx-auto h-20 w-20 text-destructive mb-6" />
         <h1 className="text-3xl font-bold font-headline text-destructive mb-4">Event Not Found</h1>
         <p className="text-lg text-muted-foreground mb-6">The event you're looking for doesn't exist or may have been moved.</p>
@@ -118,9 +126,9 @@ export default function PublicEventPage() {
 
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 container px-4 py-8">
-      <Card className="overflow-hidden shadow-xl rounded-lg">
-        <div className="relative w-full h-72 md:h-96">
+    <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 container px-4 py-6 sm:py-8">
+      <Card className="overflow-hidden shadow-xl rounded-lg border-border">
+        <div className="relative w-full h-60 sm:h-72 md:h-96">
           <Image 
             src={event.imageUrl || "https://placehold.co/1200x600.png"} 
             alt={event.title} 
@@ -131,37 +139,38 @@ export default function PublicEventPage() {
            />
            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
            <div className="absolute top-4 right-4 z-10">
-              <Button variant="outline" size="sm" onClick={handleShare} className="bg-background/80 hover:bg-background text-foreground">
-                <Share2 className="mr-2 h-4 w-4" /> Share Event
+              <Button variant="outline" size="sm" onClick={handleShare} className="bg-background/80 hover:bg-background text-foreground backdrop-blur-sm">
+                <Share2 className="mr-2 h-4 w-4" /> Share
               </Button>
             </div>
-           <div className="absolute bottom-0 left-0 p-6 md:p-8">
-            <h1 className="text-4xl md:text-5xl font-bold font-headline text-white drop-shadow-lg">{event.title}</h1>
+           <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-headline text-white drop-shadow-lg">{event.title}</h1>
            </div>
         </div>
         
-        <CardContent className="p-6 md:p-8 grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6 md:space-y-8">
-            <div>
-              <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
-                <Calendar className="mr-3 h-6 w-6" /> Date & Time
+        <CardContent className="p-4 sm:p-6 md:p-8 grid lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="lg:col-span-2 space-y-6 md:space-y-8">
+            
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <h2 className="text-xl sm:text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
+                <Calendar className="mr-3 h-5 w-5 sm:h-6 sm:w-6" /> Date & Time
               </h2>
-              <p className="text-foreground/90 text-lg">
+              <p className="text-foreground/90 text-base sm:text-lg">
                 {formatEventDateTime(event.eventDate, event.eventTime)}
               </p>
             </div>
             
             <div>
-              <h2 className="text-2xl font-semibold font-headline text-primary mb-3">About this Event</h2>
-              <p className="text-foreground/90 whitespace-pre-line leading-relaxed text-base md:text-lg">
+              <h2 className="text-xl sm:text-2xl font-semibold font-headline text-primary mb-3">About this Event</h2>
+              <p className="text-foreground/90 whitespace-pre-line leading-relaxed text-base">
                 {event.description || "No description provided."}
               </p>
             </div>
 
-            {hasLocationInfo ? (
+            {hasLocationInfo && (
               <div>
-                <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
-                  <MapPin className="mr-3 h-6 w-6" /> Location
+                <h2 className="text-xl sm:text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
+                  <MapPin className="mr-3 h-5 w-5 sm:h-6 sm:w-6" /> Location
                 </h2>
                 {event.venueName && (
                   <p className="text-lg font-medium text-foreground flex items-center mb-1">
@@ -202,13 +211,6 @@ export default function PublicEventPage() {
                   </div>
                 )}
               </div>
-            ) : (
-                 <div>
-                    <h2 className="text-2xl font-semibold font-headline text-primary mb-3 flex items-center">
-                        <MapPin className="mr-3 h-6 w-6" /> Location
-                    </h2>
-                    <p className="text-muted-foreground">Location details have not been provided.</p>
-                 </div>
             )}
 
 
@@ -218,17 +220,19 @@ export default function PublicEventPage() {
             </div>
           </div>
 
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1">
             {event.registrationOpen ? (
               <RegistrationForm eventId={event.id} eventName={event.title} />
             ) : (
-              <Card className="bg-secondary border-primary/20 shadow-none border-2 border-dashed p-6 text-center rounded-lg flex flex-col items-center justify-center h-full">
-                <Ticket className="h-16 w-16 text-primary mb-4" />
-                <CardTitle className="font-headline text-2xl text-primary mb-2">Registration Closed</CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  We're sorry, but registrations for this event are currently closed. Please check back later or contact the event organizer for more information.
-                </CardDescription>
-              </Card>
+              <div className="sticky top-24">
+                <Card className="bg-secondary border-primary/20 shadow-none border-2 border-dashed p-6 text-center rounded-lg flex flex-col items-center justify-center h-full">
+                  <Ticket className="h-12 w-12 sm:h-16 sm:w-16 text-primary mb-4" />
+                  <CardTitle className="font-headline text-xl sm:text-2xl text-primary mb-2">Registration Closed</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    We're sorry, but registrations for this event are currently closed. Please check back later or contact the event organizer for more information.
+                  </CardDescription>
+                </Card>
+              </div>
             )}
           </div>
         </CardContent>
@@ -236,3 +240,5 @@ export default function PublicEventPage() {
     </div>
   );
 }
+
+    
