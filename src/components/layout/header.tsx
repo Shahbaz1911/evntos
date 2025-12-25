@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
-    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical, Users
+    CalendarPlus, LogIn, LogOut, UserPlus, UserCircle, QrCode, LayoutDashboard, Home, Info, ArrowRight, Star, HelpCircle, DollarSign, Settings, CreditCard, ShieldCheck, ShoppingCart, Zap, MoreVertical, Users, FlaskConical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -201,6 +201,9 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
             <NavLink href="/events/create" isActive={pathname === "/events/create"} onClick={closeMobileMenu} isMobile>
               <CalendarPlus className="mr-2 h-5 w-5"/>Create Event
             </NavLink>
+             <NavLink href="/firebase-test" isActive={pathname === "/firebase-test"} onClick={closeMobileMenu} className="text-amber-500 hover:text-amber-600" isMobile>
+                <FlaskConical className="mr-2 h-5 w-5"/>Firebase Test
+            </NavLink>
             {!isAdmin && userSubscriptionStatus === 'none' && (
                 <NavLink href="/pricing" isActive={pathname === "/pricing"} onClick={closeMobileMenu} className="w-full justify-start text-xl py-4 bg-primary/5 hover:bg-primary/15 text-primary" isMobile>
                     <CreditCard className="mr-2 h-5 w-5"/> View Plans
@@ -217,6 +220,9 @@ const MobileSidebarContent = ({ activeSection }: { activeSection: string }) => {
                   </NavLink>
                 );
             })}
+             <NavLink href="/firebase-test" isActive={pathname === "/firebase-test"} onClick={closeMobileMenu} className="text-amber-500 hover:text-amber-600" isMobile>
+                <FlaskConical className="mr-2 h-5 w-5"/>Firebase Test
+            </NavLink>
           </>
         )}
       </nav>
@@ -445,6 +451,9 @@ export default function Header() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
+             <NavLink href="/firebase-test" isActive={pathname === "/firebase-test"} className="text-amber-500 hover:text-amber-600">
+                <FlaskConical />
+            </NavLink>
             <ThemeToggleButton />
             {loading ? (
               <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div>
