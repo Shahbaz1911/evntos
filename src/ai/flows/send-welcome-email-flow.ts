@@ -46,7 +46,7 @@ const sendWelcomeEmailFlow = ai.defineFlow(
       }
 
       const resend = new Resend(resendApiKey);
-      const fromEmail = 'Evntos Welcome <welcome@evntosupdates.oursblogs24.com>'; 
+      const fromEmail = 'Evntos Welcome <noreply@updates.motorkhan.com>'; 
       const userName = input.userName || 'New User';
       const appBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'; // Fallback for local dev
 
@@ -84,3 +84,5 @@ const sendWelcomeEmailFlow = ai.defineFlow(
     }
   }
 );
+
+    

@@ -323,7 +323,7 @@ const sendTicketEmailFlow = ai.defineFlow(
       const safeGuestName = input.userName.replace(/[^a-zA-Z0-9\\s]/g, '').replace(/\\s+/g, '_');
       const filename = `${safeEventName}-Ticket-${safeGuestName}.pdf`;
 
-      const fromEmail = 'Evntos Tickets <tickets@evntosupdates.oursblogs24.com>'; 
+      const fromEmail = 'Evntos Tickets <noreply@updates.motorkhan.com>'; 
 
       const { data, error } = await resend.emails.send({
         from: fromEmail,
@@ -361,3 +361,5 @@ const sendTicketEmailFlow = ai.defineFlow(
     }
   }
 );
+
+    
